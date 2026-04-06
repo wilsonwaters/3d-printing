@@ -1,0 +1,23 @@
+{
+  "name": "3d-printing",
+  "owner": {
+    "name": "Wilson Waters"
+  },
+  "metadata": {
+    "description": "AI-powered 3D printing design skills for Claude Code, Cursor, Windsurf, and Copilot",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "3d-print-designer",
+      "source": "./",
+      "description": "Designs parametric, FDM-print-optimized OpenSCAD models. Selects material, optimizes orientation, layer adhesion, and structural strength.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Wilson Waters"
+      },
+      "keywords": ["3d-printing", "openscad", "fdm", "cad"],
+      "category": "design"
+    }
+  ]
+}

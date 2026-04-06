@@ -1,0 +1,29 @@
+name: Build Framework Adapters
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.claude/skills/**'
+      - 'scripts/build-adapters.py'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build adapter files
+        run: python scripts/build-adapters.py
+
+      - name: Commit updated adapters
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: rebuild framework adapters'
+          file_pattern: 'adapters/**'

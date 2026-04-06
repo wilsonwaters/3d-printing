@@ -1,0 +1,13 @@
+{
+  "name": "3d-print-designer",
+  "version": "1.0.0",
+  "description": "Designs and generates parametric, FDM-print-optimized OpenSCAD (.scad) models. Selects material (PLA/PETG/ABS), optimizes for print orientation, layer adhesion, and structural strength.",
+  "author": {
+    "name": "Wilson Waters",
+    "url": "https://github.com/wilsonwaters"
+  },
+  "repository": "https://github.com/wilsonwaters/3d-printing",
+  "license": "MIT",
+  "keywords": ["3d-printing", "openscad", "fdm", "cad", "parametric-design"],
+  "skills": "./.claude/skills/"
+}
