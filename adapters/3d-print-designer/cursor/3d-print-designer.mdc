@@ -390,17 +390,26 @@ After a **lightweight check**, no special output is needed unless something was 
 
 ## After Generation
 
-1. Remind the user to preview with F5 and render with F6 in OpenSCAD
-2. Suggest checking "Thrown Together" view (F12) for face orientation errors
-3. **Highlight the print settings** — orientation, material, key slicer parameters
-4. Note any dimensions they should verify with a test print before the final print
-5. If PETG: remind to dry filament before printing critical parts
-5b. If ABS: remind about enclosure requirement, ventilation safety, and filament drying (80C, 4-6 hours)
-6. **Walk through the export-to-print workflow** — see [printing-workflow.md](#printing-workflow):
-   - Export: F6 (render) then F7 (export STL)
-   - Import into slicer, apply the PRINT SETTINGS from the file header
-   - Check slicer preview for red flags (walls, supports, first layer)
-   - Run pre-print checklist before starting the print
+**Check Claude memory for user experience.** Look for `user`-type memories indicating 3D printing experience (owns a printer, has used OpenSCAD, has printed before, has used this skill before). No relevant memory = treat as new user.
+
+**New / first-time users** — ask:
+
+> "Would you like help getting this model viewed, exported, and ready to print? I can walk you through the whole process — including installing OpenSCAD if you don't have it yet."
+
+If yes, walk through the full workflow:
+
+1. **Install OpenSCAD** if needed — download from https://openscad.org/downloads, install, and open the generated .scad file
+2. Preview with F5, check Thrown Together view (F12) for face orientation errors
+3. Render (F6) then export STL (F7)
+4. **Highlight the print settings** — orientation, material, key slicer parameters
+5. Note dimensions worth verifying with a test print
+6. Material reminders: PETG → dry filament; ABS → enclosure, ventilation, drying (80C, 4-6h)
+7. **Import STL into their printer's slicer software** (Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, etc.) — apply the PRINT SETTINGS from the file header, check the slicer preview, and send to printer
+8. See [printing-workflow.md](#printing-workflow) for detailed export-to-print steps
+
+After walking them through it, save a `user` memory noting they've been introduced to the workflow.
+
+**Experienced users** — skip the offer. They know what to do.
 
 ## References
 
