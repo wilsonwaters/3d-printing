@@ -79,15 +79,20 @@
 // Infill: 40-60% gyroid (small part; near-solid is fine and stronger)
 // Supports: None required -- internal cone widens upward (self-supporting),
 //   slots are vertical, ridge undersides are ~52 deg (self-supporting).
-// Orientation: As modeled, Z=0 on the build plate. The COLLET sits on its
-//   open-end collar (wide, stable). The CONE-NUT sits on its narrow end -- small
-//   footprint, so a BRIM (5-8mm) on the cone-nut is REQUIRED, not optional, or it
-//   will detach mid-print. Print both together (laid out side by side in part="all").
+// Orientation: As modeled, Z=0 on the build plate. The COLLET sits on its open-end
+//   collar. The CONE-NUT is modeled CAP-DOWN: its wide flat cap is the base (stable,
+//   no brim needed) and the M8 thread entry is at the TOP where layers print cleanest.
+//   In use the narrow end faces the caster -- flip the printed part when assembling.
+//   Both are laid out side by side in part="all".
 // Notes:
 //   - Dry PETG (60-65C, 4-6h) before printing for clean threads.
-//   - 30-40% fan; too much cooling weakens layer bonds on this load part.
-//   - After printing, run an M8 bolt (or the caster) through the cone-nut thread
-//     once to clear/seat it. Clean any strings off the ridge crests.
+//   - CONE-NUT: print fine for a cleanly-formed M8 thread -- 0.08-0.16mm (0.08mm is
+//     ideal: ~15 layers per 1.25mm thread turn; 0.2mm is marginal). 30-40% fan. On a
+//     part this small, ensure the slicer's min-layer-time / cooling is on so fine
+//     thread crests don't blob from heat buildup (print a few at once if needed).
+//   - After printing, run an M8 bolt (or the caster) through the cone-nut thread once
+//     to clear/seat it. If it won't start, set printed_thread=false (self-tap bore).
+//   - Clean any strings off the collet ridge crests.
 
 // === PARAMETERS ===
 // --- Printer settings ---
@@ -139,16 +144,20 @@ lower_bore_d = 10.7;    // collet inner dia below the wedge (= travel space for 
 
 // --- Cone-nut (Part B) ---
 cone_clear   = 0.25;    // radial-ish sliding clearance between cone-nut and collet
-cone_cap     = 1.6;     // solid cap thickness at the deep (top) end of the cone-nut
+cone_cap     = 2.0;     // solid cap (the wide end). In PRINT orientation this is the
+                        //   flat base on the plate, so keep it >= a few layers.
 fin_w        = 1.4;     // anti-rotation fin thickness (rides in slot; 0.2mm/side clearance)
 fin_or       = 8.0;     // fin outer radius (sits inside the ridge crest)
 
 // --- Thread option ---
-printed_thread = true;  // true = printed M8 thread; false = smooth bore for a
-                        //   heat-set insert / tapped hole
-thread_clear   = 0.30;  // added clearance for the printed female M8 thread (PETG)
-insert_bore_d  = 10.5;  // bore dia when printed_thread = false (set to your
-                        //   M8 heat-set insert's recommended hole)
+printed_thread = true;  // true = printed M8 thread. false = smooth bore (insert_bore_d)
+                        //   for either a heat-set insert OR self-tapping the M8 in.
+thread_clear   = 0.40;  // added clearance for the printed female M8 thread. PETG ooze
+                        //   fills fine grooves, so run loose-ish (0.4); the wedge, not
+                        //   the thread, carries grip. If the M8 still won't start, set
+                        //   printed_thread=false with insert_bore_d=7.2 to self-tap.
+insert_bore_d  = 7.2;   // smooth-bore dia when printed_thread=false. 7.2 = self-tap the
+                        //   M8 (steel cuts its own thread in PETG); ~10.5 for a heat-set.
 
 // === DERIVED CONSTANTS ===
 extrusion_width = nozzle_diameter * 1.125;        // 0.45mm
@@ -265,16 +274,20 @@ module thread_cut(len) {
     }
 }
 
-// --- Cone-nut solid body (tapered to match the wedge, minus sliding clearance) ---
+// --- Cone-nut solid body ---
+// PRINT ORIENTATION (as modelled): the WIDE cap sits on the build plate (z=0) and
+// the cone narrows UPWARD. This gives a big flat first layer (no floating base) and
+// puts the caster's thread entry at the TOP, where layers print cleanest. In use the
+// narrow end faces the caster -- the user just flips the printed part when assembling.
 module cone_nut_body() {
     union() {
-        // tapered cone body (narrow at bottom, wide at top)
-        cylinder(h = wedge_len,
-                 d1 = wedge_min_d - cone_clear,
-                 d2 = wedge_max_d - cone_clear);
-        // deep-end cap
-        translate([0, 0, wedge_len - fudge])
-            cylinder(h = cone_cap + fudge, d = wedge_max_d - cone_clear);
+        // wide cap = stable, flat first-layer base
+        cylinder(h = cone_cap, d = wedge_max_d - cone_clear);
+        // tapered cone body: wide (bottom) -> narrow (top), self-supporting
+        translate([0, 0, cone_cap - fudge])
+            cylinder(h = wedge_len + fudge,
+                     d1 = wedge_max_d - cone_clear,
+                     d2 = wedge_min_d - cone_clear);
     }
 }
 
@@ -298,23 +311,25 @@ module cone_nut() {
             }
         }
         // central thread / bore -- runs fully THROUGH so a short (14mm) stem can
-        // extend past the cone-nut into the open deep end instead of bottoming out
+        // extend past the cone-nut instead of bottoming out
         if (printed_thread) {
-            // entry lead-in chamfer (open/bottom end)
             translate([0, 0, -fudge])
-                cylinder(h = m8_pitch, d1 = m8_d + thread_clear + 2*m8_pitch, d2 = m8_d + thread_clear);
-            translate([0, 0, -fudge])
-                thread_cut(total_h + 2*fudge);
+                thread_cut(total_h + 2*fudge);   // RH thread, generated +z (handedness OK)
+            // caster lead-in chamfer at the TOP (narrow end = where the caster enters
+            // in use). Kept narrower than the narrow OD so it doesn't undercut the rim.
+            lead_h = 0.8;
+            translate([0, 0, total_h - lead_h])
+                cylinder(h = lead_h + fudge,
+                         d1 = m8_d + thread_clear, d2 = m8_d + thread_clear + 2*lead_h);
         } else {
             translate([0, 0, -fudge])
                 cylinder(h = total_h + 2*fudge, d = insert_bore_d);
         }
-        // Elephant-foot compensation on cone-nut base
+        // Elephant-foot compensation on the WIDE cap base (z=0, on the plate)
+        cap_d = wedge_max_d - cone_clear;
         difference() {
-            translate([0, 0, -fudge]) cylinder(h = ef_chamfer + fudge, d = wedge_min_d + 2);
-            cylinder(h = ef_chamfer + fudge,
-                     d1 = (wedge_min_d - cone_clear) - 2*ef_chamfer,
-                     d2 = (wedge_min_d - cone_clear) + 2*fudge);
+            translate([0, 0, -fudge]) cylinder(h = ef_chamfer + fudge, d = cap_d + 2);
+            cylinder(h = ef_chamfer + fudge, d1 = cap_d - 2*ef_chamfer, d2 = cap_d + 2*fudge);
         }
     }
 }
@@ -333,11 +348,16 @@ if (part == "all") {
 }
 
 if (part == "assembled") {
-    // cutaway showing the cone-nut nested in the collet at rest
+    // Cutaway fit-check. The cone-nut is modelled cap-DOWN (print orientation), so here
+    // it's flipped into USE orientation (narrow end down, toward the collar) to show the
+    // nesting. (The thread looks left-handed in this preview only -- it's a mirror for
+    // display; the exported part="cone" STL keeps the correct right-hand thread.)
+    cn_h = wedge_len + cone_cap;
     difference() {
         union() {
             collet();
-            translate([0, 0, wedge_z0]) color("orange") cone_nut();
+            translate([0, 0, wedge_z0 + cn_h]) rotate([180, 0, 0])
+                color("orange") cone_nut();
         }
         // quarter cutaway
         translate([0, -50, -1]) cube([50, 50, insert_len + 4]);

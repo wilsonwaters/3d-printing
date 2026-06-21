@@ -46,11 +46,11 @@ In the `.scad`, set `part` to `"all"`, `"collet"`, `"cone"`, or `"assembled"` (c
 ## Printing
 
 - **Material:** PETG (ductile — the fingers flex to grip without cracking)
-- **Layer height:** 0.2 mm (0.16 mm gives crisper threads)
+- **Layer height:** collet 0.2 mm is fine; **print the cone-nut fine (0.08–0.16 mm)** — an internal M8 thread is marginal at 0.2 mm (0.08 mm is ideal, ~15 layers per thread turn). On such a small part, keep the slicer's min-layer-time/cooling on so fine thread crests don't blob from heat.
 - **Walls:** 4 perimeters min; **infill:** 40–60% gyroid (small part)
-- **Supports:** none — internal cone widens upward, slots are vertical
-- **Orientation:** as exported, Z=0 on the bed. The collet stands on its collar (wide, stable); the **cone-nut stands on its narrow end — a 5–8 mm brim is required** or it can detach mid-print.
-- After printing, run an M8 bolt (or the caster) through the cone-nut once to seat the thread.
+- **Supports:** none — both parts are self-supporting as oriented.
+- **Orientation:** as exported, Z=0 on the bed. The collet stands on its collar. The **cone-nut prints cap-down** (wide flat base — stable, no brim needed); its M8 thread entry is at the top. In use the narrow end faces the caster, so flip the printed cone-nut when assembling.
+- After printing, run an M8 bolt (or the caster) through the cone-nut once to seat the thread. **If the M8 won't start**, the printed thread didn't form — set `printed_thread = false` (default `insert_bore_d = 7.2`) and reprint the cone-nut, then drive the M8 straight in to self-tap its own thread.
 
 ## Tuning (common tweaks)
 
