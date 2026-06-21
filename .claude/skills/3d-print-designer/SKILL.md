@@ -173,6 +173,7 @@ Every generated file MUST include a `PRINT SETTINGS` comment block specifying:
 9. **No magic numbers** — every numeric value is a parameter or derived from parameters
 10. **Prefer ribs over thick walls** — a 1.6mm rib is stronger per gram than a 5mm solid wall
 11. **Design for support-free printing by default** — choose orientations, chamfers, teardrops, and splits that eliminate supports. Only accept supports when the geometry truly demands them (complex internal cavities, deep undercuts). When supports are unavoidable, minimize their contact area and document why they're needed in the PRINT SETTINGS header.
+12. **Verify by building, then peer-review by looking** — never hand off (or claim correctness of) a model you have not compiled. Two distinct steps: a deterministic [Verification](#verification) gate (compile, manifold, bounding box, `assert()` contracts) that the author runs, then a fresh-eyes [Design Review](#design-review) (a different model when available) that visually inspects the renders and judges the design. Static review of the code is necessary but NOT sufficient.
 
 ## Pacing Rules (CRITICAL — prevents 30+ minute stalls)
 
@@ -188,12 +189,13 @@ Every generated file MUST include a `PRINT SETTINGS` comment block specifying:
 1. **Configure printer** (Step 0) — identify printer capabilities, then **select material** (Step 1) — load material reference
 2. **Evaluate support strategy** (Step 2) — can this model be designed support-free? If feasible both ways, ask the user their preference. Default to support-free.
 3. **Determine print orientation and model in it** — choose orientation that eliminates supports first, then optimizes for load path. Model with Z=0 as the build plate so the OpenSCAD preview matches the printed result. If the part is used differently than printed (e.g. a bracket printed flat but mounted vertically), note the mapping in the description header.
-4. **Output design summary to user** — briefly describe: print orientation and why, support strategy (support-free or where supports are needed and why), overall structure, key dimensions, mounting approach. Then proceed.
-5. **Write the .scad file** with parameters, derived constants, and basic geometry. Use the Write tool now — do not keep building the model mentally.
+4. **Capture acceptance criteria + output design summary** — describe: print orientation and why, support strategy, overall structure, key dimensions, mounting approach. Also restate the user's requirements as a **numbered, measurable acceptance list** (units + tolerances — "fits 18mm tube → OD ≤ 17mm to insert", "≤ 21mm deep", "M8×1.25"). You'll verify against this list at the end. Then proceed.
+5. **Write the .scad file** with parameters, derived constants, and basic geometry. Use the Write tool now — do not keep building the model mentally. Encode the acceptance criteria as `assert()` statements where they map to a dimension, so a violation fails the build.
 6. **Add structural features** — ribs, gussets, fillets. Edit the file incrementally.
 7. **Add mounting features** — screw holes (oversize!), heat-set insert bosses, slots
 8. **Add support-free features** — 45° chamfers on all undersides (not fillets), teardrop profiles for horizontal holes, tapered features from below, elephant foot compensation on bottom edges. Replace any flat overhanging ledges with chamfered or angled geometry.
-9. **Full Design Review** — run the mandatory [Design Review](#design-review) checklist. Fix and re-review until all items pass.
+9. **Verify the build (deterministic gate)** — run [Verification](#verification): compile every `part=` with the OpenSCAD CLI, gate on the result, and check the measured bounding box and `assert()` contracts. Fix and re-verify until the gate is green. **Do this before the Design Review** — don't review a part that doesn't build or misses the measurable spec. (No rendering here — that's the review's job.)
+10. **Design Review (peer, fresh eyes)** — *once the gate is green*, spawn the [Design Review](#design-review) as a self-contained sub-agent (a different model when available): give it the `.scad`, acceptance criteria, and printer/material; it renders its own views, visually inspects, and runs the FDM checklist. Triage the findings, fix real issues (re-verify after structural fixes), push back on the rest, and surface genuine trade-offs to the user.
 
 ## Assembly Workflow
 
@@ -212,7 +214,8 @@ if (part == "lid" || part == "all") translate([60,0,0]) lid();
 
 5. Document print orientation for EACH part separately in the print settings header
 6. Consider whether parts need different orientations (split for optimal strength)
-7. **Full Design Review** — run the mandatory [Design Review](#design-review) checklist. Fix and re-review until all items pass.
+7. **Verify the build (deterministic gate)** — run [Verification](#verification) on EACH `part=` value: compile, gate on the result, and check bounding boxes and `assert()` contracts. Fix and re-verify until the gate is green. (Fit/clearance between parts is judged visually in the review, not here.)
+8. **Design Review (peer, fresh eyes)** — *once the gate is green*, spawn the [Design Review](#design-review) as a self-contained sub-agent (a different model when available): it renders its own assembled/exploded/section views and inspects fit, clearance, and interference between mating parts, plus the FDM checklist. Triage findings, fix and re-verify, push back where warranted.
 
 ## Mechanical Parts
 
@@ -303,9 +306,36 @@ module ef_base(size, ef=0.4) {
 }
 ```
 
+## Verification
+
+Verification is a **hard, deterministic gate**: it confirms the model compiles into a valid manifold solid, its measured dimensions are within the intended envelope, and its `assert()` contracts hold. These are reproducible, binary pass/fail checks the author agent runs on its own. It is deliberately NOT judgment — "does it look right?" is the [Design Review](#design-review)'s job. Order of operations: **generate → verify (this gate) → design review (peer judgment) → hand off.** Don't review or hand off a part that fails this gate.
+
+> Verification answers "does it build into a valid solid that meets the *measurable* spec?" — Design Review answers "is it actually the right shape, and a *good* FDM design?"
+
+**MANDATORY for** initial generation and any major/structural change. For minor tweaks, run the lightweight slice (re-compile the changed `part=` and re-check any affected dimension/assert). The procedure is **version-tiered** — the modern OpenSCAD nightly (Manifold backend, `--summary` JSON) verifies far better than stable 2021.01, so prefer the newest installed build and recommend power users install the nightly. If OpenSCAD is not installed, you cannot run this gate: say so explicitly, do an extra-careful static review, and offer to help the user install it.
+
+Exact commands, capability detection, and per-version fallbacks: **[verification.md](verification.md) — MANDATORY READ before verifying.** The deterministic checks:
+
+1. **Build gate** — compile every `part=` value with the OpenSCAD CLI (CLI STL export does a full render, catching errors the GUI preview hides). A part PASSES only if exit code is 0 **and** the STL is non-empty **and** stderr — *after dropping `ECHO:` lines* — is clean of fatal phrases (`ERROR:`, `WARNING:`, `EXPORT-WARNING:`, `Assertion`, `not be a valid 2-manifold`, `may need repair`, `Simple: no`, `Current top level object is empty`, `(PolySet)`). A non-manifold solid can exit 0, so **gate on stderr, not the exit code alone.**
+2. **Dimension + contract checks** — confirm the measured bounding box is within the intended envelope (via `--summary` JSON on modern builds, or a stdlib binary-STL parser on 2021.01), and that `assert()`/`echo()` contracts encoding the acceptance criteria all pass (a failed assert fails the build).
+3. **Measurable requirements traceability** — trace every acceptance criterion that is *mechanically checkable* (a dimension, a thread size, a depth limit) to one of the results above. Carry any criterion that needs an eyeball (shape correctness, mechanism sense) to the Design Review, and report anything only a real print can confirm (e.g. "an actual M8 mates") as a residual — never silently pass.
+
+Verification does NOT render images or judge appearance — producing and inspecting renders belongs entirely to the [Design Review](#design-review). Verification's only output is the deterministic result (pass/fail + measurements). The author uses that result to decide whether to proceed to the review; the review itself is run separately and independently (see below).
+
+### Verification output
+
+After verifying, state what you mechanically confirmed, e.g.:
+> "Verified on OpenSCAD 2026.06.19 (Manifold): both parts compile clean, measured bounding boxes 17.5×17.5×20.2mm and 16×16×9.6mm (within the 21mm depth limit), all asserts pass. Residual: an actual M8 mating needs a test print."
+
 ## Design Review
 
-Every generated or modified .scad file must be reviewed for compliance with this skill's rules. The review intensity depends on the scope of the change.
+The Design Review is a **fresh-eyes peer review**, not the author marking its own homework. It covers what a deterministic gate cannot: **visual inspection** of the geometry (does it actually look right?), whether the mechanism/approach makes sense, the qualitative acceptance criteria, and compliance with this skill's FDM rules.
+
+**The review is self-contained and independent of Verification.** It does not consume verification's outputs, re-check its results, or assume it ran — it renders its own views from the `.scad` and judges. Gating is the *author's* orchestration job: the author runs [Verification](#verification) and only spawns the review when the gate is green (no point reviewing a part that doesn't build). The reviewer needs to know none of that.
+
+**Run it with a different AI model than generated the model, when one is available.** Spawn it as a sub-agent (Agent tool) with a different `model`, and give it everything it needs to stand alone: the `.scad` file path, the numbered acceptance criteria, the printer + material, and the checklist below (and where to find render commands — [verification.md](verification.md#rendering-images-for-the-design-review)). A different model with clean context catches blind spots the author shares with itself. You *may* tell it "the build/manifold/dimension gate already passed, focus on judgment" purely to scope its effort — but that's an optional hint, not something it must verify. If no other model is available, still run it as a separate fresh pass (a sub-agent with clean context) and note it was same-model.
+
+The review **returns findings** (each: severity · what · where · suggested fix). The author agent then **triages**: fix the real issues, and **push back** on findings that are wrong or out of scope — the review is advisory peer critique, not an authority. Surface genuine disagreements or trade-offs to the user rather than silently accepting or overriding them. This makes the review a place the design can be challenged and improved, not a rubber stamp.
 
 ### Review Tiers
 
@@ -328,10 +358,15 @@ Every generated or modified .scad file must be reviewed for compliance with this
 
 ### How to perform a Full Review
 
-1. **Re-read the .scad file in full** — do not review from memory. Use the Read tool.
-2. **Walk through every item in the checklist below.** Determine PASS or FAIL for each.
-3. **If ANY item fails:** fix the violation, then **re-read and re-review from step 1** (fixes can introduce new issues).
-4. **Repeat until all items pass.**
+Run it as a self-contained peer pass (a sub-agent with a different model when available; see above). The reviewer:
+
+1. **Reads the `.scad` file in full** (via the Read tool) — does not review from memory.
+2. **Renders the views it needs and actually looks at them** (the reviewer is multimodal; render commands in [verification.md](verification.md#rendering-images-for-the-design-review)). At minimum: ThrownTogether (any pink/purple = winding/manifold tell), an ortho/iso set for proportion and feature presence, and a section/cutaway for internal features (do bores go through? wall thickness? thread engagement? fit/interference between mating parts?). It renders these itself rather than relying on images handed to it.
+3. **Confirms the qualitative acceptance criteria** — the ones that need an eyeball rather than a measurement (correct shape, sensible mechanism, looks like what the user asked for).
+4. **Walks every item in the checklist below**, recording PASS/FAIL with a one-line reason.
+5. **Returns findings** (severity · what · where · suggested fix).
+
+The **author** then triages: fix real issues, push back on the rest, and on any structural fix **re-run Verification (the gate) and re-review** the changed area — fixes can introduce new problems. (Re-verifying is the author's loop, not the reviewer's.)
 
 ### Full Review Checklist
 
@@ -376,6 +411,13 @@ Every generated or modified .scad file must be reviewed for compliance with this
 - [ ] `part` parameter allows individual part rendering
 - [ ] Print orientation documented for EACH part separately
 
+**Visual / shape correctness (render and inspect — this is the review's core job):**
+- [ ] ThrownTogether shows no pink/purple faces (no winding/manifold tells)
+- [ ] Geometry matches intent — correct overall shape, proportions, and feature counts (holes, ribs, slots, teeth)
+- [ ] Section/cutaway confirms internal features: bores go all the way through, walls aren't paper-thin, threads/mechanisms engage
+- [ ] Multi-part: assembled view shows correct fit — no interference, no excessive gap at mating interfaces
+- [ ] Qualitative acceptance criteria met (the eyeball ones); any unmet or print-only criteria reported to the user
+
 ### Review output
 
 After a **full review** passes, tell the user:
@@ -387,6 +429,8 @@ If the review required fixes, mention what was caught:
 After a **lightweight check**, no special output is needed unless something was caught and fixed.
 
 ## After Generation
+
+> Note: this section is about getting the model onto the **user's** machine and printer — separate from [Verification](#verification) and the [Design Review](#design-review), which you already ran on your own machine. Share any renders you have (deliverable previews, or the review's images); they help the user see the result.
 
 **Check Claude memory for user experience.** Look for `user`-type memories indicating 3D printing experience (owns a printer, has used OpenSCAD, has printed before, has used this skill before). No relevant memory = treat as new user.
 
@@ -422,6 +466,9 @@ After walking them through it, save a `user` memory noting they've been introduc
 
 **Load before writing code (Step 4):**
 - **[openscad-reference.md](openscad-reference.md)** — MANDATORY READ: OpenSCAD language gotchas and patterns that prevent broken geometry
+
+**Load before verifying (Verify step, before Design Review):**
+- **[verification.md](verification.md)** — MANDATORY READ: how to compile, render, visually inspect, and trace requirements with the OpenSCAD CLI (with version-specific fallbacks)
 
 **Load only when specifically needed (do NOT pre-load):**
 - **[fdm-design-principles.md](fdm-design-principles.md)** — Load for support-free design technique details (gothic arches, graduated overhangs, part splitting), or complex structural optimization (ribs vs walls, stress management). Step 2 above covers the basics.
