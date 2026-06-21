@@ -6,7 +6,7 @@ This is distinct from the [Design Review](SKILL.md#design-review), which is the 
 
 > Verification answers "does it build into a valid solid that meets the *measurable* spec?" — Design Review answers "is it actually the right shape, and a *good* FDM design?"
 
-This file also documents the **PNG render commands** the Design Review uses — they're OpenSCAD CLI mechanics, so they live here with the rest of the CLI reference, but they belong to the review (which renders its own views and judges them), not to the verification gate. See [Rendering images for the Design Review](#rendering-images-for-the-design-review) at the bottom.
+Rendering and inspecting views belongs to the Design Review, not this gate — those commands live in [design-review.md](design-review.md). Verification never renders images or judges appearance.
 
 ---
 
@@ -138,39 +138,6 @@ Hash the evaluated CSG tree (stable across tessellation) to detect unintended ch
 ### Gate result
 
 A part is **verified** when: it compiles (exit 0, non-empty STL), stderr is clean per 1a, its measured bounding box is within the intended envelope, and all `assert()` contracts pass. Trace each *measurable* acceptance criterion to one of these results. Report anything that can't be checked mechanically (e.g. "a real M8 mates") as a residual to confirm by print — never silently pass.
-
----
-
-## Rendering images for the Design Review
-
-These are the commands the **[Design Review](SKILL.md#design-review)** uses to render the views it inspects (the reviewer renders these itself, then judges them — verification neither runs them nor looks at the output). They live here only because they're OpenSCAD CLI mechanics. Keep camera/imgsize fixed across iterations so image diffs are meaningful.
-
-The `--camera` gimbal form is `transx,transy,transz,rotx,roty,rotz,dist`; with `--viewall` the distance auto-fits, so only the rotation triple matters.
-
-```sh
-# ThrownTogether: back/CCW faces render pink, reversed faces purple (winding/manifold tells)
-"$OSCAD" --preview=throwntogether --viewall --autocenter --imgsize=1024,1024 --camera=0,0,0,55,0,25,0 -o tt.png model.scad
-
-# Orthographic front / top / right + an isometric (ortho keeps proportion true)
-V="--render --projection=ortho --viewall --autocenter --imgsize=1024,1024"
-"$OSCAD" $V --camera=0,0,0,0,0,0,0   -o top.png   model.scad
-"$OSCAD" $V --camera=0,0,0,90,0,0,0  -o front.png model.scad
-"$OSCAD" $V --camera=0,0,0,90,0,90,0 -o right.png model.scad
-"$OSCAD" $V --camera=0,0,0,55,0,25,0 -o iso.png   model.scad
-```
-
-Add a section/cutaway wrapper (the only way to *see* internal features — bores, wall thickness, thread engagement, mating clearance) driven by `-D`:
-
-```openscad
-section = 0;  // 0 = whole, 1 = cut at the Y=0 plane
-if (section == 0) model();
-else difference() { model(); translate([0,-500,-1]) cube(1000); }
-```
-```sh
-"$OSCAD" --render --viewall --imgsize=1024,1024 -D section=1 --camera=0,0,0,90,0,0,0 -o section.png model.scad
-```
-
-For assemblies, also render an **assembled** view, an **exploded** view (`-D explode=20`), and give each part a distinct `color()` so fit/interference is visible. A `%cube(10);` reference cube adds a known scale bar (image pixels are not a measurement — dimensions come from Part 1).
 
 ---
 

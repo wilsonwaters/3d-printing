@@ -147,6 +147,63 @@ module rounded_box(size, r) {
 }
 ```
 
+### FDM module patterns
+
+Reusable, print-aware modules. They assume the derived constants from the file template (`fudge`, `tolerance`, `layer_height`).
+
+```openscad
+// Through-hole / pocket: extend cutting shapes beyond every surface they exit
+// Pocket (open top):
+difference() {
+    cube([width, depth, height]);
+    translate([wall, wall, wall])
+        cube([width - 2*wall, depth - 2*wall, height + fudge]);
+}
+// Through-hole (extend BOTH directions):
+translate([x, y, -fudge])
+    cylinder(h = wall + 2*fudge, d = hole_d + tolerance);
+
+// Screw hole with countersink
+module screw_hole(h, d, head_d, head_h) {
+    translate([0, 0, -fudge]) {
+        cylinder(h=h + 2*fudge, d=d + tolerance);
+        translate([0, 0, h - head_h])
+            cylinder(h=head_h + fudge, d1=d + tolerance, d2=head_d + tolerance);
+    }
+}
+
+// Teardrop hole — self-supporting horizontal hole (no support material)
+module teardrop_hole(d, h) {
+    r = d / 2;
+    rotate([90, 0, 0])
+        linear_extrude(height=h, center=true)
+            union() {
+                circle(r=r);
+                polygon([[-r, 0], [r, 0], [0, r]]);
+            }
+}
+
+// Chamfered shelf — replaces a flat shelf/ledge with a 45° chamfered (support-free) underside
+module chamfered_shelf(width, depth, thick, chamfer) {
+    ch = min(chamfer, thick - layer_height);  // leave at least one layer flat on top
+    hull() {
+        translate([0, 0, thick - layer_height])        // full-width top
+            cube([width, depth, layer_height]);
+        translate([ch, ch, 0])                          // narrower bottom (chamfer removes underside material)
+            cube([width - 2*ch, depth - 2*ch, layer_height]);
+    }
+}
+
+// Elephant-foot compensation base — taper the first layers inward
+module ef_base(size, ef=0.4) {
+    hull() {
+        translate([ef, ef, ef])
+            cube([size[0] - 2*ef, size[1] - 2*ef, size[2] - ef]);
+        cube([size[0], size[1], 0.01]);
+    }
+}
+```
+
 ### Preview vs Render Conditional
 
 ```openscad
