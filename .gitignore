@@ -1,0 +1,8 @@
+# Locally-built skill archives (published to GitHub Releases, not committed)
+dist/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc

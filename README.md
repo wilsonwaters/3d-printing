@@ -6,7 +6,7 @@ AI-powered design skills and parametric OpenSCAD models for FDM 3D printing.
 
 | Skill | Description | Frameworks |
 |-------|-------------|------------|
-| [3d-print-designer](#3d-print-designer) | Designs parametric, FDM-optimized OpenSCAD models with material selection, print orientation, and structural optimization | Claude Code, Cursor, Windsurf, Copilot, Cline |
+| [3d-print-designer](#3d-print-designer) | Designs parametric, FDM-optimized OpenSCAD models with material selection, print orientation, and structural optimization | Claude Code, Claude Desktop, Cursor, Windsurf, Copilot, Cline |
 
 ## 3d-print-designer
 
@@ -21,7 +21,9 @@ An AI skill that designs and generates parametric OpenSCAD (.scad) models optimi
 
 ### Install
 
-#### Claude Code (CLI, Desktop, VS Code, JetBrains, Web)
+Pick the section that matches the app you run Claude in. Claude Code installs the skill as a **plugin**; the Claude **Desktop and web chat apps** install it from a **ZIP** instead — they don't use Claude Code plugins.
+
+#### Claude Code (CLI, VS Code, JetBrains)
 
 **Plugin marketplace** (recommended):
 ```
@@ -34,6 +36,15 @@ An AI skill that designs and generates parametric OpenSCAD (.scad) models optimi
 git clone https://github.com/wilsonwaters/3d-printing.git
 cp -r 3d-printing/.claude/skills/3d-print-designer ~/.claude/skills/
 ```
+
+#### Claude Desktop & claude.ai
+
+The desktop and web chat apps install skills from a ZIP — they can't add a Claude Code plugin marketplace.
+
+1. Download [`3d-print-designer.zip`](https://github.com/wilsonwaters/3d-printing/releases/latest/download/3d-print-designer.zip) from the [latest release](https://github.com/wilsonwaters/3d-printing/releases/latest).
+2. In Claude, go to **Customize → Skills → Create skill → Upload a skill** and select the ZIP.
+
+> **Enable code execution first.** Skills require code execution to be turned on. On Free / Pro / Max, enable it under **Settings → Capabilities**. On Team / Enterprise, an admin must enable it under **Organization settings → Skills**.
 
 #### Cursor
 
@@ -74,13 +85,17 @@ curl -o .cline/rules/3d-print-designer.md \
 
 Parametric OpenSCAD models in the [3d-models/](3d-models/) directory.
 
-## Framework Adapter Build
+## Building Skill Artifacts
 
-Adapter files in `adapters/` are auto-generated from the Claude Code skill source via GitHub Actions. They rebuild automatically when skill files change on `main`.
+Two artifacts are generated from the Claude Code skill source by the [Build Skill Artifacts](.github/workflows/build-skill-artifacts.yml) workflow, which runs automatically when skill files change on `main` (and can be triggered manually):
 
-To build locally:
+- **Framework adapters** (`adapters/`) — single-file versions for Cursor, Windsurf, Copilot, and Cline, committed back to the repo.
+- **Installable skill ZIP** — `3d-print-designer.zip`, published as an asset on the [latest release](https://github.com/wilsonwaters/3d-printing/releases/latest) for upload to Claude Desktop / claude.ai.
+
+To build either locally:
 ```bash
-python scripts/build-adapters.py
+python scripts/build-adapters.py    # adapters/
+python scripts/build-skill-zip.py   # dist/*.zip
 ```
 
 ## License
