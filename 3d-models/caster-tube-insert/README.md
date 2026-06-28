@@ -1,10 +1,83 @@
-# Caster Tube Insert (Expanding Collet)
+# Caster Tube Insert
 
-A two-part plug that mounts an **M8 threaded-stem caster wheel** into the open end of a round **steel tube** (~18 mm ID, ±1 mm) with strong, adjustable retention.
+Mounts an **M8 threaded-stem caster wheel** into the open end of a round **steel tube** (~18 mm ID, ±1 mm, 21 mm deep). Three iterations — **use v3**:
+
+- **v3 — simple solid push-in (RECOMMENDED).** One solid printed piece. The caster **self-taps a Ø7.5 hole** in a solid hub (steel screw forms its own thread — nothing fine to misprint), and **tangential "pinwheel" fins** grip the tube by bending *sideways* (in the layer plane), so they don't snap like v2's did. Files: `caster-tube-insert-v3.scad`, `caster-plug-v3.stl`. See [v3 below](#v3--simple-solid-push-in-recommended).
+- **v2 — barbed push-in (superseded).** Self-tap hole was too small (Ø7.0, seized) and the thin cantilever fins flexed *across* the layers and snapped off on insertion.
+- **v1 — expanding collet (superseded).** The small printed M8 thread in the cone-nut wouldn't form, and gripping it to drive the screw broke the teeth.
+
+---
+
+## v3 — simple solid push-in (RECOMMENDED)
+
+![v3 plug](preview-v3.png)
+
+One solid piece. Why it fixes the earlier failures:
+
+- **M8 = self-tap at Ø7.5 (not Ø7.0).** The steel screw forms its own thread in PETG — a *plain hole can't misprint*. v2's Ø7.0 meant ~90% thread → it seized; **Ø7.5 is ~50% thread**: holds a caster, drives with far less force. A clearance counterbore at the mouth means the screw only forms thread over the deeper ~10 mm (less torque).
+- **Fins bend *in-plane*.** The whole plug is one cross-section extruded straight up, so the grip fins lean **tangentially** — when the tube squeezes them they bend sideways along the print layers (full strength), instead of bending across the layers (which delaminated and snapped v2).
+
+### Install (important — do the pre-tap)
+1. **Pre-form the thread:** wind a plain **M8 bolt** all the way into the hub once with a spanner (easy leverage on the bench), then back it out. This forms the thread so the caster then goes in by hand.
+2. **Fit the caster:** thread the caster stem into the now-formed thread.
+3. **Tap it home:** push/tap the assembly into the tube with a soft mallet until the caster plate seats on the rim. Hold the solid hub, never the fins.
+
+### Printing (v3)
+- **Material:** PETG. **Layer height:** 0.2 mm is fine (no printed thread). **Infill:** 50–100% (the hub takes the thread). **Supports:** none — straight vertical extrusion.
+- **Orientation:** as exported — the counterbore (open/caster) end down on the plate.
+
+### Tuning (v3) — you can dial this to your actual tubes
+| Want | Change (in `caster-tube-insert-v3.scad`) |
+|------|-------------------------------------------|
+| Too hard to push in | lower `crest_d` (e.g. 19.0) or `fin_thick` (1.2) |
+| Too loose / pulls out | raise `crest_d`, more `n_fin`, or thicker `fin_thick` |
+| M8 too hard to drive | raise `selftap_d` (7.5 → 7.7) |
+| M8 strips / won't hold | lower `selftap_d` (7.5 → 7.2) |
+| Different stem (M6/M10) | `selftap_d` (M6 ≈ 5.0, M10 ≈ 9.3) |
+
+---
+
+## v2 — push-in, self-tapping (superseded)
+
+![v2 plug](preview-v2.png)
+
+One-piece plug: a **solid central core** the caster's M8 stem **self-taps** into (a steel M8 cuts its own thread in PETG — no fragile printed thread, and a captured nut can't fit a 17 mm tube), surrounded by **flexible barbed fingers** that compress to enter a tight tube and spring out to grip a loose one.
+
+### Why this replaces v1
+- A steel M8 nut is ~15 mm across corners + walls > 17 mm tube → can't be captured.
+- A printed internal M8 thread is too fine to form reliably at this size (v1's failure).
+- Self-tapping into a solid core is reliable and strong; the core won't split like the hollow cone-nut.
+- Push-in (not screw-in-place) means nothing delicate to grip during install.
+
+### Install
+1. **Pre-tap the core:** wind a plain M8 bolt all the way into the core once (easy with a spanner on the bench), then back it out. This forms the thread so the caster goes in easily afterwards.
+2. **Fit the caster:** thread the caster stem into the now-tapped core until its top plate meets the head.
+3. **Tap it home:** push/tap the whole assembly into the tube with a soft mallet until the caster plate seats on the tube rim. Hold the solid **head/core**, never the fingers.
+
+To remove: pull/lever the plug out (the barbs release under steady force).
+
+### Printing (v2)
+- **Material:** PETG. **Layer height:** 0.2 mm is fine (no fine threads). **Infill:** 60–100% (the core takes the thread). **Supports:** none.
+- **Orientation:** as exported — the flat **head disc is the base** (stable, no brim).
+
+### Tuning (v2)
+| Want | Change (in `caster-tube-insert-v2.scad`) |
+|------|-------------------------------------------|
+| Too hard to push in | lower `relaxed_crest_d` (e.g. 19.0) or thin `seg_wall` |
+| Too loose / pulls out | raise `relaxed_crest_d`, or more barb rings (`barb_pitch`) |
+| Caster strips / won't hold | lower `selftap_d` (7.0 → 6.8) |
+| Too hard to drive the screw | raise `selftap_d` (7.0 → 7.3) |
+| Different stem (M6/M10) | `m8_d`, `selftap_d` (M6 ≈ 5.2, M10 ≈ 8.7) |
+
+---
+
+## v1 — expanding collet (superseded)
+
+A two-part plug that grips the tube with a screw-tightened expanding collet.
 
 ![Print layout](preview-layout.png)
 
-## How it works
+### How it works
 
 It's a **self-energising expanding collet** — the same principle as commercial "expanding stem" caster adapters, adapted for FDM:
 
