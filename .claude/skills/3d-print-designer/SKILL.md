@@ -1,6 +1,6 @@
 ---
 name: 3d-print-designer
-description: 'Designs and generates parametric, FDM-print-optimized OpenSCAD (.scad) models — selects material (PLA/PETG/ABS) and optimizes for print orientation, layer adhesion, and structural strength. Triggers: "create a 3D model", "design a part", "make an OpenSCAD/.scad file", "design a bracket/enclosure/gear/mount", "something for 3D printing", or mentions CAD, STL, FDM, filament, or printable assemblies.'
+description: 'Designs and generates parametric, FDM-print-optimized OpenSCAD (.scad) models — selects material (PLA/PETG/ABS) and optimizes for print orientation, layer adhesion, and structural strength. Triggers: "create a 3D model", "design a part", "make an OpenSCAD/.scad file", "design a bracket/enclosure/gear/mount", "something for 3D printing", or mentions CAD, STL, 3MF, FDM, filament, or printable assemblies.'
 metadata:
   tuned-for: claude-opus-4-8
   last-tuned: "2026-06-21"
@@ -270,12 +270,14 @@ If yes, walk through the full workflow:
 4. **Highlight the print settings** — orientation, material, key slicer parameters.
 5. Note dimensions worth verifying with a test print.
 6. Material reminders: PETG → dry filament; ABS → enclosure, ventilation, drying (80C, 4-6h).
-7. **Import the STL into their slicer** (Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, etc.) — apply the PRINT SETTINGS from the file header, check the slicer preview, send to printer.
+7. **Import the STL into their slicer** (Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, etc.) — apply the PRINT SETTINGS from the file header, check the slicer preview, send to printer. **On a Bambu Lab printer, offer the settings-baked-in 3MF instead** (next step) — it skips the manual settings entry.
 8. See [printing-workflow.md](printing-workflow.md) for detailed export-to-print steps.
 
 After walking them through it, save a `user` memory noting they've been introduced to the workflow.
 
-**Experienced users** — skip the offer. They know what to do.
+**Bambu Lab printers (any experience level) — offer a settings-baked-in 3MF.** If the printer from Step 0 is a Bambu Lab machine and the user slices in Bambu Studio (or OrcaSlicer), offer to generate a Bambu *project* `.3mf` that opens with layer height, walls, infill, and supports **already applied** — eliminating the manual settings entry (filament is left for the user to select unless they ask to bake it in). A bundled, dependency-free helper (`make-bambu-3mf.py`) builds it from the OpenSCAD mesh plus the model's PRINT SETTINGS header, sourcing the settings baseline from Bambu's official profiles. See [bambu-3mf-export.md](bambu-3mf-export.md). For non-Bambu printers, the STL path above stays the default.
+
+**Experienced users** — skip the walkthrough offer. Still offer the Bambu 3MF if they're on a Bambu Lab printer; it saves them dialing settings in by hand.
 
 ## References
 
@@ -300,7 +302,8 @@ After walking them through it, save a `user` memory noting they've been introduc
 - **[printing-guidelines.md](printing-guidelines.md)** — general tolerance/overhang data beyond what the material file provides
 - **[mechanical.md](mechanical.md)** — gears, threads, snap-fits, living hinges, joints
 - **[printing-workflow.md](printing-workflow.md)** — export-to-print walkthrough for the "After Generation" step
+- **[bambu-3mf-export.md](bambu-3mf-export.md)** — Bambu-only: generate a project `.3mf` with print settings baked in (via the bundled `make-bambu-3mf.py`); load in the "After Generation" step when the user has a Bambu Lab printer
 
 ## Keywords
 
-OpenSCAD, 3D printing, CAD, parametric design, STL, FDM, PLA, PETG, ABS, mechanical parts, enclosure, bracket, gear, assembly, scad file, 3D model, filament, print orientation, layer adhesion, slicer, export, G-code, PrusaSlicer, Cura, OrcaSlicer, print workflow, acetone smoothing, heat resistant
+OpenSCAD, 3D printing, CAD, parametric design, STL, 3MF, FDM, PLA, PETG, ABS, mechanical parts, enclosure, bracket, gear, assembly, scad file, 3D model, filament, print orientation, layer adhesion, slicer, export, G-code, PrusaSlicer, Cura, OrcaSlicer, Bambu Studio, Bambu project 3mf, print settings baked in, print workflow, acetone smoothing, heat resistant

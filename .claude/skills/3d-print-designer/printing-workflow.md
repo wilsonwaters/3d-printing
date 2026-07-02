@@ -13,6 +13,7 @@ Guide users from finished .scad model to successful 3D print.
 **Format choice:**
 - **STL** — Universal compatibility, works with all slicers
 - **3MF** — Modern alternative (OpenSCAD 2019.05+), smaller files, recommended for PrusaSlicer/OrcaSlicer/Bambu Studio
+- **Bambu project 3MF (settings baked in)** — for Bambu Lab printers, generate a `.3mf` that opens in Bambu Studio with all print settings pre-applied, skipping the manual translation in step 4. See [bambu-3mf-export.md](bambu-3mf-export.md).
 
 ### Export Resolution
 
@@ -93,6 +94,8 @@ All major slicers accept STL via drag-and-drop or Ctrl+I/Cmd+I:
 | Calibration-focused users | **OrcaSlicer** — best built-in calibration tools |
 
 ## 4. Translate Print Settings to Slicer
+
+> **Bambu Lab users can skip this section.** Generate a settings-baked-in project 3MF ([bambu-3mf-export.md](bambu-3mf-export.md)) and Bambu Studio applies these settings automatically on open.
 
 The PRINT SETTINGS header in every generated .scad file maps directly to slicer settings:
 
