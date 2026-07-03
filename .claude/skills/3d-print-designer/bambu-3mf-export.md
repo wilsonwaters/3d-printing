@@ -14,7 +14,15 @@ Generate a Bambu Studio **project** `.3mf` that opens with all print settings al
 
 ## When to use this
 
-Offer it when **both** hold: the printer (from Step 0) is a **Bambu Lab** machine, and the user slices in **Bambu Studio** (or OrcaSlicer, which reads the same project format). Otherwise skip it — hand off the STL and the PRINT SETTINGS header as usual.
+Offer it only when **all** of these hold:
+
+1. The printer (from Step 0) is a **Bambu Lab** machine, **and**
+2. the user slices in **Bambu Studio** (or OrcaSlicer, which reads the same project format), **and**
+3. **Python 3.8+ is available** on the machine — the generator is a Python script (`python --version` / `python3 --version`).
+
+If any of these fails, **do not generate a 3MF** — hand off the STL and the PRINT SETTINGS header for manual import instead (see [Fallbacks](#fallbacks-and-graceful-degradation)).
+
+**Why Bambu-only:** the settings-in-3MF *project* format (`project_settings.config` + `different_settings_to_system`) is specific to Bambu Studio / OrcaSlicer, and this tool resolves Bambu's own (BBL) profiles. PrusaSlicer, Cura, and other slicers don't read this format, so for a non-Bambu printer the STL path is the only option. (An OrcaSlicer user on a non-Bambu printer could in principle use it by pointing `--profiles-dir` at Orca's own profiles with the matching preset names, but that's out of scope — treat the feature as Bambu-only.)
 
 ## What a Bambu project 3MF contains
 
@@ -29,7 +37,7 @@ OpenSCAD's own 3MF export (and any STL) is geometry-only, so opening it drops th
 
 ## The tool: make-bambu-3mf.py
 
-`make-bambu-3mf.py` lives in this skill's directory. It is dependency-free (Python 3.8+ stdlib) and does not require Bambu Studio to be running. It:
+`make-bambu-3mf.py` lives in this skill's directory. It needs only **Python 3.8+** (standard library — no pip installs) and does not require Bambu Studio to be running. (On macOS/Linux the command is often `python3` rather than `python`.) It:
 
 1. Renders the mesh (`--scad model.scad --openscad <path>`) or loads an existing mesh (`--mesh model.stl|.3mf`).
 2. Reads Bambu's **official** profile JSONs (`machine` + `process`, auto-detected) *only* to look up identity values (the printer's declared default filament, bed size) and to decide which overrides genuinely differ from the process preset — it does not copy them into the file.
@@ -91,7 +99,7 @@ The tool auto-detects the profiles directory on Windows (`C:\Program Files\Bambu
 
 Run this **after** the model has passed [Verification](SKILL.md#verification) and the [Design Review](SKILL.md#design-review) — the 3MF is a delivery step, not a design step.
 
-1. Confirm the printer is Bambu and the user uses Bambu Studio/OrcaSlicer. If not, use the STL path instead.
+1. **Check preconditions.** Confirm (a) the printer is Bambu Lab and the user slices in Bambu Studio/OrcaSlicer, and (b) Python is available — run `python --version` (or `python3 --version`). If either fails, stop here and use the fallback ([Fallbacks](#fallbacks-and-graceful-degradation)): hand off the STL + PRINT SETTINGS header for manual import. Use whichever `python`/`python3` command resolved for the run in step 4.
 2. Resolve the printer preset (from Step 0) and process preset (by layer height). Leave filament unset unless the user asks to pin a specific material — by default the file uses the printer's default filament, changeable in Bambu Studio. If a name is ambiguous, list the profile dir and confirm with the user.
 3. Map the model's PRINT SETTINGS header to override flags (table above).
 4. Run `make-bambu-3mf.py`, writing the `.3mf` next to the `.scad`.
@@ -110,5 +118,9 @@ Confirmed by opening a generated file in Bambu Studio (X1 Carbon · 0.20mm Stand
 
 - **Profiles not found** → pass `--profiles-dir`, or fall back to `--base-3mf "<an existing Bambu project .3mf>"` to reuse that project's `project_settings.config` as the baseline (the tool still swaps in the new mesh and applies overrides).
 - **3MF render unavailable / prefer STL** → `--mesh model.stl` (binary or ASCII; vertices are de-duplicated) instead of `--scad`.
-- **No Python, or not a Bambu setup** → skip this entirely and use the manual STL → slicer path in [printing-workflow.md](printing-workflow.md). Say so plainly rather than producing a file you can't stand behind.
+- **Python not available** (no `python`/`python3` on PATH) → the generator can't run, and there's no reliable non-Python way to assemble the container, so **don't attempt it**. Tell the user plainly and fall back to the STL path — e.g.:
+  > "I can't auto-generate the Bambu 3MF here because Python isn't available on this machine. I've exported the STL instead — import it into Bambu Studio and apply the settings from the PRINT SETTINGS header (layer height, walls, infill, supports). If you'd like the one-click settings-baked-in 3MF next time, install Python from python.org and I can set it up."
+
+  Then follow the STL → slicer steps in [printing-workflow.md](printing-workflow.md).
+- **Not a Bambu setup** (non-Bambu printer, or a slicer other than Bambu Studio/OrcaSlicer) → the project format doesn't apply; use the STL → slicer path in [printing-workflow.md](printing-workflow.md).
 - **Want a directly-printable file** (optional power route) → Bambu Studio and OrcaSlicer have a headless CLI (`--load-settings machine.json;process.json --load-filaments f.json --slice --export-3mf out.gcode.3mf model.3mf`) that emits a *pre-sliced* `.gcode.3mf`. That skips the on-plate review and needs the slicer installed; prefer the project 3MF above unless the user explicitly wants slice-and-send automation.
