@@ -1,0 +1,16 @@
+# Treat 3D-print and image assets as binary: no text diffs, no line-ending
+# conversion. Keeps commits readable and avoids ASCII-STL/PNG diff noise.
+*.stl   binary
+*.3mf   binary
+*.step  binary
+*.stp   binary
+*.obj   binary
+*.gcode binary
+*.zip   binary
+
+# Images
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
