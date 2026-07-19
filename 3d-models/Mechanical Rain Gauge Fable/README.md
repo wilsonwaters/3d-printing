@@ -8,14 +8,26 @@ the register back to zero, stopwatch-style. PETG on a Bambu Lab (256³), designe
 support-free, verified in OpenSCAD.
 
 > Everything lives in one parametric file — current version:
-> **`mechanical-rain-gauge-fable-v2.scad`** (use the `part` variable to export
-> each piece; extensive DESCRIPTION / PRINT SETTINGS headers inside). v1 is
-> kept for history.
+> **`mechanical-rain-gauge-fable-v3.scad`** (use the `part` variable to export
+> each piece; extensive DESCRIPTION / PRINT SETTINGS headers inside). v1/v2
+> are kept for history.
 >
-> Ready-to-use exports (regenerated from v2): **`stl/`** (one per part,
-> verified builds) and **`3mf/`** (Bambu Studio *project* files with print
-> settings baked in — P1S · 0.20mm Standard · 4 walls · 20% gyroid · no
-> supports; just open, pick filament, slice). `previews/` has renders.
+> Ready-to-use exports (current version): **`stl/`** (one per part, verified
+> builds) and **`3mf/`** (Bambu Studio *project* files with print settings
+> baked in — P1S · 0.20mm Standard · 4 walls · 20% gyroid · no supports; just
+> open, pick filament, slice). `previews/` has renders.
+
+## v3 — refinements from inspecting the v2 bucket
+
+- **Divider crest tapers to a point** — the true "knife edge" that splits the
+  spout drip between chambers (v2 left it a flat 2.4 mm wall top).
+- **Crank tab centred on the pivot axis** — its small front-bias torque (~2 %
+  of tip torque) is now zero by symmetry. Being at one *end* of the axis never
+  affected tipping (no moment arm about the tip axis).
+- FYI: the small notch at the top of the pivot bore is intentional — it's the
+  self-supporting teardrop crown for a horizontal printed hole; the pin rides
+  the bore bottom. Chamber capacity at the receiving tilt: **19.3 mL vs the
+  10 mL tip target** (echoed on every compile).
 
 ## v2 — fixes from the first physical print (bucket test)
 
