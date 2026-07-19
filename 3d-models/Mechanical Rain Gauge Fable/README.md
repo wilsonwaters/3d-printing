@@ -7,14 +7,24 @@ rainfall **0000–9999 mm** (1 dial-mm ≡ 1 mm of rain). A front push-button sn
 the register back to zero, stopwatch-style. PETG on a Bambu Lab (256³), designed
 support-free, verified in OpenSCAD.
 
-> Everything lives in one parametric file:
-> `mechanical-rain-gauge-fable-v1.scad` (use the `part` variable to export each
-> piece; extensive DESCRIPTION / PRINT SETTINGS headers inside).
+> Everything lives in one parametric file — current version:
+> **`mechanical-rain-gauge-fable-v2.scad`** (use the `part` variable to export
+> each piece; extensive DESCRIPTION / PRINT SETTINGS headers inside). v1 is
+> kept for history.
 >
-> Ready-to-use exports: **`stl/`** (one per part, verified builds) and
-> **`3mf/`** (Bambu Studio *project* files with print settings baked in —
-> P1S · 0.20mm Standard · 4 walls · 20% gyroid · no supports; just open,
-> pick filament, slice). `previews/` has renders.
+> Ready-to-use exports (regenerated from v2): **`stl/`** (one per part,
+> verified builds) and **`3mf/`** (Bambu Studio *project* files with print
+> settings baked in — P1S · 0.20mm Standard · 4 walls · 20% gyroid · no
+> supports; just open, pick filament, slice). `previews/` has renders.
+
+## v2 — fixes from the first physical print (bucket test)
+
+| Fault found on the printed v1 bucket | Root cause | v2 fix |
+|---|---|---|
+| Pivot hole blocked/malformed on one side | The crank tab was unioned *after* the bore cut (plugging the right exit), and `teardrop_x()`'s crown pointed sideways so the bore roof sagged | Tab moved inside the bore difference; teardrop crown now points up |
+| Full-length slot in the bucket bottom — water crossed between chambers, bucket never tipped | The Ø3.35 bore broke through both faces of the 2.4 mm divider | Divider thickens into a 45°-faceted octagonal rib sealing the bore (≥2.5 mm wall) |
+| "Knife" edge printed square | The outer bevel stopped 0.3 mm short of the bore, leaving a flat land | Bevel now converges past the bore radius → true chamfered edge, orifice Ø unchanged |
+| Square chambers wouldn't drain without ~90° of tip | Outer walls rose 11 mm above the floor's pour edge | Chambers are open wedges: outer wall is now a 1.8 mm lip at the floor edge; tipped 28° past rest the floor runs ~17° down-and-out |
 
 ## How it works
 
