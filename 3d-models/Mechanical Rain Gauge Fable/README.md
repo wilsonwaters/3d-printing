@@ -8,14 +8,32 @@ the register back to zero, stopwatch-style. PETG on a Bambu Lab (256³), designe
 support-free, verified in OpenSCAD.
 
 > Everything lives in one parametric file — current version:
-> **`mechanical-rain-gauge-fable-v3.scad`** (use the `part` variable to export
-> each piece; extensive DESCRIPTION / PRINT SETTINGS headers inside). v1/v2
+> **`mechanical-rain-gauge-fable-v4.scad`** (use the `part` variable to export
+> each piece; extensive DESCRIPTION / PRINT SETTINGS headers inside). v1–v3
 > are kept for history.
 >
 > Ready-to-use exports (current version): **`stl/`** (one per part, verified
 > builds) and **`3mf/`** (Bambu Studio *project* files with print settings
-> baked in — P1S · 0.20mm Standard · 4 walls · 20% gyroid · no supports; just
-> open, pick filament, slice). `previews/` has renders.
+> baked in — **X1C** · 0.20mm Standard · 4 walls · 20% gyroid · no supports;
+> just open, pick filament, slice). `previews/` has renders.
+
+## v4 — print-orientation audit (after slicing the plate)
+
+- **Drums print ring-face-down** (exports pre-flipped): they used to stand on
+  the Ø15 cam/hub column with the whole digit rim floating. Internal web now
+  bridges just 11 mm; carry teeth got 45° underside tapers; the units drum
+  gained a 45° support cone between digit band and ratchet.
+- **Pinions print sector-end-down** with a full-diameter core except at the
+  yoke/finger clearance waist (45° cone rejoins it) — no floating tooth bands.
+- **The pawl is now a separate flat-printed spring** (pegs press into the
+  rocker arm) — its beam used to print as a floating cantilever. Tunable and
+  replaceable, like the detent.
+- Slider button no longer dips below the bed (flat-chinned).
+- **Small parts split over two plates** (`plate_a` register + `plate_b`
+  levers/screen), each ≤218 mm so the auto-centred footprint clears the
+  **X1/P1 18×28 mm front-left bed-exclusion corner**; 3MFs use X1C presets.
+- Remaining sub-1.5 mm ledges (lock-band seat stubs, ratchet tooth tips)
+  droop slightly on non-working faces — accepted.
 
 ## v3 — refinements from inspecting the v2 bucket
 
@@ -74,13 +92,14 @@ moment's delay, self-correcting to ≤1 count of momentary lag.
 | `chassis` | 1 | deck on bed, towers up |
 | `bucket` | 1 | chambers up (teardrop pivot bore) |
 | `crank` | 1 | flat, peg + lap boss up |
-| `drum_units` | 1 | cam flank down (axis vertical) |
-| `drum_std` | 3 | cam flank down |
-| `pinion` | 3 | ring-gear band down |
+| `drum_units` | 1 | ring-gear face down (export pre-flipped) |
+| `drum_std` | 3 | ring-gear face down (export pre-flipped) |
+| `pinion` | 3 | sector band down (export pre-flipped) |
 | `yoke`, `rocker`, `hammer`, `slider` | 1 ea | flat |
+| `pawl` | 1 | flat, pegs up (press into the rocker arm; tunable spring) |
 | `detent` | 1 | flat, nub up (a 2 g spring — reprint thicker/thinner to tune click force) |
 | `clip` | 6 | flat |
-| `plate` | — | all small parts on one 245×237 plate |
+| `plate_a` / `plate_b` | — | register parts / levers+screen, each ≤218 mm (clears the X1/P1 bed-exclusion corner) |
 
 ## Print settings (PETG)
 
@@ -94,8 +113,9 @@ running fits), brim for drums/pinions. 30–40% fan; 50%+ on the funnel cone.
 1. **Base**: clamp screws into the socket bosses; drop the **chassis** onto the
    internal ledge.
 2. **Register**: slide the **detent** spring into its saddle on the bulkhead
-   top (from the bucket side — do this first, drums block it later). Fit the
-   **yoke** stubs into their bosses. Thread onto the Ø3 shaft, right-to-left:
+   top (from the bucket side — do this first, drums block it later). Press the
+   **pawl**'s two pegs into the rocker-arm holes (hook faces the ratchet). Fit
+   the **yoke** stubs into their bosses. Thread onto the Ø3 shaft, right-to-left:
    rocker, units drum, pinion+drum ×3 (pinions rest in the yoke saddles);
    lower the shaft into the journal slots; cap with 2 clips. **Hammer** stubs
    into the tower slots last. The detent nub should click softly into the
