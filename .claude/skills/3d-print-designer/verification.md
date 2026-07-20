@@ -135,6 +135,35 @@ python -c "import trimesh;m=trimesh.load('out.stl');print(m.is_watertight,m.is_w
 
 Hash the evaluated CSG tree (stable across tessellation) to detect unintended changes between iterations: `"$OSCAD" -o tree.csg model.scad && sha256sum tree.csg`.
 
+### 1g. Slicer-manifold check (edge-only contact)
+
+The Manifold backend **self-heals edge-only contact** (solids meeting on a bare edge/corner rather than a face — e.g. diagonally adjacent grid cells), so 1a passes, but **Bambu Studio still flags it** ("N non-manifold edges, may need repair"). Run this stdlib check (no install) on every exported STL whenever the model tiles/arrays solids: in a watertight 2-manifold mesh **every undirected edge is shared by exactly two triangles**, so any count ≠ 2 is a defect.
+
+```sh
+python - "$@" <<'PY'
+import sys
+def check(path):
+    tris, edges = 0, {}
+    verts = []
+    for line in open(path):
+        s = line.split()
+        if s[:1] == ['vertex']:
+            verts.append(tuple(s[1:4]))          # exact text = exact match
+            if len(verts) == 3:
+                tris += 1
+                for i in range(3):
+                    a, b = verts[i], verts[(i+1) % 3]
+                    k = (a, b) if a <= b else (b, a)
+                    edges[k] = edges.get(k, 0) + 1
+                verts = []
+    bad = sum(1 for c in edges.values() if c != 2)
+    print(("OK  " if bad == 0 else "BAD ") + f"{path}  tris={tris} non-manifold-edges={bad}")
+for p in sys.argv[1:]: check(p)
+PY
+```
+
+(ASCII STL parser; on the modern tier export ASCII or drop `--export-format binstl`.) A non-zero count means the fix belongs in the model — overlap the touching solids and clip to outline per [openscad-reference.md](openscad-reference.md) "Neighbouring Solids Must Overlap" — not in a slicer repair.
+
 ### Gate result
 
 A part is **verified** when: it compiles (exit 0, non-empty STL), stderr is clean per 1a, its measured bounding box is within the intended envelope, and all `assert()` contracts pass. Trace each *measurable* acceptance criterion to one of these results. Report anything that can't be checked mechanically (e.g. "a real M8 mates") as a residual to confirm by print — never silently pass.
@@ -151,7 +180,7 @@ A part is **verified** when: it compiles (exit 0, non-empty STL), stderr is clea
 
 - **Exit code is not a sufficient gate** — a non-manifold or PolySet result can exit 0. Gate on stderr (and on `--summary` topology where available) too.
 - **`--hardwarnings` misses CGAL manifold warnings** (2021.01). Still use it for language warnings, but don't rely on it alone.
-- **Manifold backend self-heals** (2026): the old "two cubes sharing one edge" no longer warns (it reports `Genus: -1` though) — so on modern builds, prefer measured/topology checks over expecting a build failure.
+- **Manifold backend self-heals** (2026): the old "two cubes sharing one edge" no longer warns (it reports `Genus: -1` though) — so on modern builds, prefer measured/topology checks over expecting a build failure. This is exactly why edge-only contact escapes the gate but **Bambu Studio later flags it non-manifold** — run the edge-count check (1g) on arrayed/tiled models.
 - **Default STL is ASCII on 2021.01** — force `--export-format binstl` before byte-parsing.
 - **Preview ≠ render**: only trust full-render export, never `$preview` geometry.
 - **Exclude `ECHO:` lines** from the stderr gate, or intentional messages cause false fails.

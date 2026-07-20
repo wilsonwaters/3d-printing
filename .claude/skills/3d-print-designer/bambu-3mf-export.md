@@ -95,6 +95,10 @@ ls "C:/Program Files/Bambu Studio/resources/profiles/BBL/filament"   # material 
 
 The tool auto-detects the profiles directory on Windows (`C:\Program Files\Bambu Studio\...`), macOS, and Linux. If it's installed elsewhere (custom drive, OrcaSlicer), pass `--profiles-dir "<.../resources/profiles/BBL>"`. A misspelt preset name fails fast with a clear `... preset not found` message — fix the name and re-run.
 
+## Full-bed prints (X1/P1 exclusion zone)
+
+If the footprint covers the X1/P1 front-left exclusion corner (see [printer-configuration.md](printer-configuration.md)) and the user has agreed to fit the stopper clip, the print needs the bed's **`bed_exclude_area` cleared to `[]`** — otherwise Bambu Studio shows "too close to exclusion area" and refuses to slice cleanly. The cleared key must be flagged in the **printer** slot (last) of `different_settings_to_system`; the `--set` flag lands overrides in the **process** slot, so clearing the exclusion this way does not bind. Either have the user clear "Excluded bed area" in Bambu Studio's printer settings (per Bambu's guide), or edit `Metadata/project_settings.config` inside the generated `.3mf` to set `"bed_exclude_area": []` and append `bed_exclude_area` to the printer slot. Keep it **single-filament** (the clip disables the cutter — no AMS/multi-colour).
+
 ## Workflow
 
 Run this **after** the model has passed [Verification](SKILL.md#verification) and the [Design Review](SKILL.md#design-review) — the 3MF is a delivery step, not a design step.

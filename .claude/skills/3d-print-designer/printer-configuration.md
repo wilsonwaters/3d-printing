@@ -91,6 +91,10 @@ build_z = 256;
 - Leave 5-10mm margin from bed edges for adhesion reliability
 - For bed-slinger printers (e.g., Bambu A1, Ender 3), tall prints are more prone to wobble — prefer wider/shorter orientations
 
+**Bambu X1/P1 front-left exclusion zone** — these printers reserve an **18×28mm front-left corner** of the bed (the `bed_exclude_area` in the machine profile protects the filament-cutter stopper). The real printable square is therefore **~220mm auto-centred** (or ~238mm if the part is shoved fully to the right), NOT the full 256mm — check `bed_exclude_area`, not just build volume, whenever a footprint approaches the bed edges. If the model's footprint would cover that corner:
+1. **Preferred:** ask the user to fit Bambu's official stopper-clip mod (a small printed clip that tucks the cutter lever away, per the [full print volume guide](https://wiki.bambulab.com/en/knowledge-sharing/print-volume-limitations)) — this frees the whole 256×256 bed and keeps the design at full size. **Caveat to state every time:** the clip disables the filament cutter, so **AMS / multi-colour cannot be used** on those prints (single-colour only), and the chamber floor must be clear of debris. Bake the cleared bed area into the 3MF (see [bambu-3mf-export.md](bambu-3mf-export.md)).
+2. **Fallback:** if the user can't or won't fit the clip (e.g. they need AMS/multi-colour), shrink the footprint to fit the stock exclusion (≤220mm centred) instead.
+
 **Nozzle diameter** — drives minimum dimensions:
 
 | Design Parameter | Formula | 0.4mm Nozzle | 0.6mm Nozzle | 0.2mm Nozzle |

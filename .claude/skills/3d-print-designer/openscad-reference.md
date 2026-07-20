@@ -40,6 +40,24 @@ difference() {
 
 Subtracting a 2D shape from a 3D object produces undefined results. Always extrude 2D shapes before boolean operations.
 
+### Neighbouring Solids Must Overlap, Never Touch on a Bare Edge
+
+Two solids that meet only along a shared edge or corner (not a face) — e.g. diagonally adjacent cells in a grid — form a **non-manifold edge**: that edge borders the outside on both sides. OpenSCAD's Manifold backend silently self-heals this and the build gate passes, but **slicers (Bambu Studio) reject it** ("N non-manifold edges, may need repair"). Give adjacent solids a real shared volume by overlapping them laterally (extend each by `eps`), then clip the union back to the intended outline with an `intersection()`:
+
+```openscad
+// BAD — diagonal neighbours touch only at a corner (non-manifold edge)
+translate([0, 0, 0]) cube([10, 10, h]);
+translate([10, 10, 0]) cube([10, 10, h]);
+
+// GOOD — overlap by eps so neighbours share volume, then clip to outline
+intersection() {
+    union() { for (c = cells) translate(c) cube([10 + eps, 10 + eps, h]); }
+    cube([tile_w, tile_d, big_h]);   // exact outer boundary
+}
+```
+
+See [verification.md](verification.md) for the edge-count check that catches this deterministically (the build gate alone does not).
+
 ### Polyhedron Faces Must Be Clockwise from Outside
 
 Wrong winding = non-manifold geometry. Use F12 "Thrown Together" mode to check — pink faces have wrong winding. Validate by unioning with any cube and rendering (F6) — if it disappears, winding is wrong.
