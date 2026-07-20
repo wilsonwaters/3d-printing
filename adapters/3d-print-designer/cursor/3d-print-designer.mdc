@@ -411,6 +411,10 @@ build_z = 256;
 - Leave 5-10mm margin from bed edges for adhesion reliability
 - For bed-slinger printers (e.g., Bambu A1, Ender 3), tall prints are more prone to wobble — prefer wider/shorter orientations
 
+**Bambu X1/P1 front-left exclusion zone** — these printers reserve an **18×28mm front-left corner** of the bed (the `bed_exclude_area` in the machine profile protects the filament-cutter stopper). The real printable square is therefore **~220mm auto-centred** (or ~238mm if the part is shoved fully to the right), NOT the full 256mm — check `bed_exclude_area`, not just build volume, whenever a footprint approaches the bed edges. If the model's footprint would cover that corner:
+1. **Preferred:** ask the user to fit Bambu's official stopper-clip mod (a small printed clip that tucks the cutter lever away, per the [full print volume guide](https://wiki.bambulab.com/en/knowledge-sharing/print-volume-limitations)) — this frees the whole 256×256 bed and keeps the design at full size. **Caveat to state every time:** the clip disables the filament cutter, so **AMS / multi-colour cannot be used** on those prints (single-colour only), and the chamber floor must be clear of debris. Bake the cleared bed area into the 3MF (see [bambu-3mf-export.md](bambu-3mf-export.md)).
+2. **Fallback:** if the user can't or won't fit the clip (e.g. they need AMS/multi-colour), shrink the footprint to fit the stock exclusion (≤220mm centred) instead.
+
 **Nozzle diameter** — drives minimum dimensions:
 
 | Design Parameter | Formula | 0.4mm Nozzle | 0.6mm Nozzle | 0.2mm Nozzle |
@@ -2083,6 +2087,24 @@ difference() {
 
 Subtracting a 2D shape from a 3D object produces undefined results. Always extrude 2D shapes before boolean operations.
 
+### Neighbouring Solids Must Overlap, Never Touch on a Bare Edge
+
+Two solids that meet only along a shared edge or corner (not a face) — e.g. diagonally adjacent cells in a grid — form a **non-manifold edge**: that edge borders the outside on both sides. OpenSCAD's Manifold backend silently self-heals this and the build gate passes, but **slicers (Bambu Studio) reject it** ("N non-manifold edges, may need repair"). Give adjacent solids a real shared volume by overlapping them laterally (extend each by `eps`), then clip the union back to the intended outline with an `intersection()`:
+
+```openscad
+// BAD — diagonal neighbours touch only at a corner (non-manifold edge)
+translate([0, 0, 0]) cube([10, 10, h]);
+translate([10, 10, 0]) cube([10, 10, h]);
+
+// GOOD — overlap by eps so neighbours share volume, then clip to outline
+intersection() {
+    union() { for (c = cells) translate(c) cube([10 + eps, 10 + eps, h]); }
+    cube([tile_w, tile_d, big_h]);   // exact outer boundary
+}
+```
+
+See [verification.md](verification.md) for the edge-count check that catches this deterministically (the build gate alone does not).
+
 ### Polyhedron Faces Must Be Clockwise from Outside
 
 Wrong winding = non-manifold geometry. Use F12 "Thrown Together" mode to check — pink faces have wrong winding. Validate by unioning with any cube and rendering (F6) — if it disappears, winding is wrong.
@@ -2714,6 +2736,35 @@ python -c "import trimesh;m=trimesh.load('out.stl');print(m.is_watertight,m.is_w
 
 Hash the evaluated CSG tree (stable across tessellation) to detect unintended changes between iterations: `"$OSCAD" -o tree.csg model.scad && sha256sum tree.csg`.
 
+### 1g. Slicer-manifold check (edge-only contact)
+
+The Manifold backend **self-heals edge-only contact** (solids meeting on a bare edge/corner rather than a face — e.g. diagonally adjacent grid cells), so 1a passes, but **Bambu Studio still flags it** ("N non-manifold edges, may need repair"). Run this stdlib check (no install) on every exported STL whenever the model tiles/arrays solids: in a watertight 2-manifold mesh **every undirected edge is shared by exactly two triangles**, so any count ≠ 2 is a defect.
+
+```sh
+python - "$@" <<'PY'
+import sys
+def check(path):
+    tris, edges = 0, {}
+    verts = []
+    for line in open(path):
+        s = line.split()
+        if s[:1] == ['vertex']:
+            verts.append(tuple(s[1:4]))          # exact text = exact match
+            if len(verts) == 3:
+                tris += 1
+                for i in range(3):
+                    a, b = verts[i], verts[(i+1) % 3]
+                    k = (a, b) if a <= b else (b, a)
+                    edges[k] = edges.get(k, 0) + 1
+                verts = []
+    bad = sum(1 for c in edges.values() if c != 2)
+    print(("OK  " if bad == 0 else "BAD ") + f"{path}  tris={tris} non-manifold-edges={bad}")
+for p in sys.argv[1:]: check(p)
+PY
+```
+
+(ASCII STL parser; on the modern tier export ASCII or drop `--export-format binstl`.) A non-zero count means the fix belongs in the model — overlap the touching solids and clip to outline per [openscad-reference.md](openscad-reference.md) "Neighbouring Solids Must Overlap" — not in a slicer repair.
+
 ### Gate result
 
 A part is **verified** when: it compiles (exit 0, non-empty STL), stderr is clean per 1a, its measured bounding box is within the intended envelope, and all `assert()` contracts pass. Trace each *measurable* acceptance criterion to one of these results. Report anything that can't be checked mechanically (e.g. "a real M8 mates") as a residual to confirm by print — never silently pass.
@@ -2730,7 +2781,7 @@ A part is **verified** when: it compiles (exit 0, non-empty STL), stderr is clea
 
 - **Exit code is not a sufficient gate** — a non-manifold or PolySet result can exit 0. Gate on stderr (and on `--summary` topology where available) too.
 - **`--hardwarnings` misses CGAL manifold warnings** (2021.01). Still use it for language warnings, but don't rely on it alone.
-- **Manifold backend self-heals** (2026): the old "two cubes sharing one edge" no longer warns (it reports `Genus: -1` though) — so on modern builds, prefer measured/topology checks over expecting a build failure.
+- **Manifold backend self-heals** (2026): the old "two cubes sharing one edge" no longer warns (it reports `Genus: -1` though) — so on modern builds, prefer measured/topology checks over expecting a build failure. This is exactly why edge-only contact escapes the gate but **Bambu Studio later flags it non-manifold** — run the edge-count check (1g) on arrayed/tiled models.
 - **Default STL is ASCII on 2021.01** — force `--export-format binstl` before byte-parsing.
 - **Preview ≠ render**: only trust full-render export, never `$preview` geometry.
 - **Exclude `ECHO:` lines** from the stderr gate, or intentional messages cause false fails.
@@ -3184,6 +3235,10 @@ ls "C:/Program Files/Bambu Studio/resources/profiles/BBL/filament"   # material 
 ```
 
 The tool auto-detects the profiles directory on Windows (`C:\Program Files\Bambu Studio\...`), macOS, and Linux. If it's installed elsewhere (custom drive, OrcaSlicer), pass `--profiles-dir "<.../resources/profiles/BBL>"`. A misspelt preset name fails fast with a clear `... preset not found` message — fix the name and re-run.
+
+## Full-bed prints (X1/P1 exclusion zone)
+
+If the footprint covers the X1/P1 front-left exclusion corner (see [printer-configuration.md](printer-configuration.md)) and the user has agreed to fit the stopper clip, the print needs the bed's **`bed_exclude_area` cleared to `[]`** — otherwise Bambu Studio shows "too close to exclusion area" and refuses to slice cleanly. The cleared key must be flagged in the **printer** slot (last) of `different_settings_to_system`; the `--set` flag lands overrides in the **process** slot, so clearing the exclusion this way does not bind. Either have the user clear "Excluded bed area" in Bambu Studio's printer settings (per Bambu's guide), or edit `Metadata/project_settings.config` inside the generated `.3mf` to set `"bed_exclude_area": []` and append `bed_exclude_area` to the printer slot. Keep it **single-filament** (the clip disables the cutter — no AMS/multi-colour).
 
 ## Workflow
 
