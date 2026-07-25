@@ -35,9 +35,14 @@
 // Physical context: lives outdoors on a post or fence in the open, ideally with the rim
 //   300 mm+ above ground and clear of obstructions by twice their height (WMO siting).
 //   Loads are tiny -- the whole mechanism runs on a few grams of water head -- so the
-//   design driver is FRICTION and WATER INGRESS, not strength. The register lives in its
-//   own dry bay in front of the wet tipper compartment; the only path between them is the
-//   drive link slot, which sits well above the water line behind a drip shield.
+//   design driver is FRICTION and WATER INGRESS, not strength. The register lives in its own
+//   bay in FRONT of the wet tipper compartment -- they are side by side, not stacked, and do
+//   not overlap in plan. Its dryness comes from that separation plus reg_frame + reg_side
+//   enclosing the wheels on all four long faces.
+//   NOT YET MODELLED: a dedicated splash shield around the drive-link slot. The link has to
+//   cross from the wet side to the dry side and nothing currently baffles that opening. Add
+//   an upstand on the chassis between the tipper and the register bay before printing for
+//   real outdoor service.
 //
 // Design decisions:
 //   - 200.0 cm^2 aperture (159.577 mm ID) rather than a round 150 mm: it is the WMO
@@ -180,7 +185,13 @@ wheel_od       = 34.0;  // decagon circumradius x2 -> facet width 10.5 mm
 digit_band_w   = 7.5;
 gear_band_w    = 3.0;
 cam_band_w     = 4.0;
-drive_band_w   = 3.0;
+// The ratchet/detent ring and the carry teeth get SEPARATE bands. They cannot share one:
+// the 2 carry teeth are fixed to the wheel, so over ten digit positions their 36 deg wedge
+// sweeps every single world angle -- there is no angle at which a pawl or detent riding the
+// hub would escape being lifted 3.4 mm by a tooth once per revolution. Angular placement
+// cannot solve it; axial separation can.
+ratchet_band_w = 3.0;
+carry_full_w   = 3.0;   // full-height tooth region that actually meshes the pinion
 wheel_gap      = 1.3;
 digit_size     = 8.0;   // character height, measured around the drum
 digit_emboss   = 1.0;   // emboss height above the facet
@@ -213,9 +224,10 @@ petg_E            = 2000;  // MPa, PETG Young's modulus
 pawl_tooth_r = 20.0;  // pivot -> pawl tooth contact
 pawl_link_r  = 24.0;  // pivot -> link pin eye
 link_len     = 46.0;  // connecting rod, crank pin -> pawl link pin (set on assembly)
+pawl_spring_angle = 55;  // splay of the pawl's return spring away from the lever axis
 
 // ---- Heart cam (reset) ----
-cam_r_min = 10.0;
+cam_r_min = 11.5;   // raised so the ratchet ring above barely oversails the cam
 cam_r_max = 15.0;
 cam_asym  = 0.92;   // breaks the unstable equilibrium opposite the cusp
 
@@ -290,17 +302,24 @@ centre_dist  = gear_pitch_r * 2;                 // 30.0  wheel axis -> pinion a
 // The pinion must reach BOTH mesh planes: the drive band of wheel N (which carries the 2
 // mutilated carry teeth) and the gear band of wheel N+1. It must not reach as far as wheel
 // N's digit drum or wheel N+1's cam band, or it would foul them -- hence the 0.4 mm trim.
-pinion_w     = drive_band_w + wheel_gap + gear_band_w - 0.4;   // 6.9
+pinion_w     = carry_full_w + wheel_gap + gear_band_w - 0.4;   // 6.9
 pinion_shaft_d = 4.0;   // steel rod, 3 pinions on one shaft
 // Drive-band hub radius. Pinned to the root circle so the carry-teeth wedge is flush with
 // the hub and all ten detent notches are identical.
-detent_notch_r = gear_root_r;                    // 13.125
+// Carry-band hub sits on the gear's root circle (standard 0.25*module root clearance to the
+// pinion tips, 0.375 mm). The ratchet ring has its OWN radius, now that it is a separate
+// band and no longer has to share the carry band's hub.
+carry_hub_r    = gear_root_r;                    // 13.125
+detent_notch_r = cam_r_min + 0.5;                // 12.0 -- ratchet/detent contact radius
+carry_lead     = gear_outer_r - detent_notch_r;  // 4.5 -- 45 deg ramp up to the carry teeth
+carry_band_w   = carry_lead + carry_full_w;      // 7.5
 
 // -- wheel --
 wheel_r        = wheel_od / 2;                   // 17.0 decagon circumradius
 facet_inradius = wheel_r * cos(180/digits_per_wheel);   // 16.17
 facet_w        = 2 * wheel_r * sin(180/digits_per_wheel); // 10.51
-wheel_w        = gear_band_w + cam_band_w + digit_band_w + drive_band_w;  // 17.5
+wheel_w        = gear_band_w + digit_band_w + cam_band_w
+               + ratchet_band_w + carry_band_w;   // 25.0
 wheel_pitch    = wheel_w + wheel_gap;            // 18.8
 bore_d         = shaft_d + 2*tolerance;          // 10.6 running fit
 digit_step     = 360 / digits_per_wheel;         // 36
@@ -339,10 +358,13 @@ energy_margin = tip_energy_mj / carry_work_mj;
 //      which is only r=10 at its cusp -- a 5 mm unsupported ring. Putting the cam *above*
 //      the drum leaves diameters 16.5 -> 17 -> 15 -> 13.125, i.e. one 0.5 mm step up and
 //      then all steps down.
-z_gear  = 0;
-z_digit = gear_band_w;
-z_cam   = z_digit + digit_band_w;
-z_drive = z_cam + cam_band_w;
+z_gear    = 0;
+z_digit   = gear_band_w;
+z_cam     = z_digit + digit_band_w;
+z_ratchet = z_cam + cam_band_w;
+z_carry   = z_ratchet + ratchet_band_w;
+// Diameters bottom-up: 16.5 -> 17 (0.5 chamfer) -> 15 -> 12 -> 13.125 then 16.5 on a
+// 45 deg ramp. Only two small steps up, both ramped.
 
 // -- phasing, all measured as wheel-local angle from "digit 0 at the window" --
 // Directions, as wheel-local angles (0 = window/+Y, 90 = up/+Z, 180 = back/-Y, 270 = down/-Z):
@@ -407,10 +429,23 @@ assert(abs(centre_dist - gear_pitch_r*2) < 0.001,
        "AC4: pinion centre distance must equal 2x pitch radius for a 1:1 mesh");
 assert(gear_teeth * carry_teeth / gear_teeth == carry_teeth,
        "AC4: carry ratio sanity");
-assert(detent_notch_r <= centre_dist - gear_outer_r - 0.3,
-       "AC4: mutilated hub fouls the pinion tips");
-assert(abs(detent_notch_r - gear_root_r) < 0.001,
-       "AC4: drive-band hub must sit on the root circle, or the carry wedge bridges a detent notch");
+// The carry hub is the gear's root circle, so its clearance to the pinion tips is exactly
+// the standard 0.25*module root clearance (0.375 mm) -- correct by gear geometry, not a
+// tuned fudge.
+assert(abs((centre_dist - gear_outer_r) - carry_hub_r - 0.25*gear_mod) < 0.001,
+       "AC4: carry hub is not on the root circle -- pinion tip/root clearance is wrong");
+// Ratchet ring must be clear of the pinion AND of the carry teeth radially, and it lives in
+// its own band so the sweeping carry wedge can never reach the pawl or the detent.
+assert(detent_notch_r < carry_hub_r,
+       "AC4: ratchet ring must sit inside the carry hub");
+assert(z_carry > z_ratchet && z_ratchet > z_cam,
+       "AC4: ratchet band must be axially separate from the carry band -- the carry wedge sweeps all 360 deg");
+assert(detent_notch_r >= cam_r_min,
+       "AC7: ratchet ring undercuts the heart cam below it");
+assert(detent_notch_r - cam_r_min <= 1.0,
+       "AC7: ratchet ring oversails the cam cusp by more than 1 mm -- add a 45 deg ramp");
+assert(abs(carry_lead - (gear_outer_r - detent_notch_r)) < 0.001,
+       "AC7: carry-tooth ramp must be 45 deg from the ratchet ring up to the tooth tips");
 // -- drive train: one tip must advance exactly one notch, never two --
 assert(pawl_notches > 1.02,
        "AC2: pawl throw too short -- it will not carry the ratchet a full notch");
@@ -445,15 +480,15 @@ assert(body_od < build_x - 10 && body_h < build_z,
        "AC6: body does not fit the build volume");
 assert(reg_out_w < build_x - 10,
        "AC6: register frame does not fit the build volume");
-assert(wheel_w == gear_band_w + cam_band_w + digit_band_w + drive_band_w,
+assert(wheel_w == gear_band_w + digit_band_w + cam_band_w + ratchet_band_w + carry_band_w,
        "wheel band widths inconsistent");
 assert(drum_chamfer >= 0.4,
        "AC7: digit drum needs a 45 deg chamfer to print support-free");
-assert(z_drive > z_cam && z_cam > z_digit && z_digit > z_gear,
-       "AC7: band order must be gear/digit/cam/drive (see the note at z_gear)");
-assert(pinion_w >= drive_band_w + wheel_gap + 1.0,
+assert(z_carry > z_ratchet && z_ratchet > z_cam && z_cam > z_digit && z_digit > z_gear,
+       "AC7: band order must be gear/digit/cam/ratchet/carry (see the note at z_gear)");
+assert(pinion_w >= carry_full_w + wheel_gap + 1.0,
        "AC4: pinion too narrow -- it must reach the next wheel's gear band or the carry cannot transmit");
-assert(pinion_w <= drive_band_w + wheel_gap + gear_band_w - 0.3,
+assert(pinion_w <= carry_full_w + wheel_gap + gear_band_w - 0.3,
        "AC4: pinion too wide -- it will foul the digit drum or the next cam band");
 assert(centre_dist - gear_outer_r < wheel_r,
        "geometry note: pinion must stay axially clear of every digit drum (it does, by band order)");
@@ -518,7 +553,7 @@ module gear_2d(teeth = gear_teeth, mod = gear_mod, backlash = gear_backlash) {
 module mutilated_gear_2d(phase = carry_phase) {
     ta = 360 / gear_teeth;
     union() {
-        circle(r = detent_notch_r);
+        circle(r = carry_hub_r);
         intersection() {
             gear_2d();
             // keep only the wedge holding the carry teeth
@@ -531,15 +566,15 @@ module mutilated_gear_2d(phase = carry_phase) {
     }
 }
 
-// Drive band: the mutilated carry driver, with 10 asymmetric ratchet notches cut into its
-// hub. Those notches do double duty -- the detent comb rests in them to hold the digit, and
-// the drive pawl pushes their steep faces to advance it.
-module drive_band_2d() {
+// Ratchet / detent ring: a plain hub with 10 asymmetric notches. Steep driving face for the
+// pawl on one side, shallow return ramp on the other. Serves two jobs -- the detent comb
+// rests in a notch to hold the digit, and the drive pawl pushes a steep face to advance it.
+// Crucially it carries NO gear teeth, so the pawl and detent never meet the carry wedge.
+module ratchet_band_2d() {
     difference() {
-        mutilated_gear_2d();
+        circle(r = detent_notch_r);
         for (i = [0 : digits_per_wheel-1])
             rotate(i * digit_step)
-                // steep driving face on one side, shallow return ramp on the other
                 polygon([
                     [detent_notch_r + fudge, 0],
                     [detent_notch_r - detent_notch_d, 0],
@@ -584,8 +619,20 @@ module number_wheel() {
                     linear_extrude(digit_band_w - drum_chamfer)
                         rotate(-180/digits_per_wheel) circle(r = wheel_r, $fn = digits_per_wheel);
             }
-            // drive band: mutilated carry driver + detent/ratchet notches
-            translate([0,0,z_drive]) linear_extrude(drive_band_w) drive_band_2d();
+            // ratchet / detent ring. Sits straight on the cam: at r=12 it oversails the
+            // cam's 11.5 mm cusp by only 0.5 mm, which needs no ramp.
+            translate([0,0,z_ratchet]) linear_extrude(ratchet_band_w) ratchet_band_2d();
+            // carry band: 45 deg ramp up from the ratchet ring to the 2 carry teeth, then
+            // the full-height tooth region that meshes the transfer pinion. Without the
+            // ramp the teeth would be a 4.5 mm unsupported overhang.
+            translate([0,0,z_carry]) {
+                hull() {
+                    linear_extrude(0.01) circle(r = detent_notch_r);
+                    translate([0,0,carry_lead]) linear_extrude(0.01) mutilated_gear_2d();
+                }
+                translate([0,0,carry_lead])
+                    linear_extrude(carry_full_w) mutilated_gear_2d();
+            }
             // embossed digits, one per facet
             for (i = [0 : digits_per_wheel-1])
                 rotate(i * digit_step)
@@ -718,9 +765,11 @@ module pinion_carrier() {
 // spine bar and the detent comb.
 function carrier_shaft_y() = gear_outer_r + 2;
 function carrier_shaft_z() = gear_outer_r + 4;
-// Axial left edge of the pinion at carry station i (between wheel i and wheel i+1).
-function pinion_x(i) = reg_clear + wheel_pitch*i + z_drive + 0.2;
-function detent_x(i) = reg_clear + wheel_pitch*i + z_drive + drive_band_w/2;
+// Axial left edge of the pinion at carry station i: it meshes the FULL-height part of
+// wheel i's carry band, so it starts after the 45 deg ramp.
+function pinion_x(i) = reg_clear + wheel_pitch*i + z_carry + carry_lead + 0.2;
+// Detent finger and drive pawl both act on the ratchet band.
+function detent_x(i) = reg_clear + wheel_pitch*i + z_ratchet + ratchet_band_w/2;
 
 // === PART: RESET HAMMER ===
 // One blade per wheel, all on a common rocking bar. Pressed onto the heart cams by the
@@ -787,9 +836,13 @@ module drive_pawl() {
             translate([pawl_tooth_r, 0, 0])
                 linear_extrude(3)
                     polygon([[0, 0], [0, 4.5], [-2.2, 5.6], [-3.4, 3.0]]);
-            // return leaf spring
-            translate([3, -detent_spring_t/2, 0])
-                cube([detent_spring_len, detent_spring_t, 3]);
+            // Return leaf spring. It MUST project clear of the lever hull -- rooted on the
+            // lever's centreline it is entirely swallowed by the hull and contributes no
+            // spring force at all. So it is rooted at the pivot boss and runs off at an
+            // angle, well outside the lever body.
+            rotate(pawl_spring_angle)
+                translate([3, -detent_spring_t/2, 0])
+                    cube([detent_spring_len, detent_spring_t, 3]);
         }
         // pivot bore
         translate([0, 0, -fudge]) cylinder(h = 3 + 2*fudge, d = 4 + tolerance);
@@ -995,6 +1048,18 @@ module funnel() {
 }
 
 // === ASSEMBLY ===
+// WARNING -- READ BEFORE TRUSTING THIS VIEW.
+// This assembly places the housing, funnel, chassis, tipper, crank, register frame, number
+// wheels and transfer pinions. It does NOT yet place drive_pawl(), link(), hammer(),
+// plunger() or pinion_carrier(). Those five parts are each individually verified (geometry,
+// manifold, on-bed, in-envelope) but their POSITIONS relative to one another and to the
+// frame are not established here, so this render cannot be used to check:
+//   - crank pin -> link -> pawl reach and the pawl's approach to the ratchet band
+//   - whether the pawl and the pinion carrier's spine clash in the frame's bottom opening
+//   - hammer blade reach into each cam band slot
+//   - plunger stroke sequencing (declutch first, then hammer)
+// link_len is a placeholder until those positions are fixed. Do not read a clean render
+// here as evidence that the drive train and reset linkage fit.
 module assembly() {
     e = explode;
     // housing

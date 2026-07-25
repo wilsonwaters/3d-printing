@@ -96,3 +96,19 @@ should read `0010`.
 Rim at least 300 mm above ground, in the open, clear of obstructions by twice
 their height (WMO siting guidance). Level the rim — a tilted rim changes the
 effective catch area.
+
+## Known open items
+
+Honest status, so nobody prints this expecting a finished instrument:
+
+1. **The drive-train and reset linkage are not yet positioned.** `drive_pawl`,
+   `link`, `hammer`, `plunger` and `pinion_carrier` are each individually
+   verified (geometry, manifold, on-bed, in-envelope) but `assembly()` does
+   not place them. So crank→link→pawl reach, hammer blade reach into the cam
+   slots, plunger stroke sequencing, and whether the pawl clashes with the
+   carrier's spine are all **unverified**. `link_len` is a placeholder.
+2. **No splash shield** around the drive-link slot where the link crosses
+   from the wet side to the dry side. Add an upstand on the chassis before
+   real outdoor service.
+3. **The actual tip point needs a test print** — it depends on the tipper's
+   mass distribution. That is what the two M3 trim screws are for.
