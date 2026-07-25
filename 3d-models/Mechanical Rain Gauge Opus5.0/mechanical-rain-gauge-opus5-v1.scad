@@ -198,9 +198,16 @@ gear_backlash = 0.35;// mm, PETG
 // detent_notch_r is DERIVED (= gear_root_r) further down. It must sit exactly on the
 // mutilated gear's root circle: any smaller and the carry-teeth pie slice stands proud of
 // the hub and bridges one of the ten detent notches.
-detent_notch_d    = 1.1;   // notch depth
-detent_spring_t   = 0.9;   // leaf spring thickness (PETG flexure)
-detent_spring_len = 16.0;
+detent_notch_d    = 0.8;   // notch depth = detent finger deflection
+// Leaf-spring detents. These are deliberately LIGHT. The whole mechanism runs on about
+// 1 mJ per tip (10 g of water falling ~10 mm), and during a 9->0 carry the tipper has to
+// lift TWO detents at once -- the units wheel's and the tens wheel's. A stiff comb is the
+// most likely thing to stall a carry, so the springs are long, the notches shallow, and the
+// energy margin is asserted below.
+detent_spring_t   = 0.9;   // 2 perimeters at 0.45 extrusion width
+detent_spring_len = 22.0;
+carrier_t         = 3.0;   // carrier/hammer plate thickness = flexure height
+petg_E            = 2000;  // MPa, PETG Young's modulus
 // Drive pawl lever arms. The ratio pawl_tooth_r/pawl_link_r sets how far one tip advances
 // the ratchet -- see the pawl_notches assert. Must land between 1.0 and 2.0 notches.
 pawl_tooth_r = 20.0;  // pivot -> pawl tooth contact
@@ -308,6 +315,21 @@ notch_chord  = 2 * detent_notch_r * sin(digit_step/2);             // 8.11 mm
 pawl_travel  = crank_chord * pawl_tooth_r / pawl_link_r;           // 8.74 mm
 pawl_notches = pawl_travel / notch_chord;                          // 1.078 -> one notch, never two
 
+// -- energy budget: can one tip actually drive the carry? --
+// This is the design's real failure mode, so it is checked rather than assumed.
+// A tip releases the potential energy of one chamber of water falling as the bucket rolls.
+tip_drop_mm   = chamber_l/2 * sin(2*tip_angle);                    // ~10.4 mm
+tip_energy_mj = (tip_volume_mm3 * 1e-6) * 9.81 * (tip_drop_mm/1000) * 1000;   // ~1.02 mJ
+// Cantilever detent finger: force at the tip, peak surface strain, and the energy to lift
+// it over one notch crest (triangular loading, so half F*delta).
+detent_I      = carrier_t * pow(detent_spring_t, 3) / 12;
+detent_force  = 3 * petg_E * detent_I * detent_notch_d / pow(detent_spring_len, 3);  // N
+detent_strain = 3 * detent_spring_t * detent_notch_d / (2 * pow(detent_spring_len, 2));
+detent_work_mj = 0.5 * detent_force * detent_notch_d;              // 1 N*mm == 1 mJ
+// Worst case is a carry: the units wheel's detent AND the next wheel's detent both lift.
+carry_work_mj = 2 * detent_work_mj;
+energy_margin = tip_energy_mj / carry_work_mj;
+
 // -- band z positions within a wheel (print order, bottom up) --
 // Order is gear / digit / cam / drive. Two constraints pick this:
 //   1. The transfer pinion has to bridge wheel N's DRIVE band and wheel N+1's GEAR band,
@@ -396,6 +418,15 @@ assert(pawl_notches < 1.8,
        "AC2: pawl throw too long -- it could advance two notches on one tip");
 assert(detent_notch_d > 0.6 && detent_notch_d < detent_notch_r/6,
        "AC4: detent notch depth unreasonable");
+// -- the mechanism must have the energy to do its job --
+assert(energy_margin > 6,
+       "AC4: detent comb too stiff -- one tip may not have the energy to drive a 9->0 carry");
+assert(detent_strain < 0.02,
+       "AC4: detent flexure strain over 2% -- PETG will take a set and lose its detent force");
+assert(detent_spring_t >= 2 * extrusion_width - 0.01,
+       "AC7: detent flexure thinner than 2 perimeters");
+assert(detent_spring_len / detent_spring_t > 10,
+       "AC7: detent flexure too stubby to act as a spring (want L:t > 10)");
 assert(cam_r_max < wheel_r,
        "AC5: heart cam must sit inside the digit drum");
 assert(cam_r_max - cam_r_min > plunger_stroke * 0.5,
@@ -656,7 +687,7 @@ module pinion_carrier() {
     difference() {
         union() {
             // spine bar, flat on the plate
-            cube([plate_l, spine_w, 3.0]);
+            cube([plate_l, spine_w, carrier_t]);
             // rocking pivot barrel, bottom tangent to the plate so nothing prints below Z=0
             translate([0, 3, 3]) rotate([0,90,0]) cylinder(h = plate_l, d = 6);
             // end ears carrying the common pinion shaft (axis along X, parallel to the
@@ -666,9 +697,12 @@ module pinion_carrier() {
             // detent comb: one leaf spring per wheel, kept below the pinions in Z
             for (i = [0 : digit_wheels-1]) {
                 translate([detent_x(i) - detent_spring_t/2, spine_w - fudge, 0])
-                    cube([detent_spring_t, detent_spring_len, 3.0]);
-                translate([detent_x(i) - 1.2, spine_w + detent_spring_len - 1.5, 0])
-                    cube([2.4, 1.5, 3.0]);
+                    cube([detent_spring_t, detent_spring_len, carrier_t]);
+                // tapered pad, so the tip actually seats in the shallow notch instead of
+                // riding on its shoulders
+                translate([detent_x(i), spine_w + detent_spring_len - fudge, 0])
+                    linear_extrude(carrier_t)
+                        polygon([[-1.7,0], [1.7,0], [0.85,2.0], [-0.85,2.0]]);
             }
         }
         // pivot bore, teardrop (horizontal hole)
@@ -1025,3 +1059,6 @@ echo(str("Carry: teeth at ", carry_phase % 360, " deg from digit 0; pinion at ",
          " deg; hub r ", detent_notch_r, " vs pinion tip reach ", centre_dist - gear_outer_r));
 echo(str("Stack: tipper hub z ", tipper_hub_z, "; spout z ", spout_z,
          "; register z ", reg_bottom_z, "..", reg_top_z));
+echo(str("Energy: ", tip_energy_mj, " mJ per tip vs ", carry_work_mj,
+         " mJ to lift 2 detents in a carry -> margin ", energy_margin, "x"));
+echo(str("Detent: ", detent_force, " N per finger, peak strain ", detent_strain*100, " %"));
