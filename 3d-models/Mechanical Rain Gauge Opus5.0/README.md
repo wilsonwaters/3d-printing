@@ -16,7 +16,7 @@ counter comes entirely from the falling water.
 | **Drive** | A crank on the tipper shaft pushes a link, which drives a pawl one tooth of a 10-tooth ratchet on the units wheel. The pawl advances on **one half** of the rocker cycle, so **2 tips = 1 digit = 1.0 mm** of rain. |
 | **Register** | Four number wheels with 0–9 on flat facets, read through a window. |
 | **Carry (9→0)** | A "mutilated" gear on the lower wheel exposes just **2 teeth**, which kick a 20-tooth transfer pinion 1/10 of a turn once per revolution; the pinion turns the next wheel up one digit. A detent comb holds each wheel crisply on a digit. |
-| **Reset** | One push-button. It first rocks the pinion carrier so all three transfer pinions leave mesh, then presses a hammer blade onto a **heart cam** on each wheel. A heart cam pressed by a flat can only rest with its cusp centred, so every wheel is driven to a unique position: **0**. No knob to turn, and it cannot stop between digits. |
+| **Reset** | One push-button, driving a single sliding **reset yoke** 7.2 mm downward. The yoke carries both the transfer-pinion shaft and the four hammer blades, so one stroke does two jobs: the pinions drop out of mesh (freeing the wheels from each other) and the blades press onto a **heart cam** on each wheel. Sequencing is geometric, not timed — the pinions are clear after 3.0 mm, before a blade touches a cam at 4.0 mm. A heart cam pressed by a flat can only rest with its cusp centred, so every wheel is driven to a unique position: **0**. No knob to turn, and it cannot stop between digits. |
 
 ## Design lineage
 
@@ -76,7 +76,7 @@ openscad -D 'part="funnel"' -o funnel.stl mechanical-rain-gauge-opus5-v1.scad
 ```
 
 - **0.20 mm** layers for funnel / body / chassis / tipper
-- **0.12 mm** layers for wheels, pinions, pawl, detent comb, hammer
+- **0.12 mm** layers for wheels, pinions, pawl, detent comb, reset yoke
 - 4 perimeters general, 5 on the funnel and tipper (so layer lines don't wick water)
 - 25% gyroid; 100% infill in the flexures and the link
 - **No supports anywhere** — the design is built around that
@@ -133,6 +133,7 @@ Honest status, so nobody prints this expecting a finished instrument:
 
 ## Files
 
-- `mechanical-rain-gauge-opus5-v1.scad` — the parametric model, 15 `part=` values
+- `mechanical-rain-gauge-opus5-v1.scad` — the parametric model, 16 `part=` values
+  (14 printable parts plus `register` sub-assembly views and the `clash` checks)
 - `stl/` — exported STLs, one per printable part
 - `img/` — renders
