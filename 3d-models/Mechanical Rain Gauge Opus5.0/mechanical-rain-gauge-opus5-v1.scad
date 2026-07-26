@@ -215,9 +215,11 @@ detent_notch_d    = 0.8;   // notch depth = detent finger deflection
 // lift TWO detents at once -- the units wheel's and the tens wheel's. A stiff comb is the
 // most likely thing to stall a carry, so the springs are long, the notches shallow, and the
 // energy margin is asserted below.
-detent_spring_t   = 0.9;   // 2 perimeters at 0.45 extrusion width
-detent_spring_len = 22.0;
-carrier_t         = 3.0;   // carrier/hammer plate thickness = flexure height
+detent_spring_t   = 1.35;  // 3 perimeters at 0.45 extrusion width
+detent_spring_len = 38.0;  // long, because the comb has to reach up past the pinions
+carrier_t         = 3.0;   // comb plate thickness = flexure height
+yoke_spine_t      = 5.0;   // reset yoke spine depth in Y
+yoke_ear_t        = 3.5;   // reset yoke end ear thickness
 petg_E            = 2000;  // MPa, PETG Young's modulus
 // Drive pawl lever arms. The ratio pawl_tooth_r/pawl_link_r sets how far one tip advances
 // the ratchet -- see the pawl_notches assert. Must land between 1.0 and 2.0 notches.
@@ -234,7 +236,8 @@ cam_asym  = 0.92;   // breaks the unstable equilibrium opposite the cusp
 // ---- Register frame / window ----
 reg_wall     = 2.4;
 window_h     = 11.0;  // vertical aperture, shows one digit
-reg_clear    = 1.2;   // clearance around the wheel stack
+reg_clear    = 1.2;   // RADIAL clearance: wheel drum to the window wall. Keep small or the
+                      // digits sit too far behind the window.
 
 // ---- Reset plunger ----
 plunger_d       = 12.0;
@@ -253,7 +256,9 @@ collar_t     = 5.0;   // extra wall at the top, so the funnel rebate has materia
 collar_h     = 12.0;
 collar_flare = 5.0;   // 45 deg flare onto the shell (self-supporting underside)
 funnel_rebate_h = 6.0;
-window_z     = 54.0;  // height of the register window above the base
+window_z     = 62.0;  // height of the register window above the base. Driven by reg_shaft_y:
+                      // the frame now hangs reg_shaft_y below the window centreline and must
+                      // still clear the floor (see the reg_bottom_z assert).
 
 // ---- Fasteners ----
 m3_d = 3.0;
@@ -369,24 +374,51 @@ z_carry   = z_ratchet + ratchet_band_w;
 // -- phasing, all measured as wheel-local angle from "digit 0 at the window" --
 // Directions, as wheel-local angles (0 = window/+Y, 90 = up/+Z, 180 = back/-Y, 270 = down/-Z):
 window_phi = 0;
-hammer_phi = 90;    // reset hammer presses from above
-detent_phi = 180;   // detent comb bears on the back
-pawl_phi   = 216;   // drive pawl, must be a multiple of digit_step
+hammer_phi = 90;    // reset hammer presses down from above
+detent_phi = 270;   // detent comb bears from below
+pawl_phi   = 234;   // drive pawl, from below-back
 pinion_phi = 270;   // transfer pinions sit below the wheel axis
+// The detent comb and the pinions share the 270 deg direction, which is fine because they
+// act on DIFFERENT axial bands (ratchet vs carry) -- see the detent_x/pinion_x asserts.
+// 270 is not a multiple of digit_step, so the ratchet notches carry a phase offset instead
+// of sitting on the digit angles.
+ratchet_phase = detent_phi - floor(detent_phi/digit_step) * digit_step;   // 18
 // Carry teeth must be at the pinion when the wheel is mid-way through its 9->0 step:
 carry_phase = pinion_phi + (digits_per_wheel - 0.5) * digit_step;   // -> 612 == 252 mod 360
 
 // -- register frame --
-stack_w    = digit_wheels * wheel_pitch - wheel_gap;   // 71.9
-reg_in_w   = stack_w + 2*reg_clear;
+// AXIAL clearance is a separate number from the radial one: the reset yoke's end ears have
+// to live in the gap between the frame's end plates and the ends of the wheel stack, so that
+// gap is sized by the ear, not by a running clearance.
+reg_side_clear = yoke_ear_t + 1.5;                     // 5.0
+stack_w    = digit_wheels * wheel_pitch - wheel_gap;   // 103.9
+reg_in_w   = stack_w + 2*reg_side_clear;
 reg_out_w  = reg_in_w + 2*reg_wall;
 window_w   = stack_w + 2;
 // Wheel axis position within the frame. Below the axis there must be room for the pinion
 // AXIS (centre_dist away) *plus the pinion's own outer radius* plus a wall -- getting this
 // wrong is what makes the pinions hang outside the frame.
-reg_shaft_y = centre_dist + gear_outer_r + reg_wall + 2;   // 50.9
-reg_h       = reg_shaft_y + wheel_r + 14;                  // 81.9 (14 = hammer swing room)
-reg_depth   = wheel_od + 2*reg_clear + reg_wall;           // 38.8
+// One downward stroke of the reset yoke does both jobs. Sized by the harder of the two:
+//   - unmesh a pinion: needs > 2*addendum = 3.0 mm of radial retreat
+//   - seat the hammer's flat on a heart cam cusp: the blade starts just clear of the drum
+//     (wheel_r + 2) and has to come down to just above cam_r_min for the flat to straddle
+//     the cusp. That is the binding case, at 7.2 mm.
+blade_rest_r = wheel_r + 2;                                // 19.0
+reset_stroke = blade_rest_r - (cam_r_min + 0.3);            // 7.2
+// The frame must leave room BELOW the pinion for the full stroke, not just for the pinion.
+reg_shaft_y = centre_dist + gear_outer_r + reg_wall + 2 + reset_stroke;   // 58.1
+pinion_y    = reg_shaft_y - centre_dist;                   // 28.1
+// Above the wheels: hammer blades, and the top spine that carries them.
+yoke_top_y  = reg_shaft_y + blade_rest_r + 4;              // 81.1
+reg_h       = yoke_top_y + yoke_spine_t + 4;               // 89.1
+reg_depth   = wheel_od + 2*reg_clear + reg_wall;            // 38.8
+// Yoke sits behind the window wall and slides vertically in slots in the frame ends.
+yoke_z0     = reg_wall + 0.5;
+// The yoke must stop short of the detent comb, which is mounted flat against the back cover.
+// Running the yoke the full depth puts its bottom spine straight through the comb's fingers.
+comb_z      = reg_depth - reg_wall - carrier_t;
+yoke_depth  = comb_z - yoke_z0 - 0.5;
+yoke_shaft_z = shaft_axis_z() - yoke_z0;                   // pinion shaft, in yoke-local z
 
 // -- vertical stack, derived bottom-up so nothing can silently overlap --
 // The tipper's corners sweep well below its pivot, which is the clearance that actually
@@ -468,10 +500,16 @@ assert(cam_r_max - cam_r_min > plunger_stroke * 0.5,
        "AC5: cam rise too small for the plunger stroke to zero the wheels");
 assert(hammer_blade_w < cam_band_w - 0.5,
        "AC5: hammer blade will not fit the cam band slot");
-assert(pawl_phi % digit_step == 0,
-       "AC4: drive pawl must line up with a detent notch");
-assert(detent_phi % digit_step == 0,
-       "AC4: detent comb must line up with a detent notch");
+// Both the pawl and the detent act on the ratchet ring, so both must fall on a notch. The
+// notches are at i*digit_step + ratchet_phase, so it is that residue they have to match.
+assert(abs((pawl_phi - floor(pawl_phi/digit_step)*digit_step) - ratchet_phase) < 0.001,
+       "AC4: drive pawl does not line up with a ratchet notch");
+assert(abs((detent_phi - floor(detent_phi/digit_step)*digit_step) - ratchet_phase) < 0.001,
+       "AC4: detent comb does not line up with a ratchet notch");
+// The comb and the pinions both come from below (270 deg). That is only safe because they
+// act on different axial bands -- prove the two never overlap in X.
+assert(detent_x(0) + 2 < pinion_x(0) || pinion_x(0) + pinion_w < detent_x(0) - 2,
+       "AC4: detent comb and transfer pinion occupy the same axial station");
 assert(facet_w > digit_size * 0.6,
        "AC3: digit facet too narrow for the character size");
 assert(funnel_od < build_x - 10 && funnel_h < build_z,
@@ -574,7 +612,7 @@ module ratchet_band_2d() {
     difference() {
         circle(r = detent_notch_r);
         for (i = [0 : digits_per_wheel-1])
-            rotate(i * digit_step)
+            rotate(i * digit_step + ratchet_phase)
                 polygon([
                     [detent_notch_r + fudge, 0],
                     [detent_notch_r - detent_notch_d, 0],
@@ -692,14 +730,17 @@ module reg_frame() {
         translate([-fudge, reg_shaft_y, shaft_axis_z()])
             rotate([0,90,0]) rotate([0,0,-90])
                 linear_extrude(reg_out_w + 2*fudge) teardrop_2d(shaft_d + tolerance);
-        // pinion carrier rocking pivot bores
-        translate([-fudge, reg_shaft_y - centre_dist - 6, shaft_axis_z()])
-            rotate([0,90,0]) rotate([0,0,-90])
-                linear_extrude(reg_out_w + 2*fudge) teardrop_2d(4 + tolerance);
-        // reset hammer pivot bores
-        translate([-fudge, reg_shaft_y + wheel_r + 3, shaft_axis_z()])
-            rotate([0,90,0]) rotate([0,0,-90])
-                linear_extrude(reg_out_w + 2*fudge) teardrop_2d(4 + tolerance);
+        // Reset yoke guides. The yoke TRANSLATES, so these are vertical slots, not pivot
+        // bores -- two per end plate, which constrains it to pure vertical motion.
+        for (gy = [pinion_y, yoke_top_y + yoke_spine_t/2])
+            hull() for (dy = [0, -reset_stroke - 1])
+                translate([-fudge, gy + dy, shaft_axis_z()])
+                    rotate([0,90,0])
+                        cylinder(h = reg_out_w + 2*fudge, d = pinion_shaft_d + tolerance);
+        // plunger entry, above the wheels, so the plunger can bear on the yoke's top spine
+        translate([reg_out_w/2, yoke_top_y + yoke_spine_t + plunger_d/2 - 1, -fudge])
+            rotate([-90,0,0]) rotate([0,0,180])
+                linear_extrude(reg_wall + 2*fudge) teardrop_2d(plunger_d + tolerance);
         // screw bosses for the back cover
         for (x = [6, reg_out_w - 6]) for (y = [6, reg_h - 6])
             translate([x, y, reg_depth - 8]) cylinder(h = 10, d = m3_d - 0.4);
@@ -716,6 +757,10 @@ module reg_side() {
         cube([reg_out_w, reg_h, reg_wall]);
         for (x = [6, reg_out_w - 6]) for (y = [6, reg_h - 6])
             translate([x, y, -fudge]) cylinder(h = reg_wall + 2*fudge, d = m3_d + 0.3);
+        // detent comb screws: the comb mounts to this cover, immediately in front of it
+        for (x = [reg_wall + 4, reg_out_w - reg_wall - 4])
+            translate([x, comb_base_y() + 3, -fudge])
+                cylinder(h = reg_wall + 2*fudge, d = m3_d + 0.3);
     }
 }
 
@@ -725,75 +770,101 @@ module reg_side() {
 // freeing the wheels to be zeroed independently. The detent comb is on the same part so
 // one moulding does both jobs. Prints flat, flexures in the XY plane so they bend along
 // layers rather than across them.
-module pinion_carrier() {
-    plate_l  = reg_in_w;
-    spine_w  = 12;                 // spine bar depth in Y
-    ear_t    = 3.0;                // end ear thickness
-    ear_y    = carrier_shaft_y() + 6;
-    ear_z    = carrier_shaft_z() + 6;
+// This is US 897379's "vibratory frame", as one printed part. A single downward stroke:
+//   - carries the pinion shaft DOWN, so all three transfer pinions leave mesh at once and
+//     the wheels are freed from each other
+//   - drives the hammer blades DOWN onto the four heart cams, zeroing every wheel
+// Both from one motion, which is why the carrier and the hammer are not separate parts.
+// Sequencing is automatic and geometric: the pinions unmesh after 3.0 mm, while the blades
+// do not touch a cam until 4.0 mm, so the wheels are always free before they are driven.
+//
+// Print orientation: laid so the yoke's own Z is the frame's DEPTH direction. Every wall is
+// then vertical, the spines and ears all start on the plate, and the horizontal shaft bores
+// are teardrops. Footprint is large but flat.
+module reset_yoke() {
+    w  = yoke_span();
+    ht = yoke_top_y - yoke_bot_y() + yoke_spine_t;
     difference() {
         union() {
-            // spine bar, flat on the plate
-            cube([plate_l, spine_w, carrier_t]);
-            // rocking pivot barrel, bottom tangent to the plate so nothing prints below Z=0
-            translate([0, 3, 3]) rotate([0,90,0]) cylinder(h = plate_l, d = 6);
-            // end ears carrying the common pinion shaft (axis along X, parallel to the
-            // wheel shaft -- the pinions must turn on the same axis direction as the wheels)
-            for (x = [0, plate_l - ear_t])
-                translate([x, 0, 0]) cube([ear_t, ear_y, ear_z]);
-            // detent comb: one leaf spring per wheel, kept below the pinions in Z
+            // bottom spine, clear below the pinions
+            translate([0, yoke_bot_y(), 0]) cube([w, yoke_spine_t, yoke_depth]);
+            // top spine, carrying the hammer blades and the plunger ramp
+            translate([0, yoke_top_y, 0]) cube([w, yoke_spine_t, yoke_depth]);
+            // end ears. These stay INSIDE the frame -- a spine or ear that crossed an end
+            // plate would foul it through the whole stroke.
+            for (x = [0, w - yoke_ear_t])
+                translate([x, yoke_bot_y(), 0]) cube([yoke_ear_t, ht, yoke_depth]);
+            // top guide stubs, projecting outward into the frame's upper guide slots. With
+            // the pinion shaft below, these two give pure vertical translation.
+            for (s = [0, 1])
+                translate([s ? w - fudge : -yoke_guide_l + fudge,
+                           yoke_top_y + yoke_spine_t/2, yoke_shaft_z])
+                    rotate([0,90,0])
+                        cylinder(h = yoke_guide_l, d = pinion_shaft_d - tolerance);
+            // hammer blades, thin enough to enter the cam band slot.
+            // cam_x() is measured from the frame interior, so shift into yoke-local X.
+            for (i = [0 : digit_wheels-1])
+                translate([reg_wall + cam_x(i) - yoke_x0() - hammer_blade_w/2,
+                           reg_shaft_y + blade_rest_r, 0])
+                    cube([hammer_blade_w,
+                          yoke_top_y - reg_shaft_y - blade_rest_r + fudge, yoke_depth]);
+        }
+        // pinion shaft bore through both ears
+        translate([-fudge, pinion_y, yoke_shaft_z])
+            rotate([0,90,0]) rotate([0,0,-90])
+                linear_extrude(w + 2*fudge) teardrop_2d(pinion_shaft_d + tolerance);
+    }
+    // No ramp on the yoke: the wedge lives on the PLUNGER tip, which bears down on this
+    // spine's plain top face. Keeping the incline on one part means only one part has to be
+    // right, and the yoke needs no matching feature.
+}
+function yoke_x0()    = reg_wall + 0.5;    // yoke's X origin in frame coordinates
+function yoke_span()  = reg_in_w - 1.0;   // ears land in the reg_side_clear gaps
+function yoke_bot_y() = pinion_y - gear_outer_r - 3;
+yoke_guide_l = 4.0;
+
+// === PART: DETENT COMB ===
+// Mounted to the FRAME, not to the yoke. It has to stay put while the yoke moves, and it
+// does not need to lift for a reset: the heart cam beats a detent about 11:1 on torque, so
+// the wheels simply click over their detents while being zeroed.
+// Fingers reach up from below the pinions to the ratchet rings. They are long (38 mm)
+// because they must clear the pinions, which is why they are 3 perimeters thick rather
+// than 2 -- see the detent_force / detent_strain contracts.
+// Prints flat; every flexure bends within the layer plane.
+module detent_comb() {
+    base_y = comb_base_y();
+    difference() {
+        union() {
+            cube([reg_in_w, 6, carrier_t]);
             for (i = [0 : digit_wheels-1]) {
-                translate([detent_x(i) - detent_spring_t/2, spine_w - fudge, 0])
+                translate([detent_x(i) - detent_spring_t/2, 6 - fudge, 0])
                     cube([detent_spring_t, detent_spring_len, carrier_t]);
-                // tapered pad, so the tip actually seats in the shallow notch instead of
-                // riding on its shoulders
-                translate([detent_x(i), spine_w + detent_spring_len - fudge, 0])
+                // tapered pad, so the tip seats in the shallow notch instead of riding on
+                // its shoulders
+                translate([detent_x(i), 6 + detent_spring_len - fudge, 0])
                     linear_extrude(carrier_t)
                         polygon([[-1.7,0], [1.7,0], [0.85,2.0], [-0.85,2.0]]);
             }
         }
-        // pivot bore, teardrop (horizontal hole)
-        translate([-fudge, 3, 3]) rotate([0,90,0]) rotate([0,0,-90])
-            linear_extrude(plate_l + 2*fudge) teardrop_2d(4 + tolerance);
-        // pinion shaft bore through both ears, teardrop
-        translate([-fudge, carrier_shaft_y(), carrier_shaft_z()])
-            rotate([0,90,0]) rotate([0,0,-90])
-                linear_extrude(plate_l + 2*fudge) teardrop_2d(pinion_shaft_d + tolerance);
+        for (x = [4, reg_in_w - 4])
+            translate([x, 3, -fudge]) cylinder(h = carrier_t + 2*fudge, d = m3_d + 0.3);
     }
 }
-// Pinion shaft sits far enough out in Y and up in Z that a gear_outer_r pinion clears the
-// spine bar and the detent comb.
-function carrier_shaft_y() = gear_outer_r + 2;
-function carrier_shaft_z() = gear_outer_r + 4;
+// Comb base sits below the pinions; the finger tips reach the ratchet ring from below.
+function comb_base_y() = reg_shaft_y - detent_notch_r - detent_spring_len - 8;
 // Axial left edge of the pinion at carry station i: it meshes the FULL-height part of
 // wheel i's carry band, so it starts after the 45 deg ramp.
-function pinion_x(i) = reg_clear + wheel_pitch*i + z_carry + carry_lead + 0.2;
+function pinion_x(i) = reg_side_clear + wheel_pitch*i + z_carry + carry_lead + 0.2;
 // Detent finger and drive pawl both act on the ratchet band.
-function detent_x(i) = reg_clear + wheel_pitch*i + z_ratchet + ratchet_band_w/2;
+function detent_x(i) = reg_side_clear + wheel_pitch*i + z_ratchet + ratchet_band_w/2;
 
 // === PART: RESET HAMMER ===
 // One blade per wheel, all on a common rocking bar. Pressed onto the heart cams by the
 // plunger; each blade's flat face can only sit still with its cam's cusp centred, so all
 // four wheels are driven to digit 0 simultaneously. Prints flat.
-module hammer() {
-    bar_l = reg_in_w;
-    blade_reach = wheel_r - cam_r_min + 4;   // must reach past the drum onto the cam
-    difference() {
-        union() {
-            cube([bar_l, 8, 3.0]);
-            // pivot barrel, bottom tangent to the plate (nothing below Z=0)
-            translate([0, 3, 3]) rotate([0,90,0]) cylinder(h = bar_l, d = 6);
-            // one blade per wheel, thin enough to enter the cam band slot between the
-            // gear band and the digit drum
-            for (i = [0 : digit_wheels-1])
-                translate([cam_x(i) - hammer_blade_w/2, 8 - fudge, 0])
-                    cube([hammer_blade_w, blade_reach, 3.0]);
-        }
-        translate([-fudge, 3, 3]) rotate([0,90,0]) rotate([0,0,-90])
-            linear_extrude(bar_l + 2*fudge) teardrop_2d(4 + tolerance);
-    }
-}
-function cam_x(i) = reg_clear + wheel_pitch*i + z_cam + cam_band_w/2;
+// (The separate hammer part is gone: its blades are now part of reset_yoke, because one
+// downward stroke has to drive both the declutch and the zeroing.)
+function cam_x(i) = reg_side_clear + wheel_pitch*i + z_cam + cam_band_w/2;
 
 // === PART: RESET PLUNGER ===
 // Push-button. The first part of the stroke rocks the pinion carrier out of mesh via the
@@ -1048,18 +1119,34 @@ module funnel() {
 }
 
 // === ASSEMBLY ===
-// WARNING -- READ BEFORE TRUSTING THIS VIEW.
-// This assembly places the housing, funnel, chassis, tipper, crank, register frame, number
-// wheels and transfer pinions. It does NOT yet place drive_pawl(), link(), hammer(),
-// plunger() or pinion_carrier(). Those five parts are each individually verified (geometry,
-// manifold, on-bed, in-envelope) but their POSITIONS relative to one another and to the
-// frame are not established here, so this render cannot be used to check:
-//   - crank pin -> link -> pawl reach and the pawl's approach to the ratchet band
-//   - whether the pawl and the pinion carrier's spine clash in the frame's bottom opening
-//   - hammer blade reach into each cam band slot
-//   - plunger stroke sequencing (declutch first, then hammer)
-// link_len is a placeholder until those positions are fixed. Do not read a clean render
-// here as evidence that the drive train and reset linkage fit.
+// The register sub-assembly, in the frame's own coordinates (x along the wheel shaft,
+// +y = up in use, +z = toward the back in use). Kept as its own module so the same
+// placement is reused by assembly() and by the interference check.
+//   reset = 0 for the rest state, 1 for the fully-pressed reset state.
+module register(reset = 0) {
+    dy = -reset * reset_stroke;
+    color("darkseagreen") reg_frame();
+    for (i = [0 : digit_wheels-1])
+        color("ivory")
+            translate([reg_wall + reg_side_clear + i*wheel_pitch, reg_shaft_y, shaft_axis_z()])
+                rotate([0,90,0]) number_wheel();
+    for (i = [0 : digit_wheels-2])
+        color("orange")
+            translate([reg_wall + pinion_x(i), pinion_y + dy, shaft_axis_z()])
+                rotate([0,90,0]) rotate([0,0,180/gear_teeth]) transfer_pinion();
+    color("indianred")
+        translate([yoke_x0(), dy, yoke_z0]) reset_yoke();
+    color("slateblue")
+        translate([reg_wall, comb_base_y(), comb_z]) detent_comb();
+    // drive pawl: pivots in the frame, tooth reaching the units wheel's ratchet band from
+    // pawl_phi (below-back)
+    color("gold")
+        translate([reg_wall + detent_x(0) - 1.5, pawl_pivot_y(), pawl_pivot_z()])
+            rotate([0, 0, pawl_phi - 270]) rotate([0,-90,0]) drive_pawl();
+}
+function pawl_pivot_y() = reg_shaft_y - detent_notch_r - pawl_tooth_r*sin(pawl_phi - 180);
+function pawl_pivot_z() = shaft_axis_z() + pawl_tooth_r*cos(pawl_phi - 180);
+
 module assembly() {
     e = explode;
     // housing
@@ -1078,23 +1165,49 @@ module assembly() {
                 translate([0, tipper_ow()/2 + hub_stub + 1, hub_z()]) rotate([-90,0,0]) crank();
         }
     // register: window facing +Y, wheel shaft along X
-    translate([-reg_out_w/2, body_id/2 - 4, window_z + window_h/2 - reg_shaft_y])
-        rotate([90,0,0]) {
-            color("darkseagreen") reg_frame();
-            for (i = [0 : digit_wheels-1])
-                color("ivory")
-                    translate([reg_wall + reg_clear + i*wheel_pitch, reg_shaft_y, shaft_axis_z()])
-                        rotate([0,90,0]) number_wheel();
-            for (i = [0 : digit_wheels-2])
-                color("orange")
-                    translate([reg_wall + pinion_x(i), reg_shaft_y - centre_dist, shaft_axis_z()])
-                        rotate([0,90,0]) transfer_pinion();
-        }
+    translate([-reg_out_w/2, body_id/2 - 4, reg_bottom_z]) rotate([90,0,0]) register(reset_view);
+    // reset plunger, entering the body's front wall and bearing on the yoke's push tab
+    color("firebrick")
+        translate([window_w/2 + 14, body_id/2 - 4 + 8, window_z + window_h/2])
+            rotate([90,0,0]) plunger();
+    // connecting rod, tipper crank pin -> pawl link pin
+    color("darkorange")
+        translate([crank_r, tipper_ow()/2 + hub_stub + 3, tipper_hub_z]) rotate([0,-70,0]) link();
 }
 
 // === RENDER ===
 part = "all";  // "all","funnel","body","chassis","tipper","crank","wheel","pinion",
-               // "reg_frame","reg_side","carrier","hammer","plunger","pawl","link"
+               // "reg_frame","reg_side","yoke","comb","plunger","pawl","link",
+               // "register","register_reset","clash","clash_reset"
+reset_view = 0;   // 0 = rest, 1 = reset button fully pressed
+
+// Mechanical interference check. Intersecting the moving group with the static group gives a
+// solid only where parts CLASH -- so an empty result is a real, deterministic fit check, and
+// a non-empty one reports exactly where. Run it at both ends of the reset stroke.
+//   openscad -D 'part="clash"' -o /dev/null --summary all model.scad
+// An empty top-level object (facets 0 / "object is empty") means NO interference.
+module clash_check(reset = 0) {
+    dy = -reset * reset_stroke;
+    intersection() {
+        union() {   // moving group: the yoke only.
+            // The pinions ride on the yoke but are deliberately excluded -- they MESH with
+            // the wheels, so intersecting them would only ever report the intended mesh
+            // (and gear_2d is a trapezoidal approximation of an involute, which overlaps a
+            // little by construction). The pinions' clearance to the wheels is governed by
+            // centre_dist and gear_backlash, and their travel by the reset_stroke asserts.
+            translate([yoke_x0(), dy, yoke_z0]) reset_yoke();
+        }
+        union() {   // static group
+            // Wheels are EXCLUDED on purpose. The hammer blade is meant to touch a heart cam
+            // and the pinion teeth are meant to touch the wheel teeth, so including the
+            // wheels would only ever report intended contact -- and the wheels are drawn at
+            // their rest rotation, not the rotation the cam would take up. What this check
+            // does prove is the fit of the moving yoke inside the fixed structure.
+            reg_frame();
+            translate([reg_wall, comb_base_y(), comb_z]) detent_comb();
+        }
+    }
+}
 
 if (part == "all")        assembly();
 if (part == "funnel")     funnel();
@@ -1106,8 +1219,12 @@ if (part == "wheel")      number_wheel();
 if (part == "pinion")     transfer_pinion();
 if (part == "reg_frame")  reg_frame();
 if (part == "reg_side")   reg_side();
-if (part == "carrier")    pinion_carrier();
-if (part == "hammer")     hammer();
+if (part == "yoke")       reset_yoke();
+if (part == "comb")       detent_comb();
+if (part == "register")       register(0);
+if (part == "register_reset") register(1);
+if (part == "clash")          clash_check(0);
+if (part == "clash_reset")    clash_check(1);
 if (part == "plunger")    plunger();
 if (part == "pawl")       drive_pawl();
 if (part == "link")       link();

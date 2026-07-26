@@ -49,12 +49,12 @@ resolution is unchanged at 1 mm either way.
 | `chassis` | 1 | internal deck, tipper bearings, calibration stop screw bosses |
 | `tipper` | 1 | twin 10 mL chambers, sloped floors so they drain dry |
 | `crank` | 1 | keys onto the tipper hub's D-flat |
-| `wheel` | **4** | identical number wheels, 34 mm dia |
+| `wheel` | **4** | identical number wheels, 34 mm dia × 25 mm wide, five bands: gear / digits / heart cam / ratchet / carry |
 | `pinion` | **3** | transfer pinions |
 | `reg_frame` | 1 | register U-frame, prints window-face-down |
 | `reg_side` | 1 | register back cover |
-| `carrier` | 1 | pinion carrier + integral detent comb |
-| `hammer` | 1 | reset hammer, one blade per wheel |
+| `yoke` | 1 | reset yoke — the "vibratory frame". Carries the pinion shaft AND the four hammer blades, so one 7.2 mm downward stroke both declutches the carries and zeroes every wheel |
+| `comb` | 1 | detent comb, mounts to the back cover (fixed, does not move with the yoke) |
 | `plunger` | 1 | reset button |
 | `pawl` | 1 | drive pawl |
 | `link` | 1 | connecting rod |
@@ -97,18 +97,42 @@ Rim at least 300 mm above ground, in the open, clear of obstructions by twice
 their height (WMO siting guidance). Level the rim — a tilted rim changes the
 effective catch area.
 
+## Verifying it yourself
+
+```sh
+# build gate: every part must compile clean, be manifold, and sit on the plate
+openscad --backend=Manifold --hardwarnings -D 'part="wheel"' -o /tmp/w.stl \
+         --summary all --summary-file /tmp/w.json mechanical-rain-gauge-opus5-v1.scad
+
+# mechanical interference check: intersects the moving reset yoke with the fixed
+# structure at both ends of the stroke. "Current top level object is empty" = CLEAR.
+openscad --backend=Manifold -D 'part="clash"'       -o /tmp/c.stl  mechanical-rain-gauge-opus5-v1.scad
+openscad --backend=Manifold -D 'part="clash_reset"' -o /tmp/cr.stl mechanical-rain-gauge-opus5-v1.scad
+```
+
+Both clash checks currently report CLEAR. There are ~50 `assert()` contracts, so
+a violated design constraint fails the build rather than shipping quietly.
+
 ## Known open items
 
 Honest status, so nobody prints this expecting a finished instrument:
 
-1. **The drive-train and reset linkage are not yet positioned.** `drive_pawl`,
-   `link`, `hammer`, `plunger` and `pinion_carrier` are each individually
-   verified (geometry, manifold, on-bed, in-envelope) but `assembly()` does
-   not place them. So crank→link→pawl reach, hammer blade reach into the cam
-   slots, plunger stroke sequencing, and whether the pawl clashes with the
-   carrier's spine are all **unverified**. `link_len` is a placeholder.
-2. **No splash shield** around the drive-link slot where the link crosses
-   from the wet side to the dry side. Add an upstand on the chassis before
-   real outdoor service.
-3. **The actual tip point needs a test print** — it depends on the tipper's
-   mass distribution. That is what the two M3 trim screws are for.
+1. **The crank → link → pawl chain is placed but not dimensioned.** `link_len`
+   is still a placeholder: the pawl and link are positioned in `assembly()` and
+   the pawl's *throw* is asserted (1.18 notches), but the actual centre-to-centre
+   link length wants setting against a real print.
+2. **The clash check deliberately excludes the wheels.** Blade-on-cam and
+   tooth-on-tooth are intended contacts, and the wheels are drawn at their rest
+   rotation rather than the rotation a cam would take up. So the check proves the
+   yoke fits the fixed structure — not that the cams zero correctly.
+3. **No splash shield** around the drive-link slot where the link crosses from
+   the wet side to the dry side. Add an upstand on the chassis before real
+   outdoor service.
+4. **The actual tip point needs a test print** — it depends on the tipper's mass
+   distribution. That is what the two M3 trim screws are for.
+
+## Files
+
+- `mechanical-rain-gauge-opus5-v1.scad` — the parametric model, 15 `part=` values
+- `stl/` — exported STLs, one per printable part
+- `img/` — renders
