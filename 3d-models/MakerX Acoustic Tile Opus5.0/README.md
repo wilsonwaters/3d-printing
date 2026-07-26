@@ -16,6 +16,7 @@ well floors into an array of tuned resonators that absorb a slice of the low-mid
 | `makerx-acoustic-tile.scad` | **v1** — the 250 mm single tile. Needs the stopper-clip mod; manual colour swaps. |
 | `makerx-acoustic-tile-v2.scad` | **v2** — a 190 mm module + printed bowtie key. Stock printer, AMS, per-cell colour. |
 | `scripts/acoustic_model.py` | First-principles acoustic prediction (diffusion + absorption) and all the plots below. |
+| `3mf/*.3mf` | **Bambu Studio project files** — open with print settings already applied. |
 | `docs/*.png` | Renders and predicted-performance figures. |
 
 Quick start:
@@ -33,6 +34,93 @@ openscad --backend=Manifold -o coupon.stl -D 'part="coupon"' makerx-acoustic-til
 # Re-run the acoustic model (tables + figures)
 python3 scripts/acoustic_model.py            # add --sweep for the neck design study
 ```
+
+---
+
+## Bambu Studio 3MF files
+
+`3mf/` holds Bambu **project** files, not bare geometry. They open in Bambu
+Studio with layer height, walls, infill, supports and brim **already applied** —
+no dialling settings in by hand. Built with the repo's
+`.claude/skills/3d-print-designer/make-bambu-3mf.py` against Bambu's official
+X1C profiles.
+
+| File | What | Size | Mass |
+|---|---|---|---|
+| `makerx-acoustic-tile-v2-module.3mf` | v2 module — **start here** | 190 × 190 × 52 mm | 451 g |
+| `makerx-acoustic-tile-v2-coupon.3mf` | v2 test coupon, ~40 min | 55.25 mm sq | 52 g |
+| `makerx-acoustic-tile-v2-keys.3mf` | 12 bowtie keys | 148 × 68 × 4 mm | 34 g |
+| `makerx-acoustic-tile-v1-250mm.3mf` | v1 tile — **needs the stopper-clip mod** | 250 × 250 × 52 mm | 699 g |
+| `makerx-acoustic-tile-v1-coupon.3mf` | v1 test coupon, ~1 h | 73.04 mm sq | 82 g |
+
+Baked-in settings, identical across all five:
+
+```
+printer   Bambu Lab X1 Carbon 0.4 nozzle      layer height  0.2 mm
+process   0.20mm Standard @BBL X1C            walls         3   (overridden)
+filament  printer default (change freely)     infill        15% gyroid (overridden)
+                                              supports      off
+                                              brim          outer_only (overridden)
+```
+
+Only `wall_loops`, `sparse_infill_pattern` and `brim_type` are flagged as
+modified — layer height, infill density and supports already match the
+`0.20mm Standard @BBL X1C` preset, so the tool correctly leaves them bound to
+the system profile rather than marking them changed.
+
+Filament is deliberately **not pinned**: the file uses your printer's default so
+you can pick whatever PLA you have.
+
+### Two caveats worth reading
+
+**1. `v1-250mm.3mf` has the bed exclusion cleared.** A 250 mm footprint overlaps
+the X1/P1 front-left filament-cutter corner, so this file additionally sets
+`"bed_exclude_area": []`, flagged in the **printer** slot of
+`different_settings_to_system` (the process slot would not bind). That only
+matches reality **if you have fitted Bambu's stopper-clip mod** — and the clip
+disables the cutter, so this file is **single-filament only, no AMS**. If you have
+not fitted the clip, use the v2 module instead. The v2 files need no such patch:
+a 190 mm part clears the exclusion when centred.
+
+**2. These are single-body files.** The generator takes one mesh, so each 3MF is
+one colour. For v2's four-colour `logo_x` scheme you still need the per-colour
+bodies loaded as a multi-part object:
+
+```sh
+for c in navy magenta gold cyan; do
+  openscad --backend=Manifold -o "v2-$c.stl" -D "part=\"$c\"" makerx-acoustic-tile-v2.scad
+done
+```
+
+Load those four into Bambu Studio as one object and assign a filament to each.
+Or open `v2-module.3mf`, print it in a single colour, and skip the AMS entirely.
+
+### Regenerating them
+
+```sh
+python3 ../../.claude/skills/3d-print-designer/make-bambu-3mf.py \
+  --scad makerx-acoustic-tile-v2.scad --openscad "<openscad>" \
+  --profiles-dir "<Bambu Studio>/resources/profiles/BBL" \
+  --printer "Bambu Lab X1 Carbon 0.4 nozzle" \
+  --process "0.20mm Standard @BBL X1C" \
+  --layer-height 0.2 --walls 3 --infill 15 --infill-pattern gyroid \
+  --supports off --brim outer_only \
+  --out 3mf/makerx-acoustic-tile-v2-module.3mf
+```
+
+Add `-D 'part="coupon"'` or `-D 'part="keyplate"'` for the other two.
+
+### Validation
+
+- All five re-import through OpenSCAD's lib3mf with **exit 0, no warnings**, and
+  measured bounding boxes matching the model exactly (250.00, 190.00, 148.00 ×
+  68.00 × 4.00 mm and both coupons).
+- Every exported mesh passes the skill's **§1g slicer-manifold check** — each
+  undirected edge shared by exactly two triangles, **0 non-manifold edges** on
+  all six bodies. This is the check that catches edge-only contact, which
+  OpenSCAD's Manifold backend silently self-heals but Bambu Studio flags.
+- The generator's own `mesh_stat` reports `edges_fixed="0"`,
+  `degenerate_facets="0"`, `facets_reversed="0"`, `backwards_edges="0"`.
 
 ---
 
