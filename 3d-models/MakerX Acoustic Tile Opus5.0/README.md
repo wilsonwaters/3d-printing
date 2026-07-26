@@ -13,7 +13,8 @@ well floors into an array of tuned resonators that absorb a slice of the low-mid
 
 | File | What it is |
 |---|---|
-| `makerx-acoustic-tile.scad` | The parametric model. Everything is driven from the parameter block. |
+| `makerx-acoustic-tile.scad` | **v1** — the 250 mm single tile. Needs the stopper-clip mod; manual colour swaps. |
+| `makerx-acoustic-tile-v2.scad` | **v2** — a 190 mm module + printed bowtie key. Stock printer, AMS, per-cell colour. |
 | `scripts/acoustic_model.py` | First-principles acoustic prediction (diffusion + absorption) and all the plots below. |
 | `docs/*.png` | Renders and predicted-performance figures. |
 
@@ -32,6 +33,181 @@ openscad --backend=Manifold -o coupon.stl -D 'part="coupon"' makerx-acoustic-til
 # Re-run the acoustic model (tables + figures)
 python3 scripts/acoustic_model.py            # add --sweep for the neck design study
 ```
+
+---
+
+## v2 — the 190 mm module and the bowtie key
+
+`makerx-acoustic-tile-v2.scad`. Same acoustics, re-proportioned so the whole
+thing prints on a **stock** X1/P1 with the **AMS available**, and extended with a
+separately-printed key that joins modules into a panel of any size.
+
+![v2 face](docs/v2-face.png)
+
+*Face-on: the magenta MakerX X across both diagonals, off-X floors alternating
+gold and electric blue by depth, the traced MakerX letterform debossed in the
+flush centre cell.*
+
+### Why it exists
+
+v1 is 250 mm, which overlaps the 18 × 28 mm front-left exclusion. The only way to
+print it is the stopper-clip mod — and that clip disables the filament cutter, so
+the AMS is off and colour has to be manual swaps. v2 solves it by shrinking the
+module until a prime tower fits *beside* it:
+
+```
+module at x [4,194], y [30,220]   ->   54 mm free column at x [198,252]
+```
+
+That column is enough for a four-filament prime tower. Which means v2 can colour
+**per cell** instead of per height band — and that is what makes the full-face
+MakerX X possible.
+
+| | v1 | v2 |
+|---|---|---|
+| Module | 250 × 250 × 52 mm | **190 × 190 × 52 mm** |
+| Printer | needs stopper-clip mod | **stock, no mod** |
+| AMS | unavailable (clip kills the cutter) | **available** |
+| Colour | 6 manual swaps, height bands | **per-cell, or height bands** |
+| Cell width | 34.04 mm | 25.60 mm |
+| `f_high` | 5038 Hz | **6699 Hz** |
+| Mass | 699 g | **451 g** |
+| Joining | butt only | **bowtie keys** |
+
+`f_low` (1786 Hz) and `f_design` (3063 Hz) are unchanged — they depend on well
+depth, not tile size — so v2 gives up nothing at the bottom and gains 1.7 kHz at
+the top. What it does give up is *single-panel* area: a 190 mm module is smaller
+than a wavelength over more of its band, so arraying matters more. Which is what
+the key is for.
+
+### The key
+
+![the joint from behind](docs/v2-joint.png)
+
+Each module edge carries **two blind bowtie pockets** in the back plate. Butt two
+modules, drop a printed key into the paired pockets, and the joint is locked
+in-plane — the flared ends cannot pass back through the pinched waist, exactly
+like a woodworker's butterfly key.
+
+| | |
+|---|---|
+| Key | 34 × 20 × 4 mm, 14 mm waist, **2.9 g**, ~8 min |
+| `part="key"` | plain joiner |
+| `part="key-mount"` | same plus a countersunk M4 — fixes the joint *and* the panel to the wall |
+| `part="keyplate"` | 12 keys laid out on one plate, 33.9 g |
+| `part="pair"` | two modules butted with keys in place, for inspection |
+| `part="fit"` | interference gate — renders empty when the fit is right |
+| Fit | 0.15 mm per side, push fit |
+
+Why it is built this way:
+
+- **On the back, not the face.** The face is the acoustic surface; a joiner there
+  would put a flat land across every joint. The back plate is against the wall and
+  otherwise dead area.
+- **Blind pockets.** 1.6 mm of plate is left above each pocket, so no sealed cell
+  cavity is breached and the Helmholtz mechanism is untouched. The pockets are
+  flat-bottomed and open downward onto the build plate, so they are not overhangs
+  — no supports, no bridging.
+- **Modules butt at exactly 190.0 mm**, so the well grid stays continuous. The
+  joint reads as a 2.7 mm land against a 1.35 mm internal fin.
+- **Rotation-safe.** Pockets sit symmetrically about each edge's midpoint and use
+  the same cell indices on all four edges (cells 2 and 4 at the default), so any
+  edge mates any edge at any 90° rotation. Modules stay interchangeable, and
+  changing `pattern_offset` for array modulation never breaks the key system —
+  the pocket cells are auto-selected and scored by available cavity.
+
+Assemble **face-down** on a flat surface: butt the modules, drop the keys in, then
+lift onto the wall. Keys are captured once the panel is hung; use `key-mount` keys
+at a few joints if you want them positively fixed.
+
+![key plate](docs/v2-key.png)
+
+*One plate of keys: 12 in ~35 g. The front row is `key-mount` (countersunk M4),
+the rest plain joiners.*
+
+A 3 × 3 panel is 570 × 570 mm and needs 12 keys (~35 g).
+
+![two modules joined](docs/v2-pair.png)
+
+*Two modules butted at exactly 190.0 mm. The well grid runs straight through the
+joint; each module keeps its own X badge.*
+
+![v2 module](docs/v2-iso.png)
+
+### Colour modes
+
+```sh
+-D 'colour_mode="logo_x"'   # default: per-cell, needs AMS + prime tower
+-D 'colour_mode="strata"'   # v1 scheme: height bands, 6 manual swaps, no tower
+```
+
+**`logo_x`** paints the two diagonals magenta — at 7 × 7 that is what the MakerX
+letterform reduces to — with off-X floors alternating gold and electric blue by
+depth. Only the top 1.2 mm of each floor changes colour (`colour_skin`), so a
+colour change costs a few layers rather than a whole body.
+
+Honest trade-off: `logo_x` is a **face-on graphic**. Because only floor tops are
+coloured, the module reads mostly navy from an oblique angle. `strata` bands the
+fins themselves, so it keeps its colour from any viewing angle but cannot draw a
+picture. Pick by where the panel will be seen from.
+
+Both modes partition the module exactly:
+
+| Mode | navy | magenta | gold | cyan | sum | vs module |
+|---|---|---|---|---|---|---|
+| `logo_x` | 325.98 | 9.95 | 12.49 | 15.47 | 363.89 | 363.88 cm³ |
+| `strata` | 115.48 | 103.13 | 96.65 | 48.63 | 363.89 | 363.88 cm³ |
+
+### Printing v2
+
+Everything from the v1 print settings carries over. Differences:
+
+- **Do not auto-arrange.** Bambu Studio will centre the module and collide with
+  the exclusion. Place it manually at x 4…194, y 30…220 and let the prime tower
+  take the right-hand column.
+- Module ≈ **451 g**, ~16–20 h. Test coupon is 55.25 mm, 52 g, ~40 min.
+- Print keys in mx-magenta so a disassembled panel is obvious, or mx-blue to
+  vanish into the joint.
+- If your holes run tight, raise `key_clear` rather than forcing a key in — PLA
+  splits along layer lines.
+
+### v2 parameters
+
+| Parameter | Default | Notes |
+|---|---|---|
+| `key_pockets` | `true` | Set `false` for a standalone module with no joiner |
+| `key_t` / `key_half` | 4.0 / 17 | Key thickness and reach each side of the joint |
+| `key_end_w` / `key_waist_w` | 10 / 7 | Half-widths; waist must be smaller or it does not lock |
+| `key_clear` | 0.15 | Per-side clearance |
+| `key_boss_h` | 4.0 | Back-plate thickening that gives the pocket its depth |
+| `colour_mode` | `"logo_x"` | or `"strata"` |
+| `colour_skin` | 1.2 | Depth of the colour layer on floor tops |
+
+`n_prime = 11` at 190 mm gives 15.8 mm cells — too small for both a keyhole and a
+20 mm key. The model says so and names the fix; use a larger `tile_size`, a
+smaller `key_end_w`, or `mount_style="none"`.
+
+### v2 verification
+
+Same gate as v1, on OpenSCAD 2026.07.20 (Manifold). All 13 `part=` values and 8
+parameter variants build clean under `--hardwarnings`; every printable body is
+**0 open edges, 0 non-manifold edges**; both colour modes partition exactly.
+Plus one gate v1 did not need:
+
+- **Key interference gate** (`part="fit"`) intersects the key with the module at
+  its installed position. A correct clearance fit renders **empty**, and it does.
+  The test is sensitive, not trivially empty: `key_clear=-0.5` yields 0.21 cm³ of
+  collision and `key_pockets=false` yields 1.01 cm³.
+
+Two bugs this caught during development, both now fixed: the corner posts' `fudge`
+overlap landed on exactly the same plane as the fins', producing 30 zero-area
+degenerate facets; and for odd `N` the pocket-cell search included the middle
+cell, where `p` and `N-1-p` collapse to the same cell and each edge silently got
+one pocket instead of two.
+
+Residuals a print must settle: whether the 0.15 mm key fit is right on your
+machine, and whether the bowtie holds a 900 g two-module panel without a
+`key-mount` screw.
 
 ---
 
