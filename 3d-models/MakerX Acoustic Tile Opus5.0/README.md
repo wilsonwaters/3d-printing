@@ -183,7 +183,7 @@ Key dimensions (all derived, all printed to stderr by the model):
 
 | | |
 |---|---|
-| Outer size | 250.0 × 250.0 × 52.0 mm |
+| Outer size | 250.0 × 250.0 × 52.0 mm (needs the stopper-clip mod — see below) |
 | Cells | 7 × 7 = 49, clear width 34.043 mm, pitch 35.393 mm |
 | Open aperture | 90.9 % (fin/rim land 9.1 %) |
 | Fin / rim / back plate | 1.35 / 1.8 / 1.6 mm |
@@ -214,6 +214,27 @@ handles fine.
 
 Verified on OpenSCAD 2026.07.20 (Manifold backend). Target: Bambu Lab X1C,
 0.4 mm nozzle, 0.20 mm layers, PLA.
+
+> **Bed exclusion — read this before slicing.** The Bambu X1/P1 reserve an
+> **18 × 28 mm front-left corner** of the bed for the filament-cutter stopper
+> (`bed_exclude_area` in the machine profile). The stock usable square is
+> therefore **~220 mm auto-centred, ~238 mm shoved hard right — not 256 mm.**
+> A 250 mm tile overlaps that corner *either way*, and Bambu Studio will refuse
+> to slice it cleanly.
+>
+> Two options:
+>
+> 1. **Fit Bambu's stopper-clip mod** ([print volume guide](https://wiki.bambulab.com/en/knowledge-sharing/print-volume-limitations))
+>    and clear "Excluded bed area" in the printer settings. This frees the full
+>    256 mm bed and keeps the tile at 250 mm. **The clip disables the filament
+>    cutter, so the AMS cannot be used** — print single-filament with manual
+>    swaps. That is exactly what the colour scheme below is designed for, so you
+>    lose nothing. Keep the chamber floor clear of debris.
+> 2. **Stay stock**: `-D 'tile_size=220' -D 'bed_clip_fitted=false'`. Everything
+>    scales; cell width drops to 29.7 mm and `f_high` rises to ~5.8 kHz.
+>
+> The model asserts this: with `bed_clip_fitted = false` a 250 mm tile fails the
+> build with a message naming both fixes.
 
 | Setting | Value |
 |---|---|
@@ -253,11 +274,15 @@ open and the floor top surfaces are clean before committing 25 hours.
 
 ### Colour: 4 filaments, 6 swaps, no prime tower
 
-This is the part that makes a 250 mm multi-colour tile possible on a 256 mm bed.
-Colour is banded by **height**, not by cell, so **only one filament is ever active
-at a given Z**. That means no prime tower and no purge blocks — just six filament
-changes at layer boundaries. It works on the AMS *and* on a single-extruder printer
-with manual swaps.
+This is the part that makes a 250 mm multi-colour tile possible at all. Colour is
+banded by **height**, not by cell, so **only one filament is ever active at a given
+Z**. That means no prime tower and no purge blocks — just six filament changes at
+layer boundaries, done by hand.
+
+That is not merely convenient, it is the only route: a 250 mm tile needs the
+stopper-clip mod to clear the bed exclusion, and the clip disables the AMS. A
+per-cell colour scheme needing a prime tower could not have been printed at this
+size on this printer.
 
 | Swap | At Z | Layer (0.2 mm) | Filament | What it colours |
 |---|---|---|---|---|
@@ -276,11 +301,12 @@ The result reads as a topographic map: a navy grid at the face, with each depth
 level a different colour as you look down into it, and navy again at the very
 bottom of the deepest wells.
 
-In Bambu Studio: *Prepare → right-click the layer slider → Add filament change*,
-at each layer above. Or for a single-extruder printer, insert a pause and swap the
-spool.
+In Bambu Studio: *Prepare → right-click the layer slider → Add pause*, at each
+layer above, then swap the spool by hand when it stops.
 
-If you would rather let the AMS drive it from separate bodies:
+The four colour bodies can also be exported separately, for a printer **without**
+the X1/P1 bed exclusion (or a tile shrunk to ≤220 mm, where the AMS is still
+available):
 
 ```sh
 for c in navy magenta gold cyan; do
@@ -290,8 +316,9 @@ done
 
 Load the four as a single multi-part object. Their volumes sum to exactly the
 one-piece tile (189.27 + 151.74 + 147.55 + 74.82 = 563.38 cm³ against the tile's
-563.37 cm³), so the partition is exact — no overlaps, no gaps. You will need a prime tower for this route,
-which a 250 mm tile leaves no room for, so prefer the swap table above.
+563.37 cm³), so the partition is exact — no overlaps, no gaps. This route needs a
+prime tower, which a 250 mm tile has no plate room for **and** which the stopper
+clip rules out anyway — so on a 250 mm X1C tile, use the manual swap table above.
 
 ---
 
@@ -374,7 +401,9 @@ message instead of producing a bad STL.
 | Parameter | Default | Notes |
 |---|---|---|
 | `part` | `"tile"` | `tile`, `preview`, `section`, `coupon`, `navy`, `magenta`, `gold`, `cyan` |
-| `tile_size` | 250 | Tiles butt at this. Asserted against the build plate. |
+| `tile_size` | 250 | Tiles butt at this. Asserted against the plate *and* the bed exclusion. |
+| `bed_clip_fitted` | `true` | Stopper-clip mod fitted. Set `false` + `tile_size=220` to stay stock. |
+| `bed_exclude_x` / `_y` | 18 / 28 | X1/P1 front-left exclusion. Set 0 for other printers. |
 | `n_prime` | 7 | 5, 7, 11, 13. Asserted prime. |
 | `pattern_offset` | `[4,4]` | Array modulation; any `[m,n]` in 0..N-1 |
 | `well_depth_max` | 48 | 32 = slim (≈517 g), 48 = default, 70 = max reach (≈861 g) |
@@ -413,8 +442,9 @@ Built and measured with OpenSCAD 2026.07.20, Manifold backend.
   manifold complaints (with `--hardwarnings`). Top-level object reports
   `(manifold)` and `Status: NoError`, not `(PolySet)`.
 - **Measured bounding box** — 250.00 × 250.00 × 52.00 mm, matching the intended
-  envelope exactly, and inside the X1C's 256 mm plate with 3 mm per side. Every
-  variant holds 250 × 250 in XY.
+  envelope exactly. Every variant holds 250 × 250 in XY. Note this fits the X1C
+  plate only with the stopper-clip mod fitted (see the bed-exclusion note above);
+  the model asserts it.
 - **Mesh integrity** — independent STL parse of the printable bodies (`tile`,
   `coupon`, and all four colour bodies): **0 open edges, 0 non-manifold edges**.
   (`preview` and `section` are stacked visualisation solids and do report shared

@@ -55,9 +55,11 @@
 //     gussets - a gusset would sit exactly where the screw head must slide -
 //     so those two floors bridge the full 34 mm, which PLA handles fine.
 //   - Colour is banded by HEIGHT, not by cell. Only one filament is ever active
-//     at a given Z, so the four brand colours need six filament swaps and NO
-//     prime tower - which matters because a 250 mm tile leaves no room for one
-//     on a 256 mm bed. Reads as a topographic map of the depth sequence.
+//     at a given Z, so the four brand colours need six manual swaps and NO
+//     prime tower. This is what makes 250 mm x 4 colours possible at all: the
+//     tile needs the stopper-clip mod to clear the bed exclusion, and that mod
+//     disables the AMS - so an AMS/prime-tower scheme could not have worked
+//     here regardless. Reads as a topographic map of the depth sequence.
 //   - N = 7 chosen over 5/11/13. f_low is c/(4*well_depth_max) and so is the
 //     same 1786 Hz for every N, but f_design scales with s_max/N (rises with N)
 //     while f_high scales with 1/cell_w (also rises with N) - small N tunes
@@ -100,7 +102,13 @@
 //   Test before committing 25 h -> part = "coupon" (73 mm, ~1 h).
 //
 // Overall dimensions: 250.0 x 250.0 x 52.0 mm
-//   (Bambu Lab X1C, 256 x 256 x 256 mm - 3 mm clearance each side in XY)
+//   (Bambu Lab X1C, 256 x 256 x 256 mm.) IMPORTANT: the X1/P1 reserve an
+//   18x28 mm front-left corner for the filament-cutter stopper, so the stock
+//   usable square is ~220 mm auto-centred / ~238 mm hard right. 250 mm needs
+//   Bambu's stopper-clip mod plus bed_exclude_area cleared in the printer
+//   profile. The clip disables the cutter, so print single-filament with
+//   manual swaps - the colour scheme is built for exactly that. Set
+//   tile_size = 220 to stay stock.
 // Coordinate system: X, Y = the wall plane, tile centred on the origin.
 //   Z = height from the build plate. Z = 0 is the BACK of the tile (the face
 //   that touches the wall); Z = 52 is the acoustic face.
@@ -134,7 +142,8 @@
 //   - Bridge flow ~110%, bridge speed <= 30 mm/s for clean floor undersides.
 //   - The sealed voids are intentional. Ignore any "object has internal void"
 //     hint from the slicer; do NOT add drain holes, they defeat mechanism 2.
-//   - Colour: see README.md for the six swap heights. No prime tower needed.
+//   - Colour: six MANUAL filament swaps, see README.md for the heights. No
+//     prime tower, no AMS (the stopper clip disables the cutter).
 //   - Estimated 25-30 h and ~699 g per tile at default settings (563 cm^3 solid);
 //     ~517 g for the slim preset (well_depth_max=32, fin_t=0.9).
 
@@ -153,6 +162,14 @@ build_x         = 256;   // Bambu Lab X1C
 build_y         = 256;
 build_z         = 256;
 plate_margin    = 2.0;   // keep this much clear of each bed edge
+// Bambu X1/P1 reserve a front-left corner for the filament-cutter stopper, so
+// the usable square is ~220 mm auto-centred (~238 mm shoved hard right), NOT
+// the full 256 mm. A 250 mm tile overlaps it either way and needs Bambu's
+// stopper-clip mod. The clip disables the cutter, so the AMS cannot be used -
+// which is fine here because the colour scheme runs on manual filament swaps.
+bed_exclude_x   = 18;    // front-left exclusion, mm (0 for non-Bambu printers)
+bed_exclude_y   = 28;
+bed_clip_fitted = true;  // stopper-clip mod fitted? Frees the full bed, no AMS.
 
 /* [Tile] */
 tile_size      = 250;    // outer square, mm. Tiles butt at this dimension.
@@ -292,6 +309,18 @@ assert(tile_size <= build_x - 2 * plate_margin &&
        tile_size <= build_y - 2 * plate_margin,
        str("Tile ", tile_size, " mm does not fit the ", build_x, " x ", build_y,
            " mm plate with ", plate_margin, " mm margin. Reduce tile_size or split."));
+// A footprint only clears the front-left exclusion if its near edge starts
+// beyond it: centred needs build_x - 2*bed_exclude_x, hard right needs
+// build_x - bed_exclude_x.
+max_centred   = build_x - 2 * bed_exclude_x;
+max_hard_right = build_x - bed_exclude_x;
+assert(bed_clip_fitted || bed_exclude_x == 0 || tile_size <= max_hard_right,
+       str("Tile ", tile_size, " mm overlaps the ", bed_exclude_x, "x",
+           bed_exclude_y, " mm front-left exclusion zone even positioned hard ",
+           "right (max ", max_hard_right, " mm). Either fit Bambu's stopper ",
+           "clip and set bed_clip_fitted = true (this disables the AMS - fine ",
+           "here, the colour scheme uses manual swaps), or set tile_size <= ",
+           max_centred, "."));
 assert(face_z <= build_z, "Tile is taller than the build volume.");
 assert(cell_w > 8, str("cell_w = ", cell_w, " mm is too small - reduce n_prime."));
 assert(fin_t >= 2 * extrusion_width - 1e-9,
@@ -358,6 +387,12 @@ echo(band_edges = band_edges(),
 echo(keyhole_cells = [[kh_left, N - 1], [kh_right, N - 1]],
      badge_cell = badge_cell);
 echo(variant = variant_label());
+if (bed_clip_fitted && bed_exclude_x > 0 && tile_size > max_centred)
+    echo(str("NOTE: ", tile_size, " mm exceeds the ", max_centred, " mm ",
+             "auto-centred limit on a stock Bambu X1/P1. This assumes the ",
+             "stopper-clip mod is fitted and bed_exclude_area cleared in the ",
+             "printer profile. The clip disables the filament cutter, so print ",
+             "single-filament with manual swaps - do NOT use the AMS."));
 
 function variant_label() = variant_text != "" ? variant_text
     : str("N", N, "-", pattern_offset[0], pattern_offset[1]);
