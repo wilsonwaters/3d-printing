@@ -65,6 +65,29 @@ spring for the plunger.
 
 ## Printing
 
+**Bambu Lab X1 Carbon: just open the `3mf/` files.** Each is a Bambu Studio
+*project* 3MF with the print settings already applied — layer height, wall count,
+infill, pattern, supports, brim and PETG filament all baked in. No settings to
+dial in by hand: open, review on the plate, slice, print.
+
+| Parts | Process preset | Layer | Walls | Infill |
+|---|---|---|---|---|
+| funnel, tipper | 0.20mm Standard @BBL X1C | 0.20 | **5** (water-tight) | 25% gyroid |
+| body, chassis, reg_frame, reg_side | 0.20mm Standard @BBL X1C | 0.20 | 4 | 25% gyroid |
+| crank, wheel, pinion, yoke, plunger | 0.12mm Fine @BBL X1C | 0.12 | 4 | 25% gyroid |
+| comb, pawl, link | 0.12mm Fine @BBL X1C | 0.12 | 4 | **100%** (flexures) |
+
+The funnel additionally carries a 5 mm brim — a 176 mm PETG ring lifts at the edge
+without one.
+
+> Caveat: these were generated with `--base-3mf` (borrowing a sibling project's
+> settings baseline) because Bambu Studio isn't installed on the machine that built
+> them. The overrides are correctly flagged in `different_settings_to_system`, so
+> they bind on open — but give the settings a glance the first time.
+
+For any other printer or slicer, use the STLs in `stl/` and apply the PRINT
+SETTINGS header manually.
+
 ```
 part = "wheel";   // then render (F6) and export STL (F7)
 ```
@@ -113,6 +136,26 @@ openscad --backend=Manifold -D 'part="clash_reset"' -o /tmp/cr.stl mechanical-ra
 Both clash checks currently report CLEAR. There are ~50 `assert()` contracts, so
 a violated design constraint fails the build rather than shipping quietly.
 
+**Slicer-manifold check.** The Manifold backend silently self-heals edge-only
+contact, but Bambu Studio still reports it. In a watertight mesh every undirected
+edge is shared by exactly two triangles, so export **binary** STLs and count:
+
+```sh
+openscad --backend=Manifold --export-format binstl -D 'part="wheel"' -o stl/wheel.stl \
+         mechanical-rain-gauge-opus5-v1.scad
+```
+
+All 14 parts currently report 0 non-manifold edges. This check caught a real
+defect: the carry-band ramp's base disc was exactly `detent_notch_r`, so it
+coincided with the ratchet ring's cylinder and the ten notch mouths met edge-on
+(100 non-manifold edges on the wheel). The base is now deliberately 0.5 mm under.
+
+**Bed limits.** The X1/P1 reserve an 18×28 mm front-left corner
+(`bed_exclude_area`), so the real auto-centred printable square is **~220 mm, not
+256 mm**. Footprints are asserted against that. The largest part (body, 182 mm
+plus mount lugs = 187 mm) fits with room to spare, so no stopper-clip mod is
+needed and AMS stays available.
+
 ## Known open items
 
 Honest status, so nobody prints this expecting a finished instrument:
@@ -135,5 +178,6 @@ Honest status, so nobody prints this expecting a finished instrument:
 
 - `mechanical-rain-gauge-opus5-v1.scad` — the parametric model, 16 `part=` values
   (14 printable parts plus `register` sub-assembly views and the `clash` checks)
-- `stl/` — exported STLs, one per printable part
+- `stl/` — binary STLs, one per printable part (14)
+- `3mf/` — Bambu Studio project 3MFs with print settings baked in (14)
 - `img/` — renders

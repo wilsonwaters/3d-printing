@@ -146,6 +146,10 @@ layer_height    = 0.2;
 build_x = 256;
 build_y = 256;
 build_z = 256;
+// X1/P1 reserve an 18x28mm front-left corner (bed_exclude_area, protecting the filament
+// cutter stopper), so the real auto-centred printable square is ~220mm, NOT 256. Footprints
+// are checked against this, not against build_x.
+build_usable = 220;
 
 // ---- Meteorological calibration (the heart of the design) ----
 catch_area_cm2 = 200.0;  // WMO/CIMO standard collection area. 1 mm rain = 20.00 mL.
@@ -512,12 +516,12 @@ assert(detent_x(0) + 2 < pinion_x(0) || pinion_x(0) + pinion_w < detent_x(0) - 2
        "AC4: detent comb and transfer pinion occupy the same axial station");
 assert(facet_w > digit_size * 0.6,
        "AC3: digit facet too narrow for the character size");
-assert(funnel_od < build_x - 10 && funnel_h < build_z,
-       "AC6: funnel does not fit the build volume");
-assert(body_od < build_x - 10 && body_h < build_z,
-       "AC6: body does not fit the build volume");
-assert(reg_out_w < build_x - 10,
-       "AC6: register frame does not fit the build volume");
+assert(funnel_od <= build_usable && funnel_h < build_z,
+       "AC6: funnel does not fit the usable bed (X1/P1 exclusion zone applies)");
+assert(body_od + 2*collar_t + 14 <= build_usable && body_h < build_z,
+       "AC6: body (incl. collar and mount lugs) does not fit the usable bed");
+assert(reg_out_w <= build_usable && reg_h <= build_usable,
+       "AC6: register frame does not fit the usable bed");
 assert(wheel_w == gear_band_w + digit_band_w + cam_band_w + ratchet_band_w + carry_band_w,
        "wheel band widths inconsistent");
 assert(drum_chamfer >= 0.4,
@@ -665,7 +669,11 @@ module number_wheel() {
             // ramp the teeth would be a 4.5 mm unsupported overhang.
             translate([0,0,z_carry]) {
                 hull() {
-                    linear_extrude(0.01) circle(r = detent_notch_r);
+                    // Deliberately UNDER the ratchet radius. Matching it exactly makes the
+                    // ramp's base cylinder coincide with the ratchet ring's, and the ten
+                    // notch mouths then meet edge-on -- Manifold self-heals that but Bambu
+                    // Studio reports it as non-manifold edges.
+                    linear_extrude(0.01) circle(r = detent_notch_r - 0.5);
                     translate([0,0,carry_lead]) linear_extrude(0.01) mutilated_gear_2d();
                 }
                 translate([0,0,carry_lead])
