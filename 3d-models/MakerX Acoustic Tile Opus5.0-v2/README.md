@@ -10,6 +10,13 @@ cover as much wall as you like.
 
 ![Quadrant, face on](render-quadrant-face.png)
 
+Two series live here, both maintained:
+
+- **125 series** — 125mm joinable quadrants, 4 to a 250mm tile. Prints fail cheap (~8h).
+  Colour by elevation band, ~zero purge. Start here.
+- **500 series** — one 250mm tile with a corner notch; 4 tiles + a key make 500×500 with a
+  single giant X. Bigger statement, ~30h prints. See [The 500 series](#the-500-series).
+
 ## Files
 
 **Print v2.** It is the same tile acoustically but uses **35% less plastic** — see
@@ -154,6 +161,79 @@ rides entirely on a property (colour) that sound cannot detect.
 
 All colours and the logomark were taken from the live site's CSS custom properties and
 logo SVG, not eyeballed.
+
+## The 500 series
+
+An alternate, not a replacement. One printed part is a full **250 × 250 mm** tile with a
+square notch bitten out of a corner. Four of them, each rotated 90° further so the notches
+meet in the middle, tile into **500 × 500 mm**; the notches combine into a 71.43 mm hole
+filled by a separately printed **key**. Each tile's main diagonal is one arm of a single
+500 mm X, and the key is its crossing.
+
+![500 assembly](render-500-assembly.png)
+
+| File | What it is |
+|---|---|
+| `makerx-diffuser-tile-500-v1.scad` | Source for the whole series. |
+| `makerx-500-tile-v1-4colour.3mf` | **Start here.** Settings baked in, four filament-assigned parts. |
+| `makerx-500-key-v1-2colour.3mf` | The centre key, navy body + gold crossing. |
+| `makerx-500-*-v1.stl` | Tile, key and spline as single meshes. |
+
+**Why the notch.** The X1/P1 reserves an 18 × 28 mm front-left corner of the bed. The usual
+escape is Bambu's stopper-clip mod, but that disables the filament cutter and so the AMS —
+it would forbid the multi-colour this design is built around. Notching the part instead
+keeps the exclusion zone *and* the AMS. Verified: the 2×2-cell (35.71 mm) notch clears the
+zone at 0, 3 and 6 mm bed margin.
+
+Be clear what the notch is worth: simply shifting a plain tile right to dodge the zone
+already allows ~235 mm at the same margin. The notch buys 250 mm — **+12.8% area**. Its
+real value is that 250 is the module where four tiles land on exactly 500 × 500 and the
+notches self-assemble into a home for the key.
+
+**Colour works differently here.** The 125 series paints colour in elevation bands, which
+means colour *is* height — so drawing an X forces the X cells to be tallest and biases the
+relief. The 500 series instead colours only the **top 0.6 mm** of each cell, chosen per
+cell. Because cell tops sit at just 7 discrete heights, the cost stays small. Measured:
+
+| Scheme | Tool changes | Purge/tile | Height field |
+|---|---|---|---|
+| Elevation bands (125 series) | 3 | ~2 g | X must be the tallest cells |
+| Naive full-height per-cell | 909 | ~676 g | free |
+| **Top skin (500 series)** | **40** | **~20–30 g** | **free — well mixed** |
+
+That ~25 g buys a genuinely well-mixed relief, so the branding costs the diffusion nothing.
+The height field is four 7×7 QRD blocks at four different rotations, which breaks the
+7-cell periodicity while keeping the histogram: measured `[3,30,31,32,32,32,32]` over 192
+cells.
+
+**Honest visual trade.** The X reads strongly face-on and weakly at an oblique angle — the
+colour is a thin skin, and tall navy blocks screen the lower coloured cells. That is the
+price of not sculpting the X into the relief. If you want it bolder, `colour_mode =
+"elevation"` puts the X on the tallest cells for ~zero purge, at the cost of a diagonal
+ridge in the height field.
+
+**Print warnings, both real:**
+
+- A 250 mm part leaves **~3 mm of bed margin — no brim is possible**, and PLA corner lift is
+  documented on 150 mm+ parts. `base_t` is 3.0 mm here, not v2's 2.4 mm, because the back
+  plate is what resists warping and the v2 thinning does not scale.
+- **`make-bambu-3mf.py` will warn that the footprint covers the exclusion zone.** That is a
+  false positive for this design: the tool tests the bounding box and cannot see the notch.
+  Placement is centred (3 mm margin), which the geometry check confirms is clear.
+- Nothing protrudes past 250 mm — the 125 series' joining pins would make the footprint
+  258 mm and would not fit the bed. Tiles align via a pocket at the middle of each edge and
+  a loose printed **spline** that bridges two facing pockets. The midpoint is its own
+  mirror, so that joint is rotation-agnostic for free.
+
+Acoustics are unchanged from the 125 series by construction — same 17.857 mm pitch and
+10.8 mm depth step, so f₀ 2269 Hz, upper limit 9604 Hz and resonators 668–1909 Hz all carry
+over verbatim.
+
+**Verified:** every `part=` compiles clean; 0 non-manifold edges throughout; the colour
+split is an exact partition (body 561.08 + skins 0.77 + 0.78 + 0.77 = 563.40 cm³, and key
+50.36 + 2.96 = 53.32 cm³); the assembly volume equals 4 × tile + key exactly
+(2306.92 cm³), so no tile or key shares any volume; and both 3MFs round-trip through
+lib3mf to their source volumes.
 
 ## Assembly and mounting
 
