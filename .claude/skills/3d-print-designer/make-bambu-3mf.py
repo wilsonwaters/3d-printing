@@ -56,6 +56,7 @@ The tool is intentionally dependency-free (Python 3.8+ stdlib only).
 import argparse
 import json
 import os
+import random
 import re
 import struct
 import subprocess
@@ -210,6 +211,59 @@ def bed_from_printable_area(area):
     return 256.0, 256.0
 
 
+def rect_from_area(area):
+    """Bounding rect (x0, y0, x1, y1) of an area list like ['0x0','18x0','18x28','0x28']."""
+    xs, ys = [], []
+    for pt in area or []:
+        if "x" in pt:
+            a, b = pt.split("x")
+            xs.append(float(a)); ys.append(float(b))
+    if not xs:
+        return None
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _hits_exclusion(px, py, w, h, excl, clearance):
+    """True if a footprint centred at (px,py) overlaps the exclusion rect plus clearance."""
+    if not excl:
+        return False
+    ex0, ey0, ex1, ey1 = excl
+    if ex1 <= ex0 or ey1 <= ey0:
+        return False
+    return not (px - w / 2.0 >= ex1 + clearance or px + w / 2.0 <= ex0 - clearance
+                or py - h / 2.0 >= ey1 + clearance or py + h / 2.0 <= ey0 - clearance)
+
+
+def choose_placement(bed_x, bed_y, w, h, excl, scatter, scatter_max, seed, margin=8.0):
+    """Pick where the part's footprint centre lands on the plate.
+
+    Parts always landing dead centre wear one patch of the build plate, so by default this
+    nudges each print somewhere else within whatever room the part leaves. The offset is
+    bounded by the part's own size (a big part barely moves, a small one roams), clamped so
+    the footprint keeps `margin` clear of every bed edge, and rejected if it would touch the
+    printer's bed_exclude_area — on an X1/P1 that is the 18x28mm front-left corner reserved
+    for the filament cutter, and a part parked there will not slice cleanly.
+
+    Returns (cx, cy, (dx, dy)) where dx/dy are the offset from plate centre.
+    """
+    cx0, cy0 = bed_x / 2.0, bed_y / 2.0
+    if scatter != "on":
+        return cx0, cy0, (0.0, 0.0)
+    lo_x, hi_x = margin + w / 2.0, bed_x - margin - w / 2.0
+    lo_y, hi_y = margin + h / 2.0, bed_y - margin - h / 2.0
+    if lo_x >= hi_x or lo_y >= hi_y:
+        return cx0, cy0, (0.0, 0.0)          # part fills the bed: leave it centred
+    rx = min((hi_x - lo_x) / 2.0, scatter_max)
+    ry = min((hi_y - lo_y) / 2.0, scatter_max)
+    rng = random.Random(seed)                # seed=None -> genuinely different each run
+    for _ in range(64):
+        px = min(hi_x, max(lo_x, cx0 + rng.uniform(-rx, rx)))
+        py = min(hi_y, max(lo_y, cy0 + rng.uniform(-ry, ry)))
+        if not _hits_exclusion(px, py, w, h, excl, 1.0):
+            return px, py, (px - cx0, py - cy0)
+    return cx0, cy0, (0.0, 0.0)              # could not find a clear spot: fall back to centre
+
+
 def _as_list(v):
     if isinstance(v, list):
         return v
@@ -234,6 +288,7 @@ def build_minimal_config(profiles_dir, printer, process, filaments, overrides, s
     """
     machine = resolve_preset(profiles_dir, "machine", printer)
     proc = resolve_preset(profiles_dir, "process", process)
+    build_minimal_config.exclude_area = machine.get("bed_exclude_area")
 
     if filaments:
         fil_ids = list(filaments)
@@ -499,15 +554,26 @@ def slice_info_xml(studio_version):
 """
 
 
-def assemble_3mf(out_path, verts, tris, cfg, part_name, studio_version):
+def assemble_3mf(out_path, verts, tris, cfg, part_name, studio_version,
+                 scatter="on", scatter_max=60.0, scatter_seed=None, exclude_area=None):
     xs = [v[0] for v in verts]; ys = [v[1] for v in verts]; zs = [v[2] for v in verts]
     cx = (min(xs) + max(xs)) / 2.0
     cy = (min(ys) + max(ys)) / 2.0
     minz = min(zs)
+    w = max(xs) - min(xs); h = max(ys) - min(ys)
     bed_x, bed_y = bed_from_printable_area(cfg.get("printable_area"))
-    # Centre the part on the plate; rest its base on the bed (mesh is modelled Z=0 = plate).
-    tx, ty, tz = bed_x / 2.0 - cx, bed_y / 2.0 - cy, -minz
+    # Place the footprint (scattered by default to spread build-plate wear); rest its base on
+    # the bed, since the mesh is modelled with Z=0 = plate.
+    px, py, delta = choose_placement(bed_x, bed_y, w, h, rect_from_area(exclude_area),
+                                     scatter, scatter_max, scatter_seed)
+    tx, ty, tz = px - cx, py - cy, -minz
     transform = f"1 0 0 0 1 0 0 0 1 {tx:.6f} {ty:.6f} {tz:.6f}"
+    excl = rect_from_area(exclude_area)
+    assemble_3mf.last_placement = (
+        px, py, delta, w, h,
+        _hits_exclusion(px, py, w, h, excl, 0.0),
+        px - w / 2.0 < 7.9 or px + w / 2.0 > bed_x - 7.9
+        or py - h / 2.0 < 7.9 or py + h / 2.0 > bed_y - 7.9)
 
     obj_uuid = uuid_str()
     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -555,6 +621,14 @@ def main():
     ap.add_argument("--support-type", type=str, help="e.g. 'tree(auto)', 'normal(auto)'")
     ap.add_argument("--brim", type=str, help="brim_type, e.g. auto_brim, outer_only, no_brim")
     ap.add_argument("--set", action="append", help="Arbitrary override key=value (repeatable; value may be JSON)")
+    ap.add_argument("--scatter", choices=["on", "off"], default="on",
+                    help="Nudge the part to a random spot on the plate instead of always dead "
+                         "centre, to spread build-plate wear. Bounded by the part's own size, "
+                         "kept clear of the bed edges and of bed_exclude_area. Default: on")
+    ap.add_argument("--scatter-max", type=float, default=60.0,
+                    help="Largest offset from plate centre, mm (default 60)")
+    ap.add_argument("--scatter-seed", type=int, default=None,
+                    help="Seed the scatter for a reproducible placement (default: random each run)")
 
     args = ap.parse_args()
     filaments = args.filament or []  # empty => don't bake a filament; user picks in Bambu Studio
@@ -589,6 +663,7 @@ def main():
                 changed.setdefault(classify_override(k), set()).add(k)
         cfg["different_settings_to_system"] = build_different_settings(
             cfg.get("different_settings_to_system"), changed, len(filaments) if filaments else 1)
+        exclude_area = cfg.get("bed_exclude_area")
     else:
         profiles_dir = find_profiles_dir(args.profiles_dir)
         if not profiles_dir:
@@ -597,9 +672,12 @@ def main():
                 "<.../resources/profiles/BBL> or fall back to --base-3mf <existing.3mf>.")
         cfg = build_minimal_config(profiles_dir, args.printer, args.process,
                                    filaments, overrides, args.studio_version)
+        exclude_area = getattr(build_minimal_config, "exclude_area", None)
 
     # 3) Assemble
-    assemble_3mf(args.out, verts, tris, cfg, default_name, args.studio_version)
+    assemble_3mf(args.out, verts, tris, cfg, default_name, args.studio_version,
+                 scatter=args.scatter, scatter_max=args.scatter_max,
+                 scatter_seed=args.scatter_seed, exclude_area=exclude_area)
     print(f"Wrote {args.out}")
     print(f"  geometry : {len(verts)} vertices, {len(tris)} triangles")
     print(f"  printer  : {args.printer}")
@@ -609,6 +687,23 @@ def main():
     print(f"  filament : {fil}{'' if args.filament else '  (printer default - user can change)'}")
     print(f"  modified : {cfg['different_settings_to_system'][0] or '(none)'}")
     print(f"  settings : {len(cfg)} keys in project_settings.config (lean: IDs + overrides only)")
+    px, py, (dx, dy), w, h, in_excl, at_edge = assemble_3mf.last_placement
+    if args.scatter == "on" and (dx or dy):
+        print(f"  placed   : {w:.0f} x {h:.0f}mm at ({px:.1f}, {py:.1f}) "
+              f"= centre {dx:+.1f}, {dy:+.1f} mm  (scatter on, spreads plate wear)")
+    else:
+        print(f"  placed   : {w:.0f} x {h:.0f}mm centred at ({px:.1f}, {py:.1f})"
+              f"{'  (no room to scatter)' if args.scatter == 'on' else '  (scatter off)'}")
+    if in_excl:
+        print(f"  WARNING  : this {w:.0f} x {h:.0f}mm footprint covers the printer's "
+              f"bed_exclude_area (the front-left filament-cutter corner). Above roughly "
+              f"220mm that is unavoidable. Either fit Bambu's stopper-clip mod and clear "
+              f"'Excluded bed area' in printer settings (single-colour only - the clip "
+              f"disables the cutter), or shrink the footprint. Bambu Studio will otherwise "
+              f"refuse to slice cleanly.")
+    if at_edge:
+        print(f"  WARNING  : footprint reaches within 8mm of a bed edge - check first-layer "
+              f"adhesion, or reduce the part size.")
 
 
 if __name__ == "__main__":
