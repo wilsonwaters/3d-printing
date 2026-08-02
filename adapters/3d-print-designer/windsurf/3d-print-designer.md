@@ -3143,7 +3143,10 @@ Generate a Bambu Studio **project** `.3mf` that opens with all print settings al
 - [The tool: make-bambu-3mf.py](#the-tool-make-bambu-3mfpy)
 - [Mapping the PRINT SETTINGS header to flags](#mapping-the-print-settings-header-to-flags)
 - [Choosing profile names](#choosing-profile-names)
+- [Full-bed prints (X1/P1 exclusion zone)](#full-bed-prints-x1p1-exclusion-zone)
 - [Workflow](#workflow)
+- [Plate placement](#plate-placement)
+- [Verify the generated 3MF](#verify-the-generated-3mf)
 - [Verified behaviour and caveats](#verified-behaviour-and-caveats)
 - [Fallbacks and graceful degradation](#fallbacks-and-graceful-degradation)
 
@@ -3209,6 +3212,7 @@ Translate the model's `PRINT SETTINGS` header (see [SKILL.md](SKILL.md) > Print-
 | Supports | `--supports off` / `--supports on` | add `--support-type "tree(auto)"` if on |
 | — top/bottom solids | `--top-layers` / `--bottom-layers` | optional |
 | Anything else | `--set key=value` | raw `project_settings.config` key; value may be JSON, e.g. `--set 'nozzle_temperature=["230"]'` |
+| — plate position | `--scatter on\|off`, `--scatter-max`, `--scatter-seed` | see [Plate placement](#plate-placement); **on by default** |
 
 `--printer` and `--process` come from the printer/quality choice, not the header — see below.
 
@@ -3242,14 +3246,77 @@ Run this **after** the model has passed [Verification](SKILL.md#verification) an
 2. Resolve the printer preset (from Step 0) and process preset (by layer height). Leave filament unset unless the user asks to pin a specific material — by default the file uses the printer's default filament, changeable in Bambu Studio. If a name is ambiguous, list the profile dir and confirm with the user.
 3. Map the model's PRINT SETTINGS header to override flags (table above).
 4. Run `make-bambu-3mf.py`, writing the `.3mf` next to the `.scad`.
-5. Tell the user: the file opens in Bambu Studio with settings applied — review on the plate, then Slice → Print.
+5. **Round-trip the result** ([Verify the generated 3MF](#verify-the-generated-3mf)) before handing it over.
+6. Tell the user: the file opens in Bambu Studio with settings applied — review on the plate, then Slice → Print.
+
+## Plate placement
+
+Parts are **not** dropped dead centre. Always centring wears one patch of the build plate — the
+same few square centimetres take every first layer — so by default the generator nudges each
+part to a random spot within whatever room it has. Nothing to pass; it is on by default.
+
+The offset is bounded three ways:
+
+* **By the part's own size.** The window is `bed - 2*margin - part`, so a small part roams
+  (a 28 x 16mm click moved over a ~120mm span in testing) while a 170mm funnel barely shifts.
+  A part that fills the bed is left centred.
+* **By an 8mm edge margin**, so the footprint never creeps into the poorly-heated bed perimeter.
+* **By `bed_exclude_area`** — on an X1/P1 the 18 x 28mm front-left corner reserved for the
+  filament cutter. Candidate positions that touch it are rejected and resampled. This is read
+  from the machine profile; earlier versions of the tool ignored it entirely.
+
+| Flag | Effect |
+|---|---|
+| *(default)* | scatter on, up to 60mm from centre, different every run |
+| `--scatter off` | old behaviour — dead centre |
+| `--scatter-max 30` | tighter spread |
+| `--scatter-seed 42` | reproducible placement (same seed → same spot) |
+
+The chosen position is printed on every run, e.g.
+`placed : 28 x 16mm at (185.6, 69.6) = centre +57.6, -58.4 mm`.
+
+**Footprints above ~220mm cannot avoid the exclusion corner** — to clear 18mm in X a 232mm part
+would have to span 18–250mm, past the 248mm margin. The tool warns when the final placement
+touches the exclusion area and points at the stopper-clip mod; that warning is the same
+constraint as the "~220mm auto-centred" limit in [printer-configuration.md](printer-configuration.md).
+
+Verified over 24,000 randomised placements across eight part sizes from 10 x 10 to 220 x 60mm:
+zero off-bed, zero exclusion-zone violations, and the `<item>` transform in the written 3MF
+matches the reported position with the part's base resting on Z=0.
+
+## Verify the generated 3MF
+
+A `.3mf` is a ZIP of XML that no compiler ever sees, so nothing catches a malformed one until Bambu Studio refuses to open it — in front of the user. Round-trip the file instead: OpenSCAD's `import()` reads 3MF through **lib3mf**, the same reference library slicers use, so a successful import is real evidence the container is well formed and the geometry survived.
+
+```sh
+echo 'import("out.3mf");' > rt.scad
+"$OSCAD" --export-format asciistl -o rt.stl rt.scad 2> rt.log
+python bbox.py rt.stl            # the parser from verification.md
+```
+
+It passes when OpenSCAD exits 0 **and** `rt.stl` measures the same **bounding-box size and volume** as the mesh that went in. Compare *size*, not position: the generator places parts on the plate (and scatters them by default), so the XY origin will differ by design while the size matches exactly.
+
+A failure prints one line and nothing else:
+
+```
+WARNING: Could not read file 'out.3mf', import() at line 1
+```
+
+lib3mf never says which part is bad, so diagnose by diffing the package against a 3MF known to open (`unzip -d a/ good.3mf`, `unzip -d b/ bad.3mf`, then compare file lists and each XML — the tails especially).
+
+- **A `.model` part with no `<build>` element** — *confirmed by controlled A/B*: stripping `<build/>` from `3D/Objects/object_N.model` and changing nothing else flips a working file to this exact error, and restoring it fixes it. Every model file in the package needs one, even where it is empty (`<build/>` after `</resources>`), and omitting it invalidates the whole package rather than just that part.
+- Per the 3MF spec, these are also invalid and should be expected to fail the same silent way (not individually reproduced here): a `<component>` whose `objectid`/`p:path` doesn't resolve, an object id reused within one model file, or a missing `p:UUID` while `requiredextensions="p"` is declared.
+
+Checking XML well-formedness first is cheap but **not sufficient** — every fault above is well-formed XML. Note that `Metadata/project_settings.config` is **JSON**, so an XML parser reporting it as malformed is expected and not a defect.
+
+This check earns its keep mainly when the container is hand-assembled or post-processed (adding parts, editing `project_settings.config` per [Full-bed prints](#full-bed-prints-x1p1-exclusion-zone)); `make-bambu-3mf.py`'s own output round-trips.
 
 ## Verified behaviour and caveats
 
 Confirmed by opening a generated file in Bambu Studio (X1 Carbon · 0.20mm Standard · default PLA):
 
 - The named system presets bind on open, the flagged overrides show as a **"(modified)"** process preset, the printer's **default filament** is selected, and **no "customized preset — confirm the G-code" warning** appears (the lean file embeds no G-code to trigger it).
-- The output is also a structurally valid 3MF — it re-imports cleanly through OpenSCAD's lib3mf and matches the container structure Bambu Studio itself writes.
+- The output is also a structurally valid 3MF — it re-imports cleanly through OpenSCAD's lib3mf (see [Verify the generated 3MF](#verify-the-generated-3mf)) and matches the container structure Bambu Studio itself writes.
 
 **Caveat:** the preset names you pass must exist in the user's install. A misspelt or absent id makes Bambu fall back to a generic profile (the overrides still load, but the dropdown won't bind cleanly) — when unsure, list the profile dir (above) to confirm exact names.
 
