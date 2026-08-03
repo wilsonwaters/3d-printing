@@ -243,7 +243,7 @@ digits far more legible.
 | `pivot_strap` | 2 | 1.8 cm³ | flat |
 | `bezel` | 1 | 4.9 cm³ | flat |
 | `post_mount` | 1 | 64 cm³ | optional — side clamp, only if not using the pole socket |
-| `fit_test` | 1 | 9 cm³ | **print first** — rod-fit coupon, not part of the gauge |
+| `fit_test` | 1 | 19 cm³ | **print first** — rod-fit ladder, not part of the gauge |
 
 **Total ≈ 980 g solid-equivalent**, so realistically 820–900 g of PETG including the infilled
 parts. Most of that is the funnel and body shells. If that is too much: `body_wall` 2.4 → 2.0
@@ -258,30 +258,60 @@ first** — strings inside a ratchet are a functional defect, not a cosmetic one
 
 ![Fit test](img/fit-test.png)
 
-`3mf/fit_test.3mf` — a 66 × 24 mm coupon with the three rod bores in it, two minutes to print.
-**Do this before committing filament to anything else.** Try your actual 3 mm rod in each hole:
+`3mf/fit_test.3mf` — a 116 × 30 mm coupon, two minutes to print. **Do this before committing
+filament to anything else.** It is self-calibrating, so it works on any printer and material
+without you having to judge an absolute hole size.
 
-| Hole | Fit should be | Used by |
+**Numbered row (the ladder).** Each hole is the press bore that `hole_comp = label/100` would
+produce. Find the **smallest hole your rod enters with a firm push and cannot rotate in** — that
+label *is* your `hole_comp`. Set it in the .scad and every bore in the model follows.
+
+**P / B / R row.** The three named fits at whatever `hole_comp` is currently set, to confirm:
+
+| Hole | Correct feel | If wrong |
 |---|---|---|
-| **P** | firm push, no rotation | bucket pivot, drive cam, cassette side walls |
-| **B** | turns freely, no perceptible rock | body pivot webs, pivot straps |
-| **R** | turns freely with a little slop | drums, all levers, spacers |
+| **P** press | firm push; once in the rod **will not rotate or rock at all** | any wriggle → `hole_comp` too high |
+| **B** bearing | turns freely under light finger pressure, no perceptible side-to-side rock | rocks → too high |
+| **R** running | turns freely with obvious slop | binds → too low |
 
-If **P** won't take the rod, raise `hole_comp`. If **B** rocks, lower it. This matters because
-**FDM prints holes undersize** — about 0.35 mm on a 0.4 mm nozzle, and PETG sits at the high end
-because the inner wall oozes inward. Every bore in the model has that compensation added:
+Two numbers, not one, because they answer different questions:
 
 ```
-bore_press = rod_d + hole_comp          = 3.35  ->  ~3.00 printed
-bore_bear  = rod_d + hole_comp + 0.15   = 3.50  ->  ~3.15 printed
-bore_run   = rod_d + hole_comp + 0.30   = 3.65  ->  ~3.30 printed
+hole_comp   0.30    what the MACHINE does to a hole  -- MEASURED, not from a table
+fit_press  -0.08    what the JOINT needs: INTERFERENCE, the rod must be gripped
+fit_bear   +0.15
+fit_run    +0.30
+bore = rod_d + hole_comp + fit_*
 ```
 
-Getting this wrong is not cosmetic. An earlier revision of this model specified the bores at their
-*nominal* fit sizes with no compensation — so the "3.0 mm press fit" bucket pivot printed at
-2.65 mm and no amount of pushing would get the rod in, and the nominally-free 3.4 mm drum bore
-printed at 3.05 mm and would have seized the register solid. Two minutes with this coupon catches
-that class of error before it costs you four drums and eleven spacers.
+**0.30 is measured on an X1C in PETG, using the ladder** — rungs 22 and 26 would not accept the
+rod, 30 was a firm push that would not twist, 34 could be twisted. A clean monotonic progression
+that pins one value, and which also retro-explains an earlier coupon built at a different setting.
+Re-measure for another printer or material; the ladder makes that a two-minute job.
+
+**Trust the ladder, not descriptions of feel.** Getting here took three coupons because an
+intermediate value (0.22) was inferred from verbal reports of how much the rod "rocked" rather
+than from the go/no-go — and it explained neither coupon's results. A go/no-go against the actual
+mating part is a measurement; an adjective is not. That is why the ladder exists.
+
+**A test that did NOT work, recorded so it is not repeated.** An earlier version of this procedure
+also asked for the side-to-side swing of a 40 mm protruding rod tip, on the theory that a 6 mm
+journal amplifies clearance ~13×. The readings came back 4–6 mm where pure clearance predicts
+0.9–2.9 mm, and the implied effective journal length was not even consistent between two holes
+(1.4 mm vs 3.0 mm) — so the test conflates clearance with hole straightness and reading error, and
+cannot set a number. It also does not represent the assembly: in the coupon a single short journal
+holds a cantilevered rod, whereas in the gauge the rod is carried by **two** pivot webs 80 mm
+apart so it cannot tilt at all, and the levers are sandwiched between spacers whose flat ends stop
+them cocking. So `fit_bear` and `fit_run` were deliberately **not** tightened on the strength of
+those numbers.
+
+Getting either wrong is not cosmetic, and this model got both wrong in turn. First the
+compensation was omitted entirely, so a nominal 3.0mm "press fit" bore printed at 2.65mm and no
+rod would enter, while the nominally-free 3.4mm drum bore printed at 3.05mm and would have seized
+the register. Then, with compensation added, the press *allowance* was left at 0.00 — which is a
+slip fit, not a press fit, and let the drive cam wriggle on the rod. The cam has to transmit the
+drive torque; any play there and the two-tips-per-count timing goes. Both were caught by printing
+this coupon rather than by reading the model.
 
 ### Print jobs
 
@@ -458,7 +488,8 @@ watch that the count advances on every *second* tip, consistently.
 | Reset leaves a drum off zero | gauge not level, or drum counterweight too light | level it; increase `cw_sector` |
 | Bucket sits on one side and won't tip | not top-heavy about the pivot | the model asserts `bal_arm > 5`; if you changed geometry, re-check the echo |
 | Gauge slowly goes off level | using the side clamp, not the pole socket | PETG creep under the 0.75 N·m cantilever — switch to the pole-top socket |
-| Rod won't go into a bore | `hole_comp` too low for your machine | print `fit_test`, raise `hole_comp`, reprint that part |
+| Rod won't go into a bore | `hole_comp` too low for your machine | print `fit_test`, read the ladder, raise `hole_comp` |
+| Drive cam slips on the rod | press fit too loose, or no flat filed | lower `hole_comp`; file a small flat on the rod for the cam's anti-creep flat, and add a drop of CA |
 | Drums or levers stiff on the rod | same, or stringing in the bore | check `fit_test` hole R; deburr; dry the filament |
 | Trim boss snapped off the blade | over-torqued, or knocked in handling | it is Ø9 on a 6mm pad now (11.6× the original section) — hand-tight only, and it needs no more than finger torque |
 | Digits hard to read | too dark a filament | print light, or wipe a dark marker into the engraving and scrape the surface |

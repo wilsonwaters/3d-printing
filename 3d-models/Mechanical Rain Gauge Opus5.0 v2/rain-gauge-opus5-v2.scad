@@ -279,11 +279,24 @@ ef_chamfer = 0.40;       // elephant-foot compensation
 // pushing will get a 3mm rod into, and a nominally-free 3.4mm drum bore prints at 3.05mm and
 // seizes. Print part="fit_test" FIRST and trim this number to your own machine before
 // committing to the rest.
-hole_comp  = 0.35;
-// The three rod fits. Named, so a bore is chosen by what the joint must DO, not by arithmetic.
-bore_press = rod_d + hole_comp;          // ~3.00 printed: rod is fixed in / driven by this part
-bore_bear  = rod_d + hole_comp + 0.15;   // ~3.15 printed: fixed frame, rod rotates within it
-bore_run   = rod_d + hole_comp + 0.30;   // ~3.30 printed: part swings or spins freely on the rod
+// MEASURED on an X1C in PETG with the fit_test LADDER (go/no-go against the actual rod), which
+// is the only test here that proved trustworthy. Rungs 14/18/22/26 would not accept the rod, 30
+// was a firm push that would not twist, 34 could be twisted -- a clean monotonic progression that
+// pins comp = 0.30, and which also explains the earlier coupon's results. An intermediate guess
+// of 0.22, inferred from verbal descriptions of "rock" rather than from the ladder, explained
+// neither coupon: prose is not a measurement. Re-measure for another printer or material.
+hole_comp  = 0.30;
+// Allowance ON TOP of the compensation, one per fit class. Split out from hole_comp because
+// they answer different questions: hole_comp is what the MACHINE does to a hole, the allowance
+// is what the JOINT needs. Confusing the two is how the press fit ended up specified as a
+// 0.00-clearance slide -- which is not a press fit at all, and let the drive cam wriggle on
+// the rod. A press fit needs INTERFERENCE, i.e. a negative allowance.
+fit_press  = -0.08;   // rod is gripped: bucket pivot, drive cam, cassette side walls
+fit_bear   =  0.15;   // fixed frame, rod rotates within it: body webs, pivot straps
+fit_run    =  0.30;   // part swings or spins freely on the rod: drums, levers, spacers
+bore_press = rod_d + hole_comp + fit_press;   // ~2.92 printed: firm push, will not rotate
+bore_bear  = rod_d + hole_comp + fit_bear;    // ~3.15 printed
+bore_run   = rod_d + hole_comp + fit_run;     // ~3.30 printed
 
 // -- View helpers (no effect on printed parts) --
 bucket_tilt   = rest_tilt;   // try -rest_tilt or 0 to inspect the mechanism mid-stroke
@@ -1292,24 +1305,40 @@ module bezel() {
     }
 }
 
-// Fit-test coupon. Print this before anything else and try the actual rod in all three holes:
-// P should need a firm push, B should turn freely with no rock, R should turn with a little slop.
-// If P is too tight, raise hole_comp; if B rocks, lower it. Two minutes of printing saves
-// discovering a seized register after four drums and eleven spacers.
+// Fit-test coupon. Print this before anything else.
+// LADDER (numbered row): each hole is the press bore that hole_comp = that/100 would produce.
+//   Find the SMALLEST hole the rod enters with a firm push and will not rotate in -- its label
+//   IS your hole_comp. This is self-calibrating, so it works on any printer and any material
+//   without you having to judge an absolute size.
+// NAMED (P/B/R): the three fits at the hole_comp currently set, to confirm the answer.
+//   P = firm push, no rotation.  B = turns freely, no rock.  R = turns with obvious slop.
+// Two minutes of printing saves discovering a seized register after four drums and 11 spacers.
+fit_ladder = [0.22, 0.26, 0.30, 0.34, 0.38, 0.42];   // 0.04 steps, bracketing the measured 0.30
 module fit_test() {
-    w = 66; d = 24; t = 6;
+    n = len(fit_ladder);
+    pitch = 12; w = (n + 3) * pitch + 8; d = 30; t = 6;
     labels = ["P", "B", "R"];
     bores  = [bore_press, bore_bear, bore_run];
     difference() {
         translate([-w / 2, -d / 2, 0]) cube([w, d, t]);
-        for (i = [0 : 2]) {
-            translate([-w / 2 + (i + 0.5) * w / 3, 3.5, -fudge])
-                cylinder(d = bores[i], h = t + 2 * fudge);
-            translate([-w / 2 + (i + 0.5) * w / 3, -7, t - 0.8])
-                linear_extrude(height = 1.0)
-                    text(labels[i], size = 8, font = digit_font,
+        // Row 1: the LADDER. Each hole is the press bore that a given hole_comp would give.
+        // The smallest one the rod enters with a firm push IS your hole_comp.
+        for (i = [0 : n - 1])
+            translate([-w / 2 + 4 + (i + 0.5) * pitch, 5, 0]) {
+                translate([0, 0, -fudge])
+                    cylinder(d = rod_d + fit_ladder[i] + fit_press, h = t + 2 * fudge);
+                translate([0, -9, t - 0.8]) linear_extrude(height = 1.0)
+                    text(str(fit_ladder[i] * 100), size = 4.6, font = digit_font,
                          halign = "center", valign = "center");
-        }
+            }
+        // Row 2: the three named fits at the CURRENT hole_comp, to confirm the result.
+        for (i = [0 : 2])
+            translate([w / 2 - 4 - (2.5 - i) * pitch, 5, 0]) {
+                translate([0, 0, -fudge]) cylinder(d = bores[i], h = t + 2 * fudge);
+                translate([0, -9, t - 0.8]) linear_extrude(height = 1.0)
+                    text(labels[i], size = 6, font = digit_font,
+                         halign = "center", valign = "center");
+            }
     }
 }
 
