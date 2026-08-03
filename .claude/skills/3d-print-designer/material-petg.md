@@ -139,9 +139,13 @@ PETG's elongation and fatigue resistance make it one of the best filaments for l
 | Fit Type | Clearance |
 |----------|-----------|
 | Sliding fit | 0.3-0.4mm |
-| Press fit | -0.1 to 0.1mm |
+| Press fit | -0.05 to -0.10mm (interference; 0.00 slides) |
 | Snap fit | 0.2mm |
 | Thread | 0.25-0.35mm |
+
+**Steel rod in a printed bore** — measured, X1C 0.4mm nozzle:
+`bore = rod + 0.30 + allowance`, allowance **-0.08** press / **+0.15** bearing / **+0.30**
+free-running. For 3mm rod: **3.22 / 3.45 / 3.60**.
 
 ## Slicer Parameters Affecting Design
 

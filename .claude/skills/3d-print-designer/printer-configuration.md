@@ -103,7 +103,7 @@ build_z = 256;
 | Min wall thickness | 2 * extrusion width | 0.9mm | 1.35mm | 0.45mm |
 | Ideal wall multiples | N * extrusion width | 0.9, 1.35, 1.8mm | 1.35, 2.0, 2.7mm | 0.45, 0.9, 1.35mm |
 | Min standalone feature | ~4 * extrusion width | ~1.8mm | ~2.7mm | ~0.9mm |
-| Hole diameter compensation | +0.3 to +0.4mm | +0.3mm | +0.4mm | +0.2mm |
+| Hole diameter compensation | +0.3 to +0.4mm | **+0.30mm** (measured, PETG/X1C) | +0.4mm | +0.2mm |
 | Sliding fit clearance (per side) | ~0.5 * nozzle | 0.2mm | 0.3mm | 0.1mm |
 | Min embossed text line width | ~6 * nozzle | 2.5mm | 3.0mm | 1.5mm |
 | Min engraved text line width | ~2.5 * nozzle | 1.0mm | 1.5mm | 0.5mm |
