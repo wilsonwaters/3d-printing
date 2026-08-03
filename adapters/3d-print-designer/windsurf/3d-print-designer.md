@@ -148,7 +148,11 @@ These are the load-bearing FDM invariants — the single source of truth referen
 5. **Fudge factor** — always use `fudge = 0.01` overlap in `difference()` and `intersection()`. Coincident faces produce broken geometry.
 6. **Bottom chamfers, top fillets** — 45° chamfers on bottom surfaces are self-supporting; fillets on top for aesthetics. No sharp internal corners (min 1mm fillet for stress).
 7. **Elephant foot compensation** — add `ef_chamfer` (0.3-0.5mm at 45°) on all bottom edges.
-8. **Holes oversize** — design holes 0.2-0.3mm larger than nominal (FDM undersizes holes).
+8. **Holes oversize** — a bore is `nominal + hole compensation + fit allowance`; these are two
+   separate numbers. Measured, PETG on a Bambu X1C / 0.4mm nozzle: compensation **+0.30mm**;
+   allowance **-0.08 press** (must be interference — 0.00 is a slide, not a press), **+0.15**
+   bearing (shaft rotates in it), **+0.30** free-running. So for a 3mm rod: press bore 3.22,
+   bearing 3.45, running 3.60.
 9. **No magic numbers** — every numeric value is a parameter or derived from parameters.
 10. **Prefer ribs over thick walls** — a 1.6mm rib is stronger per gram than a 5mm solid wall.
 11. **Support-free by default** — choose orientations, chamfers, teardrops, and splits that eliminate supports. Accept supports only when geometry truly demands them, then minimize contact area and document why in the PRINT SETTINGS header.
@@ -417,7 +421,7 @@ build_z = 256;
 | Min wall thickness | 2 * extrusion width | 0.9mm | 1.35mm | 0.45mm |
 | Ideal wall multiples | N * extrusion width | 0.9, 1.35, 1.8mm | 1.35, 2.0, 2.7mm | 0.45, 0.9, 1.35mm |
 | Min standalone feature | ~4 * extrusion width | ~1.8mm | ~2.7mm | ~0.9mm |
-| Hole diameter compensation | +0.3 to +0.4mm | +0.3mm | +0.4mm | +0.2mm |
+| Hole diameter compensation | +0.3 to +0.4mm | **+0.30mm** (measured, PETG/X1C) | +0.4mm | +0.2mm |
 | Sliding fit clearance (per side) | ~0.5 * nozzle | 0.2mm | 0.3mm | 0.1mm |
 | Min embossed text line width | ~6 * nozzle | 2.5mm | 3.0mm | 1.5mm |
 | Min engraved text line width | ~2.5 * nozzle | 1.0mm | 1.5mm | 0.5mm |
@@ -1193,9 +1197,13 @@ PETG's elongation and fatigue resistance make it one of the best filaments for l
 | Fit Type | Clearance |
 |----------|-----------|
 | Sliding fit | 0.3-0.4mm |
-| Press fit | -0.1 to 0.1mm |
+| Press fit | -0.05 to -0.10mm (interference; 0.00 slides) |
 | Snap fit | 0.2mm |
 | Thread | 0.25-0.35mm |
+
+**Steel rod in a printed bore** — measured, X1C 0.4mm nozzle:
+`bore = rod + 0.30 + allowance`, allowance **-0.08** press / **+0.15** bearing / **+0.30**
+free-running. For 3mm rod: **3.22 / 3.45 / 3.60**.
 
 ## Slicer Parameters Affecting Design
 
