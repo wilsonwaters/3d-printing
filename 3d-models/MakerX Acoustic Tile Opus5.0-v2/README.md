@@ -172,12 +172,47 @@ filled by a separately printed **key**. Each tile's main diagonal is one arm of 
 
 ![500 assembly](render-500-assembly.png)
 
+There are two revisions. **v2 carries the real MakerX mark and is the one to print;** v1's
+symmetric X is kept for comparison.
+
 | File | What it is |
 |---|---|
-| `makerx-diffuser-tile-500-v1.scad` | Source for the whole series. |
-| `makerx-500-tile-v1-4colour.3mf` | **Start here.** Settings baked in, four filament-assigned parts. |
-| `makerx-500-key-v1-2colour.3mf` | The centre key, navy body + gold crossing. |
-| `makerx-500-*-v1.stl` | Tile, key and spline as single meshes. |
+| `makerx-diffuser-tile-500-v2.scad` | **Current source.** True logo, rasterised from `MakerX.svg`. |
+| `makerx-500-tile-v2-pos{0..3}-*.3mf` | **Start here.** One per assembly position — the mark is not symmetric, so the four tiles differ. Settings baked in, filament-assigned parts. |
+| `makerx-500-tile-v2.stl` | The tile geometry as a single mesh (identical for all four positions). |
+| `makerx-500-key-v1-2colour.3mf`, `makerx-500-*-v1.stl` | Key and spline — geometry is unchanged from v1, so these are shared. In v2 the key is plain navy. |
+| `makerx-diffuser-tile-500-v1.scad`, `makerx-500-tile-v1-*` | The earlier symmetric-X revision. |
+| `MakerX.svg` | The source artwork the colour map is derived from. |
+
+### v2: the real mark
+
+![500 v2](render-500-v2-logo.png)
+
+v1 drew a symmetric diagonal X of its own invention. v2 rasterises the **actual logo** onto
+the 28×28 cell grid: two interlocking chevrons, the left one solid `#16acf2`, the right one
+a `#cc3a9d`→`#ffc023` gradient. The gradient is flattened per arm — **magenta on the upper
+arm, gold on the lower** — which is what those arms already read as.
+
+Geometry is untouched: same notch, same well-mixed relief, same acoustics. Only the colour
+map differs. Three consequences:
+
+- **It is cheaper to print.** Each tile needs navy plus *one* accent (position 0 needs two),
+  so 24–32 tool changes instead of v1's 40, and ~15–20 g of purge instead of ~30 g. The
+  logo's colour regions are spatially separated, and so are the tiles.
+- **The four tiles are no longer interchangeable.** The mark isn't symmetric, so each
+  assembly position has its own colour map — hence four 3MFs off one shared STL.
+- **The key is plain navy.** The real mark leaves its centre empty, where the two chevrons'
+  notches face each other. That's faithful, not an oversight.
+
+The logo is 1300×1100, so fitted to a square panel it letterboxes: roughly three cell rows
+top and bottom carry no colour.
+
+| Position | Tile | Colours | Coloured cells |
+|---|---|---|---|
+| 0 | bottom-left | navy + blue + gold | 29 |
+| 1 | bottom-right | navy + gold | 29 |
+| 2 | top-left | navy + blue | 76 (the solid chevron) |
+| 3 | top-right | navy + magenta | 27 |
 
 **Why the notch.** The X1/P1 reserves an 18 × 28 mm front-left corner of the bed. The usual
 escape is Bambu's stopper-clip mod, but that disables the filament cutter and so the AMS —
