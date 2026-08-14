@@ -7,15 +7,28 @@ a printer specific file (Bambu `.3mf` only for now) ready to open and hit print.
 
 ## Try it
 
-> **"Design a tipping-bucket rain gauge with a mechanical digit counter"**
+```
+I would like to use the /3d-print-designer skill to make a functional rain gauge:
+- The gauge should be an "old style" mechanical dial, like a water or power meter dial with 4 dials with numbers 0-9 so we can record from 1 to 9999
+- It should have a reset mechanism/button
+- It should measure in mm of rain
+- It should have a tipping bucket mechanism to mechanically turn the dials
+- The collector should be a round inverted bucket type.
+- The collector should be whatever size is most commonly used for rain guages if there is a standard, but I would suggest about 150mm round diametrer
+- The tipper should be calibrated to the bucket diameter/area so 10mm of falling rain equates to 10mm on the dials
+```
 
-![Rain gauge designed from a one-line prompt](3d-models/Mechanical%20Rain%20Gauge%20Fable/previews/assembly_iso.png)
+![Mechanical rain gauge designed from the prompt above](3d-models/Mechanical%20Rain%20Gauge%20Opus5.0%20v2/img/assembly.png)
 
-That one line produced the parametric model, a support-free split into 7 printable
-parts, and a `.3mf` per part with layer height, walls, infill and supports baked
-in — see [the full project](3d-models/Mechanical%20Rain%20Gauge%20Fable/).
+That prompt produced the parametric model, renders, a build guide, and `.3mf`
+files with layer height, walls, infill and supports baked in — five print jobs,
+plus per-part files if you'd rather print one at a time. It picked the WMO
+standard 200 cm² collector over the suggested 150 mm, calibrated the tipping
+bucket at 10 mL a chamber so one dial count is exactly 1 mm of rain, and got
+every part printing with no supports — see
+[the full project](3d-models/Mechanical%20Rain%20Gauge%20Opus5.0%20v2/).
 
-More one-liners that work:
+Simple one-liners work just as well:
 
 - "Design a wall-mounted bracket for a 1kg filament spool"
 - "Create a snap-fit enclosure for a Raspberry Pi 4"
