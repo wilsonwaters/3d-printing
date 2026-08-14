@@ -20,7 +20,7 @@ I would like to use the /3d-print-designer skill to make a functional rain gauge
 
 ![Mechanical rain gauge designed from the prompt above](3d-models/Mechanical%20Rain%20Gauge%20Opus5.0%20v2/img/assembly.png)
 
-That prompt produced the parametric model, rendered images, a build guide, and a set of Bambu `.3mf`
+That prompt produced the parametric model, rendered images, a build guide, and a set of Bambu .3mf
 files with layer height, walls, infill and supports baked in — five print jobs,
 plus per-part files if you'd rather print one at a time. It picked the WMO
 standard 200 cm² collector over the suggested 150 mm, calibrated the tipping
