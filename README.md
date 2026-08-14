@@ -3,7 +3,7 @@
 **One shot from prompt to Print.**
 
 Describe the part you want in a sentence. Get back an OpenSCAD model, images and
-a printer specific file (Bambu `.3mf` only for now) ready to open and hit print.
+a printer specific file ready to open and hit print.
 
 ## Try it
 
