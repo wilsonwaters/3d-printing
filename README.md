@@ -2,8 +2,8 @@
 
 **One shot from Prompt-to-Print.**
 
-Describe the part you want in a sentence. Get back an OpenSCAD model, images, stl file and
-a printer specific file ready to open and hit print.
+Describe the part you want in a sentence. Get back an OpenSCAD model, rendered images, stl file and
+a 3mf file ready to open and hit print.
 
 ## Try it
 
