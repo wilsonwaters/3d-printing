@@ -28,7 +28,7 @@ bucket at 10 mL a chamber so one dial count is exactly 1 mm of rain, and got
 every part printing with no supports — see
 [the full project](3d-models/Mechanical%20Rain%20Gauge%20Opus5.0%20v2/).
 
-Simple one-liners work just as well:
+Other examples:
 
 - "Design a wall-mounted bracket for a 1kg filament spool"
 - "Create a snap-fit enclosure for a Raspberry Pi 4"
