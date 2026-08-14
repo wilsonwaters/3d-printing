@@ -1,11 +1,9 @@
 # 3D Printing
 
-**One shot from prompt to pressing Print.**
+**One shot from prompt to Print.**
 
-Describe the part you want in a sentence. Get back a parametric OpenSCAD model,
-print-ready meshes, and — on a Bambu Lab printer — a `.3mf` project file that
-opens in Bambu Studio with the print settings already dialled in. Pick your
-filament, hit Print.
+Describe the part you want in a sentence. Get back an OpenSCAD model, images and
+a printer specific file (Bambu `.3mf` only for now) ready to open and hit print.
 
 ## Try it
 
@@ -38,10 +36,12 @@ More one-liners that work:
    actually run, and applies the design rules for that material.
 4. **It designs for your printer** — support-free by default, oriented so loads
    run along the layer plane, with the tolerances your machine can hold.
-5. **You get printable files.** On a Bambu Lab printer that means a Bambu Studio
-   project `.3mf` with layer height, walls, infill and supports already applied
-   (filament stays your choice) — open it and press Print. On other printers you
-   get an STL plus a print-settings header to paste into your slicer.
+5. **You get printable files** — the `.scad` source, rendered images, and a mesh
+   ready to slice. Bambu Lab machines get the full treatment for now: a Bambu
+   Studio project `.3mf` with layer height, walls, infill and supports already
+   applied, so you open it and hit Print. Other printers get an STL plus a
+   print-settings header to paste into your slicer; more printer-specific
+   formats to come.
 
 ## AI Skills
 
