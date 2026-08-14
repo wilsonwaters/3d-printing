@@ -1,6 +1,47 @@
 # 3D Printing
 
-AI-powered design skills and parametric OpenSCAD models for FDM 3D printing.
+**One shot from prompt to pressing Print.**
+
+Describe the part you want in a sentence. Get back a parametric OpenSCAD model,
+print-ready meshes, and — on a Bambu Lab printer — a `.3mf` project file that
+opens in Bambu Studio with the print settings already dialled in. Pick your
+filament, hit Print.
+
+## Try it
+
+> **"Design a tipping-bucket rain gauge with a mechanical digit counter"**
+
+![Rain gauge designed from a one-line prompt](3d-models/Mechanical%20Rain%20Gauge%20Fable/previews/assembly_iso.png)
+
+That one line produced the parametric model, a support-free split into 7 printable
+parts, and a `.3mf` per part with layer height, walls, infill and supports baked
+in — see [the full project](3d-models/Mechanical%20Rain%20Gauge%20Fable/).
+
+More one-liners that work:
+
+- "Design a wall-mounted bracket for a 1kg filament spool"
+- "Create a snap-fit enclosure for a Raspberry Pi 4"
+- "Design a parametric cable management clip"
+- "Make a gear train with a 3:1 reduction ratio"
+- "Design a plug that mounts an M8 caster wheel into an 18mm steel tube"
+- "Make an acoustic diffuser tile for my wall"
+
+## How it works
+
+1. **You describe the part** — one sentence is enough.
+2. **It asks which printer you have.** Specs for 20+ models are built in (Bambu
+   Lab X1C / P1S / P1P / A1 / A1 Mini, Prusa MK4S / MK3S+ / XL / Core One,
+   Creality K1 / Ender 3, Voron 2.4 / Trident / 0.2, Elegoo, Ankermake, Ratrig).
+   Build volume, nozzle, layer range and material support constrain the design
+   from there. Unknown printer? It asks for the specs it needs.
+3. **It picks a material** — PLA, PETG or ABS, filtered by what your printer can
+   actually run, and applies the design rules for that material.
+4. **It designs for your printer** — support-free by default, oriented so loads
+   run along the layer plane, with the tolerances your machine can hold.
+5. **You get printable files.** On a Bambu Lab printer that means a Bambu Studio
+   project `.3mf` with layer height, walls, infill and supports already applied
+   (filament stays your choice) — open it and press Print. On other printers you
+   get an STL plus a print-settings header to paste into your slicer.
 
 ## AI Skills
 
@@ -18,6 +59,7 @@ An AI skill that designs and generates parametric OpenSCAD (.scad) models optimi
 - **Structural optimization** — wall thickness, infill, ribs, layer adhesion
 - **Mechanical features** — gears, threads, snap-fits, living hinges
 - **Design review** — 45-item checklist covering geometry, printability, and assembly
+- **Print-ready export** — STL/3MF, plus settings-baked-in Bambu Studio project files
 
 ### Install
 
@@ -74,16 +116,48 @@ curl -o .cline/rules/3d-print-designer.md \
   https://raw.githubusercontent.com/wilsonwaters/3d-printing/main/adapters/3d-print-designer/cline/3d-print-designer.md
 ```
 
-### Example Prompts
+### Printer support
 
-- "Design a wall-mounted bracket for a 1kg spool holder"
-- "Create a snap-fit enclosure for a Raspberry Pi 4"
-- "Design a parametric cable management clip"
-- "Make a gear train with a 3:1 reduction ratio"
+Printer specs constrain every design decision, so the skill asks which machine
+you're on before it writes any geometry. It ships with profiles for:
+
+| Brand | Models |
+|-------|--------|
+| **Bambu Lab** | X1 Carbon / X1C, P1S, P1P, A1, A1 Mini |
+| **Prusa** | MK4S / MK4, MK3S+ / MK3S, XL (single & multi-tool), Core One |
+| **Creality** | K1C, K1 / K1 Max, Ender 3 V3 / V3 SE / V3 KE, Ender 3 / Pro / V2 |
+| **Voron** | 2.4, Trident, 0.2 |
+| **Elegoo** | Neptune 4 / 4 Pro |
+| **Ankermake** | M5 / M5C |
+| **Ratrig** | V-Core 4 |
+
+Each profile carries build volume, nozzle sizes, layer-height range, max hotend
+and bed temps, enclosure, extruder type and printable materials. Anything not
+listed falls back to a short spec questionnaire.
+
+### Bambu 3MF export — open and press Print
+
+For **Bambu Lab** printers the skill generates a Bambu Studio *project* `.3mf`
+rather than a bare mesh. A plain STL or geometry-only 3MF drops onto the plate
+with your slicer defaults; a project 3MF carries the configuration with it, so
+layer height, wall count, infill, infill pattern and supports come back exactly
+as the model was designed for.
+
+It's built by the bundled `make-bambu-3mf.py` (Python 3.8+, standard library
+only — no pip installs) and binds your own installed Bambu system presets by
+name, so you don't get the "customized preset" G-code warning. Filament stays
+your choice unless you ask for it to be baked in too.
+
+This is Bambu Studio / OrcaSlicer specific — PrusaSlicer, Cura and others don't
+read the settings-in-3MF format, so for those the skill hands off an STL plus a
+PRINT SETTINGS header to enter once.
+
+More example prompts are at the [top of this README](#try-it).
 
 ## 3D Models
 
-Parametric OpenSCAD models in the [3d-models/](3d-models/) directory.
+Parametric OpenSCAD models in the [3d-models/](3d-models/) directory — each one
+designed from a prompt with this skill.
 
 ## Building Skill Artifacts
 
