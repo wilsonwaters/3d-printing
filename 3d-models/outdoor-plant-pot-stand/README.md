@@ -10,7 +10,7 @@ out sideways at ground level and away, instead of the pot sitting in its own pud
 **One size suits every pot from a 170 mm to a 200 mm square base** — the whole top is a
 single flat plane, so there is no size-specific seat or lip to foul a different pot.
 
-- Footprint **196 × 196 × 25 mm**, one piece, ~123 g of PETG, no supports, no infill.
+- Footprint **196 × 196 × 25 mm**, one piece, ~133 g of PETG, no supports, no infill.
 - 5 × 5 open cells (37.4 mm clear each), with a whole cell dead centre under the pot's
   drain hole.
 - Drain channels notched into the bottom of every rib and through the outer wall on all
@@ -37,8 +37,16 @@ Because the lattice runs edge to edge:
   about the default stand is size-critical, so you don't need to measure precisely
   before printing (only the optional containment lip below cares about exact size).
 
-Two things worth knowing: it raises the pot's centre of gravity by 25 mm, so a tall pot
-gets marginally easier to tip — keep it snug against the wall as in the photos. And on
+**If your pot has a raised foot ring** rather than a flat slab base, it still works: the
+ribs run edge to edge, so a foot ring at the rim of a 170 mm pot crosses the ribs running
+the other way at 16 points around it, all in the same plane. If you'd rather have more
+contact points than that, `-D cell_target=28 -D min_cell_open=26` gives a 7 × 7 grid with
+26.2 mm cells (still far wider than the pot's drain hole). `cell_target` alone won't do
+it — `min_cell_open` caps the grid at 5 × 5 so a finer lattice can't quietly starve the
+cell under the drain hole.
+
+Two other things worth knowing: it raises the pot's centre of gravity by 25 mm, so a tall
+pot gets marginally easier to tip — keep it snug against the wall as in the photos. And on
 wavy pavers the stand is stiff enough that it won't conform; it'll bed down on the high
 spots the same way the pot does now.
 
@@ -62,12 +70,13 @@ with no supports and no bridging.
 |---|---|
 | Material | **PETG**, in a light colour (Tg 75–85 °C so it won't sag on hot pavers; tough rather than brittle; moderate UV life). ASA/ASA-CF is the upgrade if you have an enclosure. Don't use PLA outdoors — it creeps under load and goes chalky. |
 | Layer height | 0.2 mm |
-| Walls | 4 perimeters — the part *is* perimeters |
-| Infill | **0 %**, top solid layers **0**, bottom solid layers **0–1** (it's an open lattice by design; solid layers would just try to skin the cells) |
+| Walls | **5 perimeters** — the part *is* perimeters. 5 fills the 2.25 mm outer wall exactly; the 1.8 mm ribs take the 4 that fit |
+| Infill | **0 %**, top solid layers **0**, bottom solid layers **0** (it's an open lattice by design; solid layers would just try to skin the cells) |
 | Supports | **None** |
 | Brim | **Yes, 5–10 mm.** A 196 mm footprint of thin walls in PETG will lift at the corners without one |
 | Orientation | As modelled — flat on the plate, the ground face down |
-| Time / material | ~2–3 h, ~123 g |
+| Elephant foot | Leave the slicer's own compensation **on** — only the outer wall is chamfered in the model (a lattice can't be hulled without filling its cells, and nothing mates with this part) |
+| Time / material | ~2–3 h, ~133 g |
 
 Bambu X1C/P1 note: at 196 mm centred it clears the 18 × 28 mm front-left filament-cutter
 exclusion zone — just don't let the slicer shove it into that corner.
@@ -84,25 +93,53 @@ the build (with a message) if a change breaks the design rules.
 |------|--------|
 | Different pots | `pot_base_min` / `pot_base_max` — `stand_size` follows as `pot_base_max - 4` |
 | An exact footprint | set `stand_size` directly (≤ 216 mm for an X1C) |
-| Taller / more airflow | `stand_height` |
+| Taller / more airflow | `stand_height` (below 20 mm, lower `min_lift` too) |
 | Less filament, faster print | raise `cell_target` (bigger cells) or drop `stand_height` |
-| Stiffer | lower `cell_target`, or `rib_walls` 4 → 5 |
+| Stiffer / finer grid | lower `cell_target` **and** `min_cell_open` together, or `rib_walls` 4 → 5 |
 | Bigger drain channels | `drain_w` |
-| A lip that stops the pot sliding off | `rim_extra = 8` **and** `stand_size = 206` — see below |
+| More kick-resistant edge | `outer_walls` 5 → 6 |
+| A lip that stops the pot sliding off | `rim_extra = 8`, `stand_size = 212`, `cell_target = 42` — see below |
 
 ### Optional containment lip
 
 ![Containment lip variant](preview-corral.png)
 
 `rim_extra` raises **only the outer wall** above the flat seat, turning the stand into a
-shallow tray the pot drops into (206 × 206 × 33 mm shown). It needs
-`stand_size >= pot_base_max + 4` so the lip sits outside the biggest pot's base rather
-than under it — an assert enforces that, so you can't accidentally build a lip your pot
-won't fit inside.
+shallow tray the pot drops into (212 × 212 × 33 mm shown).
+
+What has to clear the pot is the lip's **inner opening** (`stand_size - 2 × wall_thick`),
+not the outer footprint — and because these pots taper, the pot is already a little wider
+at the top of the lip than at its base. The assert accounts for both, and tells you the
+minimum `stand_size` if you get it wrong:
+
+```
+containment lip too tight: inner opening 201.5mm, needs 206.96mm (pot base + taper
+over the lip height + clearance). Raise stand_size to at least 211.46mm.
+```
+
+So **measure your pot `rim_extra` mm above its base**, not just its base, and set
+`pot_taper` (default 0.06 mm of extra width per mm of height, per side) to match. For a
+200 mm pot with an 8 mm lip that lands at 212 mm:
 
 ```bash
-openscad -o pot-stand-corral.stl -D stand_size=206 -D rim_extra=8 pot-stand-v1.scad
+openscad -o pot-stand-corral.stl -D stand_size=212 -D rim_extra=8 -D cell_target=42 \
+  pot-stand-v1.scad
 ```
+
+## Notes from the design review
+
+- **Impact:** vertically every wall is in compression, which is FDM's strong direction and
+  has ~1000× margin. A sideways knock (boot, broom, rake) bends a wall at its base, which
+  is PETG's weaker direction — so the outer wall, the one member left standing proud
+  beside a smaller pot, is 5 perimeters where the shielded ribs are 4 (+56% section), and
+  it's a closed loop tied to the ribs every 39 mm rather than a free fin. Accepted
+  trade-off of an open lattice; `outer_walls = 6` if you want more.
+- **Cleaning:** leaves and silt will collect in the open cells over a season. Lift the pot
+  and hose it out; the drain channels are 14 mm wide with 20 exits, so it won't block.
+- **Worth checking on the first print:** that the 45° notch apexes come out clean (they're
+  right at the support-free threshold), and that the stand itself doesn't rock on your
+  pavers — it contacts the ground on many small pillar segments rather than a continuous
+  slab, so a bad paver could see it teeter where a solid slab wouldn't.
 
 ## Files
 
