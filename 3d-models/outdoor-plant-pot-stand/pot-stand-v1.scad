@@ -23,9 +23,11 @@
 // Design decisions:
 //   - Vertical-wall lattice, no top or bottom skin. Prints as pure perimeters (no
 //     infill, no solid layers): every wall is loaded in compression across the layers,
-//     which is FDM's strong direction, and the ~45cm^2 of total wall cross-section puts
-//     the stress from a 25kg wet pot at ~0.05MPa — ~1000x below PETG yield, so no
-//     creep in summer sun. It is also the lightest way to get this stiff (~133g).
+//     which is FDM's strong direction, and it is the lightest way to get this stiff
+//     (~153g). Load path for the design_load_kg = 30kg pot: 51cm^2 of wall section at
+//     the seat, 32cm^2 where the drain channels narrow it at ground level, so 0.09MPa
+//     — ~500x below PETG's cold yield and ~20x below the deliberately hot-and-tired
+//     max_bearing_mpa allowable, which the build asserts. No creep in summer sun.
 //   - Open cells top-to-bottom, so water never has to find a hole: it drops through
 //     whichever cell is under the pot's drain hole. An ODD cell count (n_cells) is
 //     forced so a whole open cell sits dead centre under that drain hole.
@@ -36,12 +38,18 @@
 //     self-supporting, so no bridge and no supports (PETG bridges poorly).
 //   - Rounded corners (corner_r) + bottom chamfer: a 196mm PETG footprint wants to
 //     lift at sharp corners; rounded corners and a small chamfer plus a brim fix that.
-//   - The outer wall is 5 perimeters where the ribs are 4. Vertically every wall is
-//     in compression (strong across the layers), but a sideways knock - boot, broom,
-//     rake while weeding - bends a wall at its base, which is PETG's weaker direction.
-//     The ribs are shielded by the pot; the outer wall is the member left standing
-//     proud beside a smaller pot, so it gets the extra 0.45mm (+56% section modulus).
-//     It is also a closed loop tied to the ribs every cell_pitch, not a free fin.
+//   - Every wall is 5 perimeters (2.25mm), so the slicer fills all of them exactly and
+//     nothing relies on gap fill. Two reasons it is not 4:
+//       * A sideways knock - boot, broom, rake while weeding - bends a wall at its base,
+//         which is PETG's weaker direction, unlike the vertical load. The outer wall is
+//         the member left standing proud beside a smaller pot, and 2.25mm gives it +56%
+//         section modulus. It is also a closed loop tied to the ribs every cell_pitch,
+//         rather than a free fin.
+//       * At 30kg the global margins are enormous either way, but the pot rests on the
+//         rib TOPS, and a glazed ceramic base is rarely dead flat: the load can land on
+//         a handful of rib crossings rather than every rib. Wider rib tops cut that
+//         local contact stress by 25% for ~20g, which is cheap insurance on a paver that
+//         reaches PETG's heat-deflection temperature in summer.
 //   - Optional containment lip (rim_extra > 0) raises just the outer wall above the
 //     seat plane to corral the pot. Sizing it is about the lip's INNER opening
 //     (stand_size - 2*wall_thick), not the outer footprint, and these pots are
@@ -59,6 +67,7 @@
 //   "drain channels/notches"  -> drain_w, drain_h, drain_channels()
 //   "containment lip/corral"  -> rim_extra, lip_clear, pot_taper, lip_opening
 //   "pot footprint"           -> pot_base_min, pot_base_max, show_pot (preview only)
+//   "how heavy the pot is"    -> design_load_kg, max_bearing_mpa, bearing_mpa (echoed)
 //
 // Common modifications:
 //   Different pots            -> pot_base_min / pot_base_max, then re-check the echoed
@@ -66,8 +75,10 @@
 //   Force an exact footprint  -> set stand_size directly (keep <= 216 for an X1C bed)
 //   Taller / more airflow     -> stand_height (keep >= drain_h + 8*layer_height)
 //   Less filament / faster    -> raise cell_target (bigger cells) or drop stand_height
+//   Heavier pot               -> design_load_kg. The bearing assert fails if it no longer
+//                                stacks up, and names what to change
 //   Stronger / finer grid     -> lower cell_target AND min_cell_open together (min_cell_open
-//                                caps the cell count on its own), or rib_walls 4 -> 5
+//                                caps the cell count on its own), or rib_walls 5 -> 6
 //   More kick-resistant edge  -> outer_walls 5 -> 6
 //   Add a lip that traps the  -> rim_extra = 8 AND stand_size = 212 (and cell_target
 //     pot from sliding           = 42 to keep 5 cells). The assert prints the exact
@@ -88,8 +99,8 @@
 //   colour for UV life. ASA/ASA-CF is the upgrade if you have an enclosure; PLA is a
 //   bad idea here — it creeps and goes chalky in the weather.)
 // Layer Height: 0.2mm
-// Walls/Perimeters: 5. The whole part IS perimeters: 5 fills the 2.25mm outer wall
-//   exactly, and the 1.8mm ribs take the 4 that fit (the slicer prints what fits).
+// Walls/Perimeters: 5. The whole part IS perimeters - every wall is 2.25mm, which is
+//   exactly 5 at 0.45mm, so there is no gap fill and no infill anywhere.
 // Infill: 0% (no infill and no top/bottom solid layers: it is an open lattice by
 //   design. Bottom solid layers 0-1, top solid layers 0.)
 // Supports: None required. Every wall is vertical; the only overhangs are the drain
@@ -103,7 +114,7 @@
 //   - Rib bottoms carry no ef_chamfer of their own (a lattice cannot be hulled without
 //     filling its cells, and nothing mates with this part) - leave the slicer's own
 //     elephant-foot compensation on. Only the outer wall is chamfered in the model.
-//   - Measured solid volume 104.7cm^3: ~133g in PETG, ~2-3h.
+//   - Measured solid volume 120.3cm^3: ~153g in PETG, ~3h.
 
 // === PARAMETERS ===
 // Printer settings
@@ -127,12 +138,18 @@ rim_extra    = 0;                 // >0 raises the outer wall above the seat as 
                                   //   (needs stand_size >= pot_base_max + 4)
 
 // Wall thicknesses, in whole perimeters
-rib_walls   = 4;         // internal lattice ribs (only ever loaded in compression)
+rib_walls   = 5;         // internal lattice ribs (only ever loaded in compression)
 outer_walls = 5;         // outer wall - thicker because it is the one member left
                          //   exposed beside a smaller pot, so it takes the broom/boot
 
 // Drainage
 drain_w = 14;            // width of the ground-level drain channels
+
+// Load
+design_load_kg  = 30;    // total weight carried: pot + wet soil + plant
+max_bearing_mpa = 2;     // allowable bearing stress on the wall cross-sections. PETG
+                         //   yields near 50MPa cold; 2 is a deliberately hot-and-tired
+                         //   allowable, since pavers in summer sun reach PETG's HDT.
 
 // Cell sizing / fit limits
 min_cell_open = 30;      // smallest clear cell allowed (drainage under the pot's hole)
@@ -171,6 +188,19 @@ cell_pitch = stand_size / n_cells;
 cell_open  = cell_pitch - rib_thick;            // clear opening of one cell
 drain_h    = drain_w / 2;                       // 45deg apex => self-supporting
 wall_h     = stand_height + rim_extra;          // outer wall height
+
+// Load path. Two cross-sections matter: the seat (rib tops, full section) and the
+// ground contact, where the drain channels have eaten drain_w out of every wall they
+// cross. Both are estimates from the parameters, not measured off the mesh.
+rib_len     = stand_size - 2 * wall_thick + 2 * rib_embed;
+n_rib       = 2 * (n_cells - 1);                // interior ribs, both directions
+ring_len    = 4 * (stand_size - 2 * corner_r) + 2 * PI * (corner_r - wall_thick / 2);
+cross_area  = pow(n_cells - 1, 2) * pow(rib_thick, 2);   // rib/rib crossings, counted twice
+seat_area   = n_rib * rib_len * rib_thick - cross_area + ring_len * wall_thick;
+ground_area = n_rib * (rib_len - n_cells * drain_w) * rib_thick - cross_area
+              + (ring_len - 4 * n_cells * drain_w) * wall_thick;
+load_n      = design_load_kg * 9.81;
+bearing_mpa = load_n / ground_area;             // governed by the narrower ground section
 
 // Containment lip fit (rim_extra > 0): what matters is the lip's INNER opening, not the
 // outer footprint, and the pot is wider at the top of the lip than at its base.
@@ -215,9 +245,16 @@ assert(rim_extra == 0 || lip_opening >= lip_needed,
        str("containment lip too tight: inner opening ", lip_opening, "mm, needs ",
            lip_needed, "mm (pot base + taper over the lip height + clearance). ",
            "Raise stand_size to at least ", lip_needed + 2 * wall_thick, "mm."));
+// last: it consumes every geometry contract above
+assert(ground_area > 0 && bearing_mpa <= max_bearing_mpa,
+       str("bearing stress ", bearing_mpa, "MPa exceeds max_bearing_mpa ",
+           max_bearing_mpa, "MPa at ", design_load_kg, "kg - thicken the walls ",
+           "(rib_walls/outer_walls) or add cells (lower cell_target and min_cell_open)"));
 
 echo(stand_size = stand_size, stand_height = stand_height, wall_h = wall_h,
      lip_opening = (rim_extra > 0) ? lip_opening : 0,
+     design_load_kg = design_load_kg, bearing_mpa = bearing_mpa,
+     seat_area_cm2 = seat_area / 100, ground_area_cm2 = ground_area / 100,
      n_cells = n_cells, cell_pitch = cell_pitch, cell_open = cell_open,
      rib_thick = rib_thick, drains_per_side = n_cells);
 
@@ -251,7 +288,6 @@ module outer_wall() {
 // Lattice ribs. Length reaches rib_embed into the outer wall on both sides so the
 // solids share real volume (no bare-edge contact), and never past its outer face.
 module ribs() {
-    rib_len = stand_size - 2 * wall_thick + 2 * rib_embed;
     for (p = lines) {
         // running along Y
         translate([p, 0, stand_height / 2])

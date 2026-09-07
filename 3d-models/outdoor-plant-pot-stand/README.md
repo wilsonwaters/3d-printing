@@ -10,11 +10,12 @@ out sideways at ground level and away, instead of the pot sitting in its own pud
 **One size suits every pot from a 170 mm to a 200 mm square base** — the whole top is a
 single flat plane, so there is no size-specific seat or lip to foul a different pot.
 
-- Footprint **196 × 196 × 25 mm**, one piece, ~133 g of PETG, no supports, no infill.
-- 5 × 5 open cells (37.4 mm clear each), with a whole cell dead centre under the pot's
+- Footprint **196 × 196 × 25 mm**, one piece, ~153 g of PETG, no supports, no infill.
+- 5 × 5 open cells (37 mm clear each), with a whole cell dead centre under the pot's
   drain hole.
 - Drain channels notched into the bottom of every rib and through the outer wall on all
   four sides, so water can't be trapped anywhere underneath.
+- Sized for a **30 kg** pot (`design_load_kg`), which the build checks rather than assumes.
 - Fully parametric — change `pot_base_max` (or `stand_size`) and re-export for other pots.
 
 ## How it suits 170–200 mm bases
@@ -50,6 +51,31 @@ pot gets marginally easier to tip — keep it snug against the wall as in the ph
 wavy pavers the stand is stiff enough that it won't conform; it'll bed down on the high
 spots the same way the pot does now.
 
+## Carrying 30 kg
+
+The build computes the load path from the parameters and asserts it, rather than leaving
+it as a claim in a comment — the numbers are echoed every time you render:
+
+| | |
+|---|---|
+| Wall cross-section at the seat | **51 cm²** |
+| …at ground level, where the drain channels narrow it | **32 cm²** |
+| Bearing stress at 30 kg | **0.09 MPa** |
+| `max_bearing_mpa` allowable | 2 MPa — deliberately hot-and-tired, since pavers in summer sun reach PETG's heat-deflection temperature |
+
+So it's ~500× below PETG's cold yield and ~20× below an allowable already derated for a
+hot paver. Buckling of a 2.25 mm × 25 mm wall panel is a further order of magnitude away.
+Raise `design_load_kg` and the assert will tell you when that stops being true.
+
+The reason every wall is 5 perimeters rather than 4 isn't that global margin — it's that
+the pot rests on the rib **tops**, and a glazed ceramic base is rarely dead flat, so the
+load can land on a handful of rib crossings instead of every rib. Wider rib tops cut that
+local contact stress by 25 % for about 20 g.
+
+One caveat that does change with weight: on **soil or sand** rather than pavers, a lattice
+sinks more than a solid slab would (30 kg over 32 cm² of ground contact ≈ 90 kPa). On
+brick pavers it's irrelevant.
+
 ## Where the water goes
 
 ![Section](preview-section.png)
@@ -70,13 +96,13 @@ with no supports and no bridging.
 |---|---|
 | Material | **PETG**, in a light colour (Tg 75–85 °C so it won't sag on hot pavers; tough rather than brittle; moderate UV life). ASA/ASA-CF is the upgrade if you have an enclosure. Don't use PLA outdoors — it creeps under load and goes chalky. |
 | Layer height | 0.2 mm |
-| Walls | **5 perimeters** — the part *is* perimeters. 5 fills the 2.25 mm outer wall exactly; the 1.8 mm ribs take the 4 that fit |
+| Walls | **5 perimeters** — the part *is* perimeters. Every wall is 2.25 mm, which is exactly 5 at 0.45 mm, so there's no gap fill anywhere |
 | Infill | **0 %**, top solid layers **0**, bottom solid layers **0** (it's an open lattice by design; solid layers would just try to skin the cells) |
 | Supports | **None** |
 | Brim | **Yes, 5–10 mm.** A 196 mm footprint of thin walls in PETG will lift at the corners without one |
 | Orientation | As modelled — flat on the plate, the ground face down |
 | Elephant foot | Leave the slicer's own compensation **on** — only the outer wall is chamfered in the model (a lattice can't be hulled without filling its cells, and nothing mates with this part) |
-| Time / material | ~2–3 h, ~133 g |
+| Time / material | ~3 h, ~153 g |
 
 Bambu X1C/P1 note: at 196 mm centred it clears the 18 × 28 mm front-left filament-cutter
 exclusion zone — just don't let the slicer shove it into that corner.
@@ -95,7 +121,8 @@ the build (with a message) if a change breaks the design rules.
 | An exact footprint | set `stand_size` directly (≤ 216 mm for an X1C) |
 | Taller / more airflow | `stand_height` (below 20 mm, lower `min_lift` too) |
 | Less filament, faster print | raise `cell_target` (bigger cells) or drop `stand_height` |
-| Stiffer / finer grid | lower `cell_target` **and** `min_cell_open` together, or `rib_walls` 4 → 5 |
+| Heavier pot | `design_load_kg` — the bearing check fails and names what to change if it no longer stacks up |
+| Stiffer / finer grid | lower `cell_target` **and** `min_cell_open` together, or `rib_walls` 5 → 6 |
 | Bigger drain channels | `drain_w` |
 | More kick-resistant edge | `outer_walls` 5 → 6 |
 | A lip that stops the pot sliding off | `rim_extra = 8`, `stand_size = 212`, `cell_target = 42` — see below |
@@ -128,12 +155,12 @@ openscad -o pot-stand-corral.stl -D stand_size=212 -D rim_extra=8 -D cell_target
 
 ## Notes from the design review
 
-- **Impact:** vertically every wall is in compression, which is FDM's strong direction and
-  has ~1000× margin. A sideways knock (boot, broom, rake) bends a wall at its base, which
-  is PETG's weaker direction — so the outer wall, the one member left standing proud
-  beside a smaller pot, is 5 perimeters where the shielded ribs are 4 (+56% section), and
-  it's a closed loop tied to the ribs every 39 mm rather than a free fin. Accepted
-  trade-off of an open lattice; `outer_walls = 6` if you want more.
+- **Impact:** the vertical load path has ~500× margin (above), but a sideways knock
+  (boot, broom, rake) bends a wall at its base, which is PETG's weaker direction. Hence
+  2.25 mm walls throughout rather than 1.8 mm — +56 % section modulus on the outer wall,
+  the one member left standing proud beside a smaller pot, and it's a closed loop tied to
+  the ribs every 39 mm rather than a free fin. Accepted trade-off of an open lattice;
+  `outer_walls = 6` if you want more.
 - **Cleaning:** leaves and silt will collect in the open cells over a season. Lift the pot
   and hose it out; the drain channels are 14 mm wide with 20 exits, so it won't block.
 - **Worth checking on the first print:** that the 45° notch apexes come out clean (they're
