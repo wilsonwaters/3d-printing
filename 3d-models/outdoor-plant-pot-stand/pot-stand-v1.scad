@@ -34,8 +34,17 @@
 //   - Drain channels: instead of drilling holes, a 45deg triangular channel is
 //     subtracted along every cell-centre line in both X and Y. That notches every
 //     rib and both faces of the outer wall in one operation, giving a connected
-//     drainage grid at ground level with an exit on all four sides. The 45deg apex is
-//     self-supporting, so no bridge and no supports (PETG bridges poorly).
+//     drainage grid with an exit on all four sides. The 45deg apex is self-supporting,
+//     so no bridge and no supports (PETG bridges poorly).
+//   - The channels sit on a drain_sill, they do NOT reach the plate. This is the whole
+//     difference between a part that prints and one that peels: cut to z=0, the
+//     channels chop the first layer into 36 disconnected islands averaging 0.9cm^2,
+//     each with free ends for PETG to curl, and a slicer brim can only reach the ~20
+//     touching the outer wall. On the sill the first layer is ONE connected grid of
+//     72.8cm^2. Drainage barely notices - water steps over a 0.8mm sill.
+//   - foot_flare widens every wall at the plate and tapers back at 45deg: a brim built
+//     into the part, reaching the interior ribs no slicer brim can touch. It is what
+//     takes the first layer from 51cm^2 to 73cm^2.
 //   - Rounded corners (corner_r) + bottom chamfer: a 196mm PETG footprint wants to
 //     lift at sharp corners; rounded corners and a small chamfer plus a brim fix that.
 //   - Every wall is 5 perimeters (2.25mm), so the slicer fills all of them exactly and
@@ -84,8 +93,11 @@
 //     pot from sliding           = 42 to keep 5 cells). The assert prints the exact
 //                                minimum stand_size if you get it wrong.
 //   Bigger drain channels     -> drain_w (drain_h stays drain_w/2 to keep 45deg)
+//   Part still lifting        -> raise foot_flare (more built-in brim) or drain_sill
+//   Less water film under it  -> lower drain_sill, at the cost of first-layer strength
 //
-// Overall dimensions: 196 x 196 x 25mm (default). Fits the ~220mm auto-centred square
+// Overall dimensions: 196 x 196 x 25mm, 197.2mm across the foot flare at the plate.
+//   Fits the ~220mm auto-centred square
 //   an X1C/P1 can print without touching the front-left filament-cutter exclusion.
 // Coordinate system: X/Y = the square footprint, centred on the origin.
 //   Z = height from the build plate; z = stand_height is the flat seat the pot rests on.
@@ -111,10 +123,11 @@
 //   - Use a BRIM (5-10mm) — a 196mm PETG footprint of thin walls likes to lift.
 //   - X1C/P1: 196mm centred clears the 18x28mm front-left cutter exclusion. Do not
 //     let the slicer shove it into the front-left corner.
-//   - Rib bottoms carry no ef_chamfer of their own (a lattice cannot be hulled without
-//     filling its cells, and nothing mates with this part) - leave the slicer's own
-//     elephant-foot compensation on. Only the outer wall is chamfered in the model.
-//   - Measured solid volume 120.3cm^3: ~153g in PETG, ~3h.
+//   - Every wall FLARES outward at the plate (foot_flare) instead of being chamfered
+//     inward for elephant foot: this part has no mating surface, so squish costs
+//     nothing, and adhesion is worth far more. Leave the slicer's own elephant-foot
+//     compensation OFF or low - the flare wants to stay wide.
+//   - Measured solid volume 126.0cm^3: ~160g in PETG, ~3h.
 
 // === PARAMETERS ===
 // Printer settings
@@ -143,7 +156,19 @@ outer_walls = 5;         // outer wall - thicker because it is the one member le
                          //   exposed beside a smaller pot, so it takes the broom/boot
 
 // Drainage
-drain_w = 14;            // width of the ground-level drain channels
+drain_w    = 14;         // width of the drain channels
+drain_sill = 0.8;        // height of solid wall LEFT UNDER the channels (4 layers at
+                         //   0.2mm). Critical for printing, not for drainage: cutting
+                         //   the channels to z=0 chops the first layer into 36 tiny
+                         //   islands with free ends, which is what makes a 196mm PETG
+                         //   lattice peel off the plate. With the sill the first layer
+                         //   is ONE connected grid. Water just steps over 0.8mm.
+
+// First-layer adhesion
+foot_flare = 0.6;        // every wall flares this much per side over its bottom
+                         //   foot_flare mm (45deg, self-supporting) - a brim built into
+                         //   the part, on the interior ribs where a slicer brim cannot
+                         //   reach. 0 disables it.
 
 // Load
 design_load_kg  = 30;    // total weight carried: pot + wet soil + plant
@@ -171,7 +196,6 @@ extrusion_width = nozzle_diameter * 1.125;      // 0.45
 rib_thick       = rib_walls * extrusion_width;  // 1.8
 wall_thick      = outer_walls * extrusion_width;// 1.8
 fudge           = 0.01;                         // boolean overlap
-ef_chamfer      = 0.4;                          // elephant-foot compensation (bottom)
 top_chamfer     = 0.6;                          // cosmetic chamfer on the top outer edge
 rib_embed       = 0.6;                          // how far ribs bury into the outer wall
 $fn             = $preview ? 32 : 64;
@@ -193,14 +217,23 @@ wall_h     = stand_height + rim_extra;          // outer wall height
 // ground contact, where the drain channels have eaten drain_w out of every wall they
 // cross. Both are estimates from the parameters, not measured off the mesh.
 rib_len     = stand_size - 2 * wall_thick + 2 * rib_embed;
+foot_thick  = rib_thick + 2 * foot_flare;       // rib width where it meets the plate
+wall_foot   = wall_thick + foot_flare;          // outer wall ditto (flares outward only)
 n_rib       = 2 * (n_cells - 1);                // interior ribs, both directions
 ring_len    = 4 * (stand_size - 2 * corner_r) + 2 * PI * (corner_r - wall_thick / 2);
 cross_area  = pow(n_cells - 1, 2) * pow(rib_thick, 2);   // rib/rib crossings, counted twice
 seat_area   = n_rib * rib_len * rib_thick - cross_area + ring_len * wall_thick;
-ground_area = n_rib * (rib_len - n_cells * drain_w) * rib_thick - cross_area
+// narrowest section: the height band where the drain channels pass through the walls
+min_section = n_rib * (rib_len - n_cells * drain_w) * rib_thick - cross_area
               + (ring_len - 4 * n_cells * drain_w) * wall_thick;
+// what actually touches the build plate: full section once a sill keeps the channels
+// off z=0, widened by the foot flare
+plate_contact = (drain_sill > 0)
+    ? n_rib * rib_len * foot_thick - pow(n_cells - 1, 2) * pow(foot_thick, 2)
+      + ring_len * wall_foot
+    : min_section;
 load_n      = design_load_kg * 9.81;
-bearing_mpa = load_n / ground_area;             // governed by the narrower ground section
+bearing_mpa = load_n / min_section;
 
 // Containment lip fit (rim_extra > 0): what matters is the lip's INNER opening, not the
 // outer footprint, and the pot is wider at the top of the lip than at its base.
@@ -221,8 +254,8 @@ assert(stand_height >= min_lift,
        "stand_height below min_lift - too low to drain and air the pot base");
 assert(drain_w <= 0.6 * cell_pitch,
        "drain channels wider than 60% of the cell pitch merge and undercut whole ribs");
-assert(stand_size <= bed_safe_xy - 4,
-       "footprint too big for the X1C's usable centred bed (220mm)");
+assert(stand_size + 2 * foot_flare <= bed_safe_xy - 4,
+       "footprint (including the foot flare) too big for the X1C's centred bed (220mm)");
 assert(stand_size >= pot_base_max - 16,
        "stand too small: the biggest pot would overhang more than 8mm per side");
 assert(len(lines_under_small) >= 4,
@@ -233,8 +266,12 @@ assert(cell_open >= min_cell_open,
        "centre cell too small - water from the drain hole needs a clear cell");
 assert(n_cells >= 3,
        "need at least 3 drain exits per side");
-assert(stand_height - drain_h >= 8 * layer_height,
+assert(stand_height - drain_sill - drain_h >= 8 * layer_height,
        "not enough wall left above the drain channels");
+assert(drain_sill == 0 || drain_sill >= 3 * layer_height,
+       "drain_sill must be 0 or at least 3 layers - a thinner sill is not worth having");
+assert(foot_flare < (cell_pitch - rib_thick) / 4,
+       "foot flare so wide the cell openings start closing up");
 assert(drain_h == drain_w / 2,
        "drain channel must stay a 45deg apex to print without support");
 assert(rib_thick >= 3 * extrusion_width && wall_thick >= 3 * extrusion_width,
@@ -246,7 +283,7 @@ assert(rim_extra == 0 || lip_opening >= lip_needed,
            lip_needed, "mm (pot base + taper over the lip height + clearance). ",
            "Raise stand_size to at least ", lip_needed + 2 * wall_thick, "mm."));
 // last: it consumes every geometry contract above
-assert(ground_area > 0 && bearing_mpa <= max_bearing_mpa,
+assert(min_section > 0 && bearing_mpa <= max_bearing_mpa,
        str("bearing stress ", bearing_mpa, "MPa exceeds max_bearing_mpa ",
            max_bearing_mpa, "MPa at ", design_load_kg, "kg - thicken the walls ",
            "(rib_walls/outer_walls) or add cells (lower cell_target and min_cell_open)"));
@@ -254,7 +291,8 @@ assert(ground_area > 0 && bearing_mpa <= max_bearing_mpa,
 echo(stand_size = stand_size, stand_height = stand_height, wall_h = wall_h,
      lip_opening = (rim_extra > 0) ? lip_opening : 0,
      design_load_kg = design_load_kg, bearing_mpa = bearing_mpa,
-     seat_area_cm2 = seat_area / 100, ground_area_cm2 = ground_area / 100,
+     seat_area_cm2 = seat_area / 100, min_section_cm2 = min_section / 100,
+     plate_contact_cm2 = plate_contact / 100, drain_sill = drain_sill,
      n_cells = n_cells, cell_pitch = cell_pitch, cell_open = cell_open,
      rib_thick = rib_thick, drains_per_side = n_cells);
 
@@ -271,9 +309,9 @@ module outer_wall() {
     difference() {
         hull() {
             linear_extrude(fudge)
-                rounded_sq(stand_size - 2 * ef_chamfer, corner_r - ef_chamfer);
-            translate([0, 0, ef_chamfer])
-                linear_extrude(wall_h - ef_chamfer - top_chamfer)
+                rounded_sq(stand_size + 2 * foot_flare, corner_r + foot_flare);
+            translate([0, 0, foot_flare])
+                linear_extrude(wall_h - foot_flare - top_chamfer)
                     rounded_sq(stand_size, corner_r);
             translate([0, 0, wall_h - fudge])
                 linear_extrude(fudge)
@@ -292,17 +330,32 @@ module ribs() {
         // running along Y
         translate([p, 0, stand_height / 2])
             cube([rib_thick, rib_len, stand_height], center = true);
+        translate([p, 0, 0]) rib_foot();
         // running along X
         translate([0, p, stand_height / 2])
             cube([rib_len, rib_thick, stand_height], center = true);
+        translate([0, p, 0]) rotate([0, 0, 90]) rib_foot();
     }
 }
 
-// One ground-level drain channel: a 45deg triangular prism running the full width.
+// A rib's built-in brim: widest at the plate, tapering back to the rib at 45deg, so it
+// is self-supporting and adds first-layer area where a slicer brim can never reach.
+module rib_foot() {
+    if (foot_flare > 0)
+        hull() {
+            translate([-foot_thick / 2, -rib_len / 2, 0])
+                cube([foot_thick, rib_len, fudge]);
+            translate([-rib_thick / 2, -rib_len / 2, foot_flare])
+                cube([rib_thick, rib_len, fudge]);
+        }
+}
+
+// One drain channel: a 45deg triangular prism running the full width, sitting ON the
+// sill rather than on the plate, so the first layer stays continuous.
 module drain_channel(pos, along_x) {
     len = stand_size + 10;
     rotate([0, 0, along_x ? 90 : 0])
-        translate([pos, 0, -fudge])
+        translate([pos, 0, drain_sill])
             rotate([90, 0, 0])
                 linear_extrude(height = len, center = true)
                     polygon([[-drain_w / 2, 0], [drain_w / 2, 0], [0, drain_h]]);

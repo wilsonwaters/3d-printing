@@ -10,11 +10,12 @@ out sideways at ground level and away, instead of the pot sitting in its own pud
 **One size suits every pot from a 170 mm to a 200 mm square base** — the whole top is a
 single flat plane, so there is no size-specific seat or lip to foul a different pot.
 
-- Footprint **196 × 196 × 25 mm**, one piece, ~153 g of PETG, no supports, no infill.
+- Footprint **196 × 196 × 25 mm** (197.2 mm across the foot flare at the plate), one
+  piece, ~160 g of PETG, no supports, no infill.
 - 5 × 5 open cells (37 mm clear each), with a whole cell dead centre under the pot's
   drain hole.
-- Drain channels notched into the bottom of every rib and through the outer wall on all
-  four sides, so water can't be trapped anywhere underneath.
+- Drain channels through every rib and the outer wall on all four sides, sitting on a
+  0.8 mm sill so the first layer stays in one piece (see below).
 - Sized for a **30 kg** pot (`design_load_kg`), which the build checks rather than assumes.
 - Fully parametric — change `pot_base_max` (or `stand_size`) and re-export for other pots.
 
@@ -59,7 +60,7 @@ it as a claim in a comment — the numbers are echoed every time you render:
 | | |
 |---|---|
 | Wall cross-section at the seat | **51 cm²** |
-| …at ground level, where the drain channels narrow it | **32 cm²** |
+| …through the drain-channel band, the narrowest section | **32 cm²** |
 | Bearing stress at 30 kg | **0.09 MPa** |
 | `max_bearing_mpa` allowable | 2 MPa — deliberately hot-and-tired, since pavers in summer sun reach PETG's heat-deflection temperature |
 
@@ -73,7 +74,7 @@ load can land on a handful of rib crossings instead of every rib. Wider rib tops
 local contact stress by 25 % for about 20 g.
 
 One caveat that does change with weight: on **soil or sand** rather than pavers, a lattice
-sinks more than a solid slab would (30 kg over 32 cm² of ground contact ≈ 90 kPa). On
+sinks more than a solid slab would (30 kg over its 73 cm² of ground contact ≈ 40 kPa). On
 brick pavers it's irrelevant.
 
 ## Where the water goes
@@ -82,13 +83,42 @@ brick pavers it's irrelevant.
 
 1. Water leaves the pot's centre drain hole and drops through the open centre cell —
    nothing to line up, nothing to clog.
-2. At ground level, a 14 mm wide × 7 mm tall channel is notched through **every** rib at
-   each cell centre, in both directions, so water can cross from cell to cell.
+2. Just above ground level, a 14 mm wide × 7 mm tall channel passes through **every** rib
+   at each cell centre, in both directions, so water can cross from cell to cell. The
+   channels start 0.8 mm up — water steps over that sill.
 3. The same channels cut through the outer wall — **5 exits per side, 20 in total** — so
    it drains away on whichever side the pavers fall.
 
 The notches are 45° triangles (pointed, not square), which is why the whole part prints
 with no supports and no bridging.
+
+## Why the first version kept lifting
+
+The first release cut the drain channels all the way to the build plate. That looks
+harmless in the model, but it **chops the first layer into 36 disconnected islands**,
+averaging 0.9 cm² each — a grid of tiny crosses and wall stubs, each with free ends for
+PETG to curl up from. A slicer brim can only grab the ~20 pieces touching the outer wall;
+the 16 interior crosses get nothing, which is exactly why brim-on and brim-off behaved
+the same.
+
+Two changes fix it at the source, measured by slicing the mesh at z = 0.1:
+
+| | before | now |
+|---|---|---|
+| Islands in the first layer | **36** | **1** |
+| Largest island | 1.2 cm² (4 % of the layer) | the whole thing |
+| Plate contact area | 32.6 cm² | **72.8 cm²** |
+
+1. **`drain_sill = 0.8 mm`** — the channels now sit on a solid sill instead of reaching
+   the plate, so the first layer is one continuous grid. Drainage barely notices: water
+   steps over a 0.8 mm sill, and the pot is still 25 mm up in the air, which was always
+   the point.
+2. **`foot_flare = 0.6 mm`** — every wall flares outward at the plate and tapers back at
+   45° over 0.6 mm. It's a brim built into the part, reaching the interior ribs where no
+   slicer brim can, and it's self-supporting because it's widest at the bottom.
+
+Set `-D drain_sill=0 -D foot_flare=0` to reproduce the old 36-island first layer if you
+ever want to see the difference.
 
 ## Printing
 
@@ -99,13 +129,28 @@ with no supports and no bridging.
 | Walls | **5 perimeters** — the part *is* perimeters. Every wall is 2.25 mm, which is exactly 5 at 0.45 mm, so there's no gap fill anywhere |
 | Infill | **0 %**, top solid layers **0**, bottom solid layers **0** (it's an open lattice by design; solid layers would just try to skin the cells) |
 | Supports | **None** |
-| Brim | **Yes, 5–10 mm.** A 196 mm footprint of thin walls in PETG will lift at the corners without one |
+| Brim | Optional now that the foot is continuous, and still in the 3MF (8 mm, outer only). Keep it for the first print; drop it once one comes off flat |
 | Orientation | As modelled — flat on the plate, the ground face down |
-| Elephant foot | Leave the slicer's own compensation **on** — only the outer wall is chamfered in the model (a lattice can't be hulled without filling its cells, and nothing mates with this part) |
-| Time / material | ~3 h, ~153 g |
+| Elephant foot | Set compensation to **0** (it's 0 in the 3MF). Every wall deliberately flares outward at the plate; squish costs nothing here and adhesion is worth more |
+| Time / material | ~3 h, ~160 g |
 
-Bambu X1C/P1 note: at 196 mm centred it clears the 18 × 28 mm front-left filament-cutter
+Bambu X1C/P1 note: at 197 mm centred it clears the 18 × 28 mm front-left filament-cutter
 exclusion zone — just don't let the slicer shove it into that corner.
+
+### If it still lifts
+
+The model side is handled above; the rest is the plate. In the order worth trying:
+
+1. **Wash the plate with warm water and dish soap**, not just IPA — IPA smears the oils
+   around in textured PEI rather than removing them, and this part is nearly all first
+   layer. Handle it by the edges afterwards.
+2. **Bed 80 °C** for PETG rather than the 70 °C some profiles use.
+3. **Part cooling fan off for the first 2–3 layers.** PETG needs almost no cooling down
+   there, and fan on a big thin first layer is a classic corner-lifter.
+4. **Check your Z-offset / first-layer squish.** "Only the first layer lifts" often means
+   it was never properly squished. The lines should look slightly flattened and touching,
+   not round and separate.
+5. **Slow the first layer** to ~20 mm/s and leave the door and top closed to kill drafts.
 
 `pot-stand-v1.3mf` is a Bambu Studio project with these settings already applied; open it,
 check the plate, slice. Otherwise import `pot-stand-v1.stl` and dial the table above.
@@ -124,6 +169,8 @@ the build (with a message) if a change breaks the design rules.
 | Heavier pot | `design_load_kg` — the bearing check fails and names what to change if it no longer stacks up |
 | Stiffer / finer grid | lower `cell_target` **and** `min_cell_open` together, or `rib_walls` 5 → 6 |
 | Bigger drain channels | `drain_w` |
+| Still lifting off the plate | raise `foot_flare` (more built-in brim) or `drain_sill` |
+| Less water film underneath | lower `drain_sill` — at the cost of first-layer strength |
 | More kick-resistant edge | `outer_walls` 5 → 6 |
 | A lip that stops the pot sliding off | `rim_extra = 8`, `stand_size = 212`, `cell_target = 42` — see below |
 
