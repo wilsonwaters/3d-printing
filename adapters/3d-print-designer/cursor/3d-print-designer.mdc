@@ -1264,6 +1264,79 @@ Speed impact on strength: 30 mm/s = 100%, 50 mm/s = 95%, 70 mm/s = 88%, 90 mm/s 
 - **Mitigation**: Mouse ears at corners, chamfered edges, 5-10mm brim, rounded corners (5-10mm radius)
 - Shrinkage: 0.3-0.8%, scale by 1.003-1.005x for precise fits
 
+### First-Layer Fragmentation (open/skeletal footprints)
+
+Those mitigations all assume the first layer is **one** region. On a part whose footprint is
+open — lattices, grids, frames, ribbed or perforated plates, anything printed as walls
+rather than slabs — any feature cut down to z=0 (drain channels, notches, slots, relief
+cuts) **severs the first layer into disconnected islands with free ends**, and PETG curls
+from free ends. A brim is not a reliable rescue: on a cellular part the only sane brim
+setting is outer-contour-only (brim inside every cell is worse than the problem), so the
+interior islands get nothing, and a ~1cm² island with free ends curls anyway. This is a
+geometry bug, not a slicer setting — it will not tune out.
+
+Measured on a 196mm PETG lattice, textured PEI plate:
+
+| | channels cut to z=0 | channels on a sill + flared foot |
+|---|---|---|
+| First-layer islands | **36** (avg 0.9cm²) | **1** |
+| Plate contact area | 32.6cm² | 72.8cm² |
+| Outcome | peeled repeatedly, brim on *and* off | prints |
+
+Two parametric rules:
+
+1. **Never cut a through-feature to z=0 on an open footprint.** Stand it on a sill of at
+   least 3 layers (0.6-0.8mm) so the bottom stays one connected region. A sill is usually
+   invisible to function — water steps over 0.8mm, airflow does not notice it.
+2. **Flare the bottom rather than chamfering it**, wherever nothing mates at the plate:
+   widen every wall ~0.5-0.8mm per side over that same height, tapering back at 45°. It is
+   self-supporting (widest at the bottom) and acts as a brim built into the part, reaching
+   interior features no slicer brim can. Set the slicer's elephant-foot compensation to 0
+   so it is not shaved back, and drop `ef_chamfer` on that face — squish costs nothing
+   where there is no mating surface.
+
+**Verify it, do not assume it.** Slice the exported mesh at half the first layer height and
+count connected regions. More than one island on what should be a connected grid — or a
+largest island under ~20% of the layer — means it will peel:
+
+```python
+# firstlayer.py <mesh.stl> <z>   e.g. python firstlayer.py part.stl 0.1
+import struct, sys
+from collections import deque
+p, z, g = sys.argv[1], float(sys.argv[2]), 0.3           # g = raster step (mm)
+f = open(p, 'rb'); f.read(80); (n,) = struct.unpack('<I', f.read(4))
+segs = []
+for _ in range(n):                                       # mesh x plane -> 2D segments
+    d = f.read(50); v = [struct.unpack('<3f', d[12+k*12:24+k*12]) for k in range(3)]
+    pts = [(a[0]+(z-a[2])/(b[2]-a[2])*(b[0]-a[0]), a[1]+(z-a[2])/(b[2]-a[2])*(b[1]-a[1]))
+           for a, b in [(v[i], v[(i+1) % 3]) for i in range(3)] if (a[2]-z)*(b[2]-z) < 0]
+    if len(pts) == 2: segs.append(pts)
+assert segs, "no material at that height"
+xs = [q[0] for s in segs for q in s]; ys = [q[1] for s in segs for q in s]
+nx = int((max(xs)-min(xs))/g)+2; ny = int((max(ys)-min(ys))/g)+2
+grid = [bytearray(nx) for _ in range(ny)]
+for j in range(ny):                                      # scanline fill, even-odd
+    y = min(ys)+(j+0.5)*g
+    xc = sorted(a[0]+(y-a[1])*(b[0]-a[0])/(b[1]-a[1]) for a, b in segs if (a[1] > y) != (b[1] > y))
+    for k in range(0, len(xc)-1, 2):
+        for i in range(max(0, int((xc[k]-min(xs))/g)), min(nx, int((xc[k+1]-min(xs))/g)+1)):
+            grid[j][i] = 1
+seen = [bytearray(nx) for _ in range(ny)]; comps = []
+for j in range(ny):
+    for i in range(nx):
+        if grid[j][i] and not seen[j][i]:
+            q = deque([(i, j)]); seen[j][i] = 1; c = 0
+            while q:
+                a, b = q.popleft(); c += 1
+                for da, db in ((1,0),(-1,0),(0,1),(0,-1)):
+                    u, w = a+da, b+db
+                    if 0 <= u < nx and 0 <= w < ny and grid[w][u] and not seen[w][u]:
+                        seen[w][u] = 1; q.append((u, w))
+            comps.append(c*g*g/100)
+comps.sort(reverse=True)
+print(f"islands={len(comps)}  total={sum(comps):.1f}cm2  largest={comps[0]:.1f}cm2")
+```
+
 ### Moisture Degradation
 
 | Moisture Level | Strength Loss | Symptoms |
