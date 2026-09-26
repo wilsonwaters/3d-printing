@@ -4,26 +4,41 @@ A one-piece bracket that plugs into the recessed notch on the dash just left of 
 instrument binnacle (right-hand-drive 2013 Discovery 4, Australian market), under the
 leather hood, and carries a **LISEN W116 Qi2.2 25 W** magnetic wireless charger on a
 standard **17 mm ball**. It holds the phone **5 cm higher** than a charger clipped straight
-into the notch, on an upright that leans back toward the windscreen once it clears the
-hood lip. The ball stalk points down toward you, so the phone stands up and tips its top
-your way. It's built for corrugations and four-wheel driving, not just bitumen.
+into the notch, reclined about 25° toward your eyes. It's built for corrugations and
+four-wheel driving, not just bitumen.
 
 ![In the car — side view](preview-car-side.png)
 
 - One piece, **ASA**, ~90 g, no supports, no holes in the trim.
-- A wedge fills the notch. Its sloped bottom sits on the whole ledge, its front face
-  climbs to 65 mm out at the top, an EPDM strip on top presses up into the underside of
-  the hood, and two small patches of 3M VHB hold its flat back face.
-- A 25 mm-deep upright rises in front of the hood lip, then leans back 15° over the hood.
-  A "head" near its top has a flat face square to the ball stalk. The stalk points 20°
-  below level and ends in a printed 17 mm ball. The W116 head clamps straight onto the
-  ball, with no vent clip in between to rattle.
-- Snap-in groove down the sloping front of the wedge, right under the charger's USB-C
-  port.
+- A wedge fills the notch. Its sloped bottom sits on the whole ledge, its top follows the
+  hood's underside with an EPDM strip pressing up into it, and two small patches of 3M VHB
+  hold its back face, which is dished 2 mm to sit on the trim.
+- A 25 mm-deep upright rises from the line of the hood lip, then bends back over the hood.
+  A "head" near its top has a flat face square to the ball stalk, which ends in a printed
+  17 mm ball. The W116 head clamps straight onto the ball, with no vent clip in between to
+  rattle.
+- Snap-in groove all the way down the sloping front of the wedge, right under the
+  charger's USB-C port.
 - A rip-cord groove across the back means it comes off again without damage.
 - Strength is checked by the model itself (see [Off-road strength](#off-road-strength)).
 
 ![From the driver's seat](preview-car-driver.png)
+
+## How it sits in the car
+
+The notch's back face, where the tape goes, **leans back about 45°** (its top toward the
+windscreen). The model is drawn square to that face: its "up" runs up the face and "out"
+is square to it, and every angle and height in the file and in this README is measured
+that way unless it says "in the car". So in the car:
+
+| | Measured from the back face | In the car |
+|---|---|---|
+| Lower part of the upright | straight up the face | leans back ~45° |
+| Upper part of the upright | leans back 15° (`upright_lean`) | leans back ~60° |
+| Ball stalk | 20° below square-out (`neck_angle = −20`) | ~25° above level, so the phone reclines toward your eyes |
+
+`trim_rake = 45` in the file only turns the drawings and reports these angles. It doesn't
+change the part.
 
 ## Measurements
 
@@ -37,10 +52,11 @@ the cluster-side return are still **estimates from photos**. Change them at the 
 |---|---|---|
 | `notch_h` | Floor ledge up to the underside of the leather hood, measured at the back of the notch | **65 mm** (measured) |
 | `hood_over` | How far the hood's front lip sticks out past the back face | **40 mm** (measured) |
-| `back_sag` | How far the back face bulges toward you: a ruler held up-and-down rocks on it with this gap at each end. 0 = flat | **0 mm** (test fit: the 4 mm dish was about 4 mm too deep) |
+| `hood_slope` | The hood's underside closes in toward you: it meets the back face at 90° minus this. The wedge's top follows it | **15°** (test fit) |
+| `back_sag` | How far the back face bulges toward you: a ruler held up-and-down rocks on it with this gap at each end. The wedge's back is dished to match. 0 = flat | **2 mm** (test fits: 4 was too deep, flat not quite enough) |
 | `hood_t` | Thickness of the hood's lip, underside to top of the leather. The build uses it to check the leaning part clears the lip | 20 mm, **estimate** |
 | `floor_depth` | How far the ledge runs out from the back face | **30 mm** (measured, approx) |
-| `floor_drop` | How much lower the ledge is 30 mm out than where it meets the back face (it slopes down) | **16 mm** (test fit: 10 mm more than the first guess) |
+| `floor_drop` | How far the ledge falls away 30 mm out, measured square to the back face | **18 mm** (test fit: the bottom's angle opened about 20° from the first guess of 6) |
 | `notch_w` | Width across the mouth of the notch | 40 mm |
 | `vent_return` | Vent-side wall: `[how far it steps in by the back face, how deep that angled part runs]` | **`[0, 0]`**, square (test fit) |
 | `cluster_return` | Cluster-side wall, same meaning (`[0, 0]` = square corner) | `[2, 2]` |
@@ -50,30 +66,27 @@ Where you want the charger (set from your test fits):
 | Parameter | What it is | Default |
 |---|---|---|
 | `upright_front` | Back face of the notch → the driver-side face of the upright, tape included. The upright grows toward the dash from here | 65 mm (where it test-fitted) |
-| `up_d` | How deep the upright is, front to back | 25 mm (5 mm deeper toward the dash than the last print) |
+| `up_d` | How deep the upright is, front to back | 25 mm |
 | `block_bottom_d` | How much of the ledge the wedge's bottom sits on (see [why not 10 mm](#why-the-bottom-uses-the-whole-ledge)) | 30 mm (all of it) |
-| `rise` | Top of the notch (hood underside) → centre of the ball: how much higher than a charger clipped straight into the notch ("5 cm up") | 50 mm |
-| `knee_above_hood` | Where the upright starts leaning, above the hood's underside | 24 mm |
-| `upright_lean` | Above the knee, the upright leans back toward the windscreen by this much | 15° |
-| `neck_angle` | Ball stalk angle above level. Negative points it down toward you | −20° |
+| `rise` | Top of the notch (the hood's underside where it meets the back face) → centre of the ball, up the face: how much higher than a charger clipped straight into the notch ("5 cm up") | 50 mm |
+| `knee_above_hood` | Where the upright starts to bend back, above the top of the notch | 24 mm |
+| `upright_lean` | Above the bend, the upright leans back toward the windscreen by this much (plus the face's 45° in the car) | 15° |
+| `neck_angle` | Ball stalk angle to square-out from the back face. Add 45° for the angle above level in the car | −20° (≈ 25° up in the car) |
 | `beam_side` | Which side of the notch the upright rides on, seen from the driver's seat | `"left"` (vent side, clear of the gauges) |
 
 > **Where the charger ends up:** clipped straight into the notch, the charger's ball
 > would sit about level with the top of the notch (where the clip hooks in, right under
-> the hood). The bracket lifts it **50 mm above that**, 30 mm above the top of the leather
-> (with `hood_t = 20`). The ball is about 81 mm out from the back face, about 6 mm further
-> toward you than on your last print, because the upright leans back 10° less. The
-> stalk now points 20° down instead of 25° up, so with the ball joint centred the phone
-> stands up and tips its top toward you; the joint does the fine aiming from there.
-> Because the phone hangs from a downward stalk, its centre sits about 20 mm lower than
-> it did at 25° up. If you want it higher, raise `rise`.
+> the hood). The bracket lifts it **50 mm above that**, measured up the back face. The ball
+> is about 81 mm out from the back face, and the stalk points about 25° above level in the
+> car, so with the ball joint centred the phone reclines toward your eyes. The joint does
+> the fine aiming from there. If you want it higher, raise `rise`.
 >
-> **The upright and the hood lip:** the upright's back now reaches the line of the hood's
-> front lip (`hood_over` = 40 mm), because your last print showed room behind it. The bend
-> starts 24 mm above the hood's underside, 2 mm higher than on your last print, so the back
-> corner of the knee passes just over the lip's top. The lip thickness (`hood_t`) is still a
-> guess. The build checks the leaning part clears the lip's corner with that guess, and the
-> side template will show it for real.
+> **The upright and the hood lip:** the upright's back reaches the line of the hood's
+> front lip (`hood_over` = 40 mm), because your earlier print showed room behind it. The
+> hood's underside slopes down toward you, so the lip sits well below the bend, which
+> starts 24 mm above the top of the notch. The lip thickness (`hood_t`) is still a guess;
+> the build checks the leaning part clears the lip's corner with that guess, and the side
+> template shows it for real.
 
 **If the wedge rocks on the ledge:** `floor_drop` sets the slope of the wedge's bottom. If
 in doubt, go 1 mm too steep rather than too shallow: the wedge then lands on the ledge's
@@ -86,8 +99,9 @@ front edge (the good spot) and the EPDM takes up the difference.
 1. **`part="gauge"`**: two 2.4 mm templates on one plate.
    - *Side template*: stand it in the notch, back edge on the back face and the sloped
      bottom edge on the ledge. The bottom should sit flat on the ledge, not rock on its
-     back corner; if it rocks, `floor_drop` is off. The top edge should sit about 2 mm under
-     the hood, which is the EPDM gap. The little V on the top edge, at the back of the
+     back corner; if it rocks, `floor_drop` is off. The top edge should run about 2 mm under
+     the hood's underside all the way out, which is the EPDM gap; if the gap closes up at
+     one end, `hood_slope` is off. The little V on the top edge, at the back of the
      upright, should line up with the hood's front lip, and the bend should clear the
      lip's top. The disc shows where the ball, and so the charger, will be.
    - *Plan template*: slide it in flat at mid height. It should reach the back face
@@ -99,63 +113,65 @@ front edge (the good spot) and the EPDM takes up the difference.
 For a full-size fit check, `d4-phone-mount-fit-test-pla.3mf` prints the whole bracket in
 PLA on a fast, low-filament draft profile. It isn't strong enough to use in the car.
 
-**Check the ball-joint collar comes off your vent clip.** The W116 head is held on its
-vent clip by a threaded collar around the ball. Unscrew it and make sure the collar
-slides off over the clip's ball. On some mounts the collar is trapped on the old
-stalk. If yours is, tell Claude. The fallback is a version with a fake vent slat for the
-stock steel hook clip to grab.
-
 ## Fitting
 
 1. **Dry-fit first.** Push the bracket in with the EPDM strip on and no tape, and check
-   it seats against the back face and feels wedged.
-2. Stick a strip of **closed-cell EPDM foam tape**, about 3 mm (compresses to 2), on the
-   block's top face, the part that goes under the hood. Run it right to the back edge and
-   across the full width: the back edge is where it does the work. Use EPDM rather than
-   felt, because felt takes a set and the wedge goes loose.
+   it seats against the back face with the EPDM squashed under the hood. Until it's taped
+   it can ease back out as the foam springs back, so don't rely on the dry fit to hold it.
+2. Stick a strip of **soft closed-cell EPDM foam tape**, about 3 mm (compresses to 2), on
+   the block's top face, the part that goes under the hood. Run it right to the back edge
+   and across the full width: the back edge is where it does the work. Soft foam is
+   better than firm here: it only has to keep contact, and a firm strip squashed hard
+   pushes the wedge back out of the notch. Use EPDM rather than felt, because felt takes a
+   set and the wedge goes loose.
 3. Lay a length of **braided fishing line** in the groove across the back face. Tuck
    its ends down the two sides of the block, where they'll sit in the gaps beside the
    notch walls. This is the rip cord.
 4. Clean the notch's back face with isopropyl alcohol. Car trim is often
    low-surface-energy plastic, so a wipe of **3M adhesion promoter (94 or 4298UV)**
    makes VHB grip far better.
-5. Put **two patches of 3M VHB 5952** (black, 1.1 mm), about 20 × 25 mm each, on the
-   back face below the rip-cord groove: one high, one low. That's plenty. The notch
-   takes the load, and the tape only stops the block sliding out. **Don't drive with it
-   dry-fitted**, though: the ledge slopes steeply (about 16 mm over 30 mm), so it nudges
-   the wedge outward, and without the tape it will slowly walk out on corrugations.
-6. Slide the block straight in, EPDM first under the hood lip, until the tape meets the
-   back face, then press hard for 30 s. Leave it 24 h before hanging the charger on it.
+5. Put **3M VHB 5952** (black, 1.1 mm) on the back face below the rip-cord groove:
+   three strips about 30 × 15 mm (high, middle, low), or one piece about 30 × 45 mm.
+   The notch takes the phone's load, and the tape stops the block sliding out. The ledge
+   falls away steeply and the squashed EPDM pushes the wedge outward all the time, so the
+   tape carries that steadily in a hot cabin; more tape area keeps it from creeping.
+   **Don't drive with it dry-fitted**: without the tape it will slowly walk out on
+   corrugations.
+6. Slide the block in, EPDM first under the hood lip, until the tape meets the back face,
+   then press hard for 30 s. Leave it 24 h before hanging the charger on it.
 7. Unscrew the W116 head's collar, pop the head onto the printed ball, tighten the
    collar and aim it. It'll want to yaw right, toward you. The neck is kept round on
    that side, so nothing fouls the collar.
-8. Clip the USB-C lead into the groove down the sloping front of the wedge. Near the
-   bottom the groove turns straight down, so the lead drops off in front of the ledge's
-   edge rather than getting pinched under the wedge.
+8. Clip the USB-C lead into the groove down the sloping front of the wedge. It runs all
+   the way to the bottom corner, where a small pocket lets the lead bend over the ledge's
+   edge without getting pinched under the wedge.
 
 **Removing it:** pull the two rip-cord ends down and forward with a sawing motion. The
-line cuts through both tape patches. If the line has gone, warm the block with a hair
-dryer (VHB softens) and ease it straight out. Adhesive remover takes off any residue.
+line cuts through the tape. If the line has gone, warm the block with a hair dryer (VHB
+softens) and ease it straight out. Adhesive remover takes off any residue.
 
 ## Why it's shaped like this
 
-**The notch does the holding; the tape stops it walking.** The phone sits out on a lever,
-so it's always trying to tip the wedge forward. The tipping pivot is the front edge of
-the wedge's bottom, where it sits on the ledge. Behind that edge, the top of the wedge
-pushes up into the hood, where it's already wedged by the EPDM. The tape on the back
-face is loaded in *shear*, VHB's strongest direction. Nothing asks the tape to hold the
-phone's weight in peel.
+**The notch does the holding; the tape stops it walking.** The model checks the worst
+case: the phone's load pulling straight down the back face, trying to tip the wedge out
+of the notch about the front edge of its bottom, where it sits on the ledge. Behind that
+edge, the top of the wedge pushes up into the hood, where it's already wedged by the
+EPDM. The tape on the back face is loaded in *shear*, VHB's strongest direction, and
+nothing asks it to hold the phone's weight in peel. In the car the back face leans back
+45°, so the phone's weight actually tips the wedge back into the trim; it's jolts toward
+you that bring the worst case on.
 
 ### Why the bottom uses the whole ledge
 
-Only the part of the hood contact **behind** the pivot pushes back, so the deeper the
-bottom sits on the ledge, the longer that lever and the less the EPDM gets squashed. The
+Only the hood contact **behind** the pivot pushes back, so the deeper the bottom sits on
+the ledge, the longer that lever and the less the EPDM gets squashed. The sloped hood
+helps too: it pushes back and down at once, so it has more leverage about the pivot. The
 model works this out and asserts it:
 
 | Wedge bottom on the ledge | Push on the EPDM in a 4 g bump | Pressure on the EPDM |
 |---|---|---|
-| **30 mm (the whole ledge, default)** | **69 N** (17 N sitting still) | **0.12 MPa** peak, under the 0.15 limit |
-| 10 mm | 282 N (71 N sitting still) | 1.67 MPa peak: crushes the foam, so it rocks |
+| **30 mm (the whole ledge, default)** | **37 N** (9 N sitting still) | **0.05 MPa** peak, well under the 0.15 limit |
+| 10 mm | 76 N (19 N sitting still) | 0.27 MPa peak: crushes the foam, so it rocks |
 
 (The pressure peaks at the back edge of the strip, because the wedge pivots about its
 front.) A bottom a little *longer* than the ledge is harmless: it just pivots on the
@@ -190,28 +206,33 @@ All of that is on the vent side. When you swing the charger right toward yoursel
 collar closes on the neck's *right* side, which is kept round, so you keep the full
 range of the ball joint.
 
-**The head.** The stalk points 20° down, but the upright leans back 15°, so a stalk
-straight out of the leaning face would point 15° up. Instead, the stalk comes out of a
-small head whose face is square to it. The collar nut sits about 5 mm from that face,
-just as it sat 5 mm from the flat upright on your test print, so the joint swings the
-same way. Below the stalk, the leaning face angles back toward the collar, so the head's
-flat face runs 10 mm below the stalk before it meets it. That leaves about 3 mm between
-the leaning face and a centred collar nut. The build checks this, assuming a 26 mm nut.
+**The head.** The upper part of the upright leans back 15° from the face, but the stalk
+points 20° below square-out, so a stalk straight out of the leaning face would aim 35°
+too high. Instead, the stalk comes out of a small head whose face is square to it. The
+collar nut sits about 5 mm from that face, just as it sat 5 mm from the flat upright on
+your test print, so the joint swings the same way. Below the stalk, the leaning face
+angles back toward the collar, so the head's flat face runs 10 mm below the stalk before
+it meets it. That leaves about 3 mm between the leaning face and a centred collar nut
+(the build checks this, assuming a 26 mm nut), and the nut can't reach the upright at any
+tilt of the joint.
 
-**The upright leans back, but less.** It rises straight until it's clear of the hood lip,
-then leans 15° toward the windscreen, back over the hood. It's 5 mm deeper than on your
-last print, all of it toward the dash, where you found room. Its front face hasn't moved.
+**The upright.** It rises from the line of the hood lip, then bends back over the hood.
+It's 25 mm deep, 5 mm deeper toward the dash than the print before last, where you found
+room. Its front face hasn't moved.
 
-**The back is flat.** Your last print's 4 mm dish was about 4 mm too deep, so the back is
-flat again. `back_sag` is still there if a different car needs a curve.
+**The back is dished 2 mm and the top slopes with the hood.** The trim face bulges gently
+toward you, so the back is a matching shallow arc (`back_sag`). The hood's underside closes
+in toward you by about 15°, so the wedge's top follows it (`hood_slope`) and the EPDM gap
+stays even all the way out.
 
 ## Off-road strength
 
 The file computes the load path and asserts it on every build. Design case: a **0.45 kg**
-charger plus big phone in a case, at **4 g** vertical (washouts, corrugations, a hard
-landing) and **1.5 g** sideways. The allowable is printed ASA strength derated to **60 %**
-for a hot parked cabin, then divided by a **2.5 safety factor**. Sections are treated as
-what the printer really makes: 6 solid perimeters around a 20 % infill core.
+charger plus big phone in a case, at **4 g** (washouts, corrugations, a hard landing) and
+**1.5 g** sideways, with the main load taken straight down the back face (the worst
+direction for the wedge; see above). The allowable is printed ASA strength derated to
+**60 %** for a hot parked cabin, then divided by a **2.5 safety factor**. Sections are
+treated as what the printer really makes: 6 solid perimeters around a 20 % infill core.
 
 | Section | Stress at the design case | Allowable |
 |---|---|---|
@@ -220,7 +241,7 @@ what the printer really makes: 6 solid perimeters around a 20 % infill core.
 | Upright where it leaves the wedge (16 × 25) | 0.7 MPa | 7.2 MPa |
 | Neck, sideways jolt | 2.4 MPa | 7.2 MPa |
 
-The EPDM under the hood peaks at 0.12 MPa at the same design case (limit 0.15 MPa, see
+The EPDM under the hood peaks at 0.05 MPa at the same design case (limit 0.15 MPa, see
 above). The slim neck is the tightest spot, which is why it's only Ø10 for the last few mm.
 Raise `design_mass_kg` for a heavier phone, or change `walls`/`infill`, and the build
 tells you if it stops adding up.
@@ -267,14 +288,15 @@ a rough lower edge on the ball, tell Claude.
 |---|---|
 | Doesn't fit the notch | `notch_h`, `notch_w`, `vent_return`, `cluster_return`, `hood_over` |
 | Wedge rocks on the ledge | `floor_drop` (the bottom's slope) |
+| Top doesn't sit evenly under the hood | `hood_slope` (the angle between the back face and the top) |
+| Back doesn't sit flat on the trim | `back_sag` (0 = flat) |
 | Shorter wedge bottom | `block_bottom_d`; the build refuses if the EPDM would be overloaded |
 | Charger further out / closer | `upright_front` moves the whole upright |
 | Upright deeper / shallower | `up_d` (grows toward the dash; the build refuses if it would reach behind the hood lip) |
-| Charger higher / lower | `rise` (from the top of the notch) |
-| Charger further back / forward | `upright_lean` (0 = straight up) |
+| Charger higher / lower | `rise` (from the top of the notch, up the back face) |
+| Charger further back / forward | `upright_lean` (0 = straight up the back face) |
 | Bend higher / lower | `knee_above_hood`; the build checks the leaning part still clears the lip (using `hood_t`) |
 | Charger aimed higher / lower by default | `neck_angle` (the head turns with it) |
-| Back face curve | `back_sag` (0 = flat) |
 | Upright on the cluster side | `beam_side = "right"`, but note the neck's keel then sits on the driver side and limits how far the charger swings right |
 | Ball too tight / loose in the socket | `asa_shrink` |
 | Thicker USB-C lead | `cable_d` |
@@ -290,8 +312,8 @@ a rough lower edge on the ball, tell Claude.
 - `d4-phone-mount-fit-test-pla.3mf`: the same bracket as a PLA draft print, for checking
   the fit only (0.28 mm Extra Draft, 2 walls, 8 % lightning infill, no brim).
 - `d4-phone-mount-gauge.stl`, `d4-phone-mount-ball-test.stl`: the test prints.
-- `measure-guide.svg`: what to measure.
-- `preview-*.png`: renders.
+- `measure-guide.svg`: what to measure, drawn as it sits in the car.
+- `preview-*.png`: renders (the car views are tilted to the 45° back face).
 
 Preview-only aid: `openscad -D show_context=true d4-phone-mount-v1.scad` ghosts the notch
 floor, back face and hood around the part.
