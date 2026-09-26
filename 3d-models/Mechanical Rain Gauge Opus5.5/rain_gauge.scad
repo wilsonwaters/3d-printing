@@ -142,10 +142,11 @@ gface = 4;  ggap = 1;   // gear face width, gap between gear planes
 // Reset
 ht_r0   = 3.0;          // heart cusp radius (bottom of the notch)
 ht_rmax = 18;           // heart tip radius
-ht_tip  = 162;          // tip angle from the notch (asymmetric: dead point off the units steps)
+ht_tip  = 168;          // tip angle from the notch (asymmetric: dead point off the units steps)
 ht_t    = 3.2;
 notch_psi = 55;         // notch flanks: steep log spiral (pressure angle) = self-centring 70° V
-notch_a   = 14;         // notch flank span each side (deg)
+notch_a   = 10;         // steep notch flank span each side (deg)
+notch_blend = 6;        // growth-rate blend from the notch flank into the main flank (deg, no corner)
 mu_design = 0.35;       // PETG/PETG with PTFE dry lube (dry can reach 0.45 – lube the hearts)
 nose_r    = 0.6;        // hammer nose radius
 nose_e    = 0;          // nose path passes through the arbor axis (push along the notch axis)
@@ -247,9 +248,17 @@ x_contact     = dial_x[3] - rc_mid;                  // drive-pawl contact line
 
 // heart
 ht_ks = tan(notch_psi);                              // notch flank growth
-ht_r1 = ht_r0*exp(ht_ks*notch_a*PI/180);             // radius where the notch flank ends
-ht_k1 = ln(ht_rmax/ht_r1)/((ht_tip - notch_a)*PI/180);
-ht_k2 = ln(ht_rmax/ht_r1)/((360 - ht_tip - notch_a)*PI/180);
+// ln r grows at ht_ks for notch_a, blends linearly to the main rate over notch_blend, then
+// holds it to the tip at ht_rmax (solved so each flank lands exactly on ht_rmax)
+function ht_kmain(span) = (ln(ht_rmax/ht_r0) - ht_ks*(notch_a + notch_blend/2)*PI/180)
+                          /((span - notch_a - notch_blend/2)*PI/180);
+ht_k1 = ht_kmain(ht_tip);
+ht_k2 = ht_kmain(360 - ht_tip);
+function ht_lnr(b, km) = let(r = PI/180, a1 = notch_a, ab = notch_blend)
+    b <= a1 ? ht_ks*b*r :
+    b <= a1 + ab ? ht_ks*a1*r + ht_ks*(b - a1)*r - (ht_ks - km)*pow((b - a1)*r, 2)/(2*ab*r) :
+    ht_ks*(a1 + ab/2)*r + km*(ab/2)*r + km*(b - a1 - ab)*r;
+ht_r1 = ht_r0*exp(ht_lnr(notch_a, ht_k1));           // radius where the steep notch flank ends
 ht_psi_min = min(atan(ht_k1), atan(ht_k2));          // main flank pressure angle (deg)
 r_seat   = ht_r0 + nose_r/sin(90 - notch_psi);       // nose centre radius when seated (≈)
 x_seat   = sqrt(r_seat*r_seat - nose_e*nose_e);
@@ -279,9 +288,7 @@ function contact_ratio(ra1, rb1, ra2, rb2, a) =
     (sqrt(ra1*ra1 - rb1*rb1) + sqrt(ra2*ra2 - rb2*rb2) - a*sin(pa))/(PI*gm*cos(pa));
 
 function heart_r(a) = let(b = ((a % 360) + 360) % 360, c = 360 - b)
-    b <= notch_a ? ht_r0*exp(ht_ks*b*PI/180) :
-    c <= notch_a ? ht_r0*exp(ht_ks*c*PI/180) :
-    b <= ht_tip  ? ht_r1*exp(ht_k1*(b - notch_a)*PI/180) : ht_r1*exp(ht_k2*(c - notch_a)*PI/180);
+    b <= ht_tip ? ht_r0*exp(ht_lnr(b, ht_k1)) : ht_r0*exp(ht_lnr(c, ht_k2));
 heart_pts = [for (a = [0:1:359]) heart_r(a)*[cos(a), sin(a)]];
 
 // polygon area / centroid (shoelace)
@@ -354,6 +361,7 @@ assert(ctr_dist - ra_w > rf_p + 0.1 && ctr_dist - pin_ra > rf_w + 0.1, "tip/root
 // hearts / reset
 assert(ht_psi_min - atan(mu_design) >= 3, str("heart flank angle ", ht_psi_min, " too low for PETG"));
 assert(90 - notch_psi > 0 && notch_psi - atan(0.45) >= 20, "notch self-centres even dry");
+assert(abs(heart_r(ht_tip) - ht_rmax) < 0.01 && abs(heart_r(ht_tip + 0.001) - ht_rmax) < 0.05, "heart flanks meet at the tip");
 // units dial rests every 36° CW from zero; the tip must not face the nose there (dead point)
 assert(min([for (k = [1:9]) abs(((ht_tip - 36*k) % 360 + 540) % 360 - 180)]) >= 10,
        "heart dead point coincides with a units-dial rest position");
