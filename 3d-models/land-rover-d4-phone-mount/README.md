@@ -3,8 +3,9 @@
 A one-piece bracket that plugs into the recessed notch on the dash just left of the
 instrument binnacle (right-hand-drive 2013 Discovery 4, Australian market), under the
 leather hood, and carries a **LISEN W116 Qi2.2 25 W** magnetic wireless charger on a
-standard **17 mm ball**. It holds the phone **4 cm out from the notch and 5 cm up**, and
-is built for corrugations and four-wheel driving, not just bitumen.
+standard **17 mm ball**. It holds the phone **5 cm higher** than a charger clipped straight
+into the notch, on an upright that leans back toward the windscreen once it clears the
+hood lip. It's built for corrugations and four-wheel driving, not just bitumen.
 
 ![In the car — side view](preview-car-side.png)
 
@@ -12,9 +13,10 @@ is built for corrugations and four-wheel driving, not just bitumen.
 - A wedge fills the notch. Its sloped bottom sits on the whole ledge, its front face
   climbs to 65 mm out at the top, an EPDM strip on top presses up into the underside of
   the hood, and two small patches of 3M VHB hold its back face.
-- An upright rises in front of the hood lip. At the top, a short tapered neck ends in a
-  printed 17 mm ball, and the W116 head clamps straight onto it. No vent clip in
-  between to rattle.
+- The wedge's back is dished to sit on the trim face, which bulges about 4 mm toward you.
+- An upright rises in front of the hood lip, then leans back 25° over the hood. A short
+  tapered neck comes straight out of it and ends in a printed 17 mm ball, and the W116
+  head clamps straight onto it. No vent clip in between to rattle.
 - Snap-in groove down the front of the upright for the USB-C lead.
 - A rip-cord groove across the back means it comes off again without damage.
 - Strength is checked by the model itself (see [Off-road strength](#off-road-strength)).
@@ -23,8 +25,8 @@ is built for corrugations and four-wheel driving, not just bitumen.
 
 ## Before you print: measure
 
-`notch_h`, `hood_over` and the ledge depth are **measured**. The rest are still
-**estimates from photos**. Measure these and put them at the top of
+`notch_h`, `hood_over`, the ledge depth and the back-face curve are **measured**. The
+rest are still **estimates from photos**. Measure these and put them at the top of
 `d4-phone-mount-v1.scad`, or send them to Claude and it'll re-export:
 
 ![What to measure](measure-guide.svg)
@@ -32,30 +34,46 @@ is built for corrugations and four-wheel driving, not just bitumen.
 | Parameter | What it is | Default |
 |---|---|---|
 | `notch_h` | Floor ledge up to the underside of the leather hood, measured at the back of the notch | **65 mm** (measured) |
-| `hood_over` | How far the hood's front lip sticks out past the notch's back face | **40 mm** (measured) |
-| `floor_depth` | How far the ledge runs out from the back face | **30 mm** (measured, approx) |
+| `hood_over` | How far the hood's front lip sticks out past the back face, measured from where the back face meets the hood | **40 mm** (measured) |
+| `back_sag` | The back face bulges toward you: a ruler held up-and-down rocks on it with this gap at each end | **4 mm** (measured) |
+| `hood_t` | Thickness of the hood's lip, underside to top of the leather. **Sets how low the upright can start leaning**, so it's worth measuring | 20 mm, **estimate** |
+| `floor_depth` | How far the ledge runs out, measured from where the back face meets the ledge | **30 mm** (measured, approx) |
 | `floor_drop` | How much lower the ledge is 30 mm out than where it meets the back face (it slopes down) | 6 mm, **estimate** |
 | `notch_w` | Width across the mouth of the notch | 40 mm |
 | `vent_return` | Vent-side wall: `[how far it steps in by the back face, how deep that angled part runs]` | `[8, 8]` |
 | `cluster_return` | Cluster-side wall, same meaning (`[0, 0]` = square corner) | `[2, 2]` |
-| `hood_t` | Thickness of the hood's lip, underside to top of the leather (used for reporting only) | 20 mm |
+
+Because the back face bulges, **where you measure from matters**. `hood_over` and
+`floor_depth` count from where the back face meets the hood and the ledge, which is how
+you'd naturally tape them. Those spots sit about 4 mm behind the middle of the bulge, and
+the model allows for that.
 
 Where you want the charger (already set to what you asked for):
 
 | Parameter | What it is | Default |
 |---|---|---|
-| `upright_offset` | Notch back face → dash side of the upright, 5 mm clear of the hood lip | 45 mm |
+| `upright_gap` | Hood lip → dash side of the upright (it stands just clear of the lip) | 5 mm |
 | `block_bottom_d` | How much of the ledge the wedge's bottom sits on (see [why not 10 mm](#why-the-bottom-uses-the-whole-ledge)) | 30 mm (all of it) |
 | `rise` | Top of the notch (hood underside) → centre of the ball: how much higher than a charger clipped straight into the notch ("5 cm up") | 50 mm |
-| `ball_pitch` | Neck tilted up, a head start on aiming at your eyes (the ball joint does the rest) | 10° |
+| `upright_lean` | Above the hood lip, the upright leans back toward the windscreen by this much | 25° |
+| `neck_tilt` | Neck angle relative to straight out of the leaning upright. At 0 it points 25° up, so the charger starts reclined | 0° |
 | `beam_side` | Which side of the notch the upright rides on, seen from the driver's seat | `"left"` (vent side, clear of the gauges) |
 
 > **What "5 cm up" means here:** clipped straight into the notch, the charger's ball
 > would sit about level with the top of the notch (where the clip hooks in, right under
-> the hood). The bracket lifts it **50 mm above that**, and the ball sits about 85 mm out
-> from the notch so the charger clears your 40 mm hood lip. That leaves the ball about 30 mm above the top of the leather
-> (with `hood_t = 20`). The side template shows exactly where the ball will be before
-> you commit. Nudge `rise` if you want it higher or lower.
+> the hood). The bracket lifts it **50 mm above that**. With the lean, the ball sits about
+> 71 mm out from the bulge on the back face. That's about 7 mm further back than your test
+> print, and the charger is also reclined 25°. It sits about 30 mm above
+> the top of the leather (with `hood_t = 20`). The side template shows exactly where the
+> ball will be before you commit. Nudge `rise` if you want it higher or lower.
+>
+> **Why the lean starts where it does:** the upright has to clear the hood lip before it
+> can lean back over the hood. The model puts the bend as low as the lip allows, which
+> is about 22 mm above the hood's underside if the lip is 20 mm thick (`hood_t`). The
+> leaning part keeps 5 mm clear of the lip's top corner. Measure
+> the real thickness. A thinner lip lets it bend lower, and the phone ends up further
+> back. Also check with the side template that nothing on the hood's top surface gets in
+> the way of the leaning part.
 
 **Measuring `floor_drop`:** lay a ruler flat across the top of the ledge from the back
 face, level it, and measure how far the ledge has dropped below it 30 mm out. If in
@@ -132,8 +150,8 @@ model works this out and asserts it:
 
 | Wedge bottom on the ledge | Push on the EPDM in a 4 g bump | Pressure on the EPDM |
 |---|---|---|
-| **30 mm (the whole ledge, default)** | **73 N** (18 N sitting still) | **0.13 MPa** peak, under the 0.15 limit |
-| 10 mm | 296 N (74 N sitting still) | 1.75 MPa peak: crushes the foam, so it rocks |
+| **30 mm (the whole ledge, default)** | **63 N** (16 N sitting still) | **0.12 MPa** peak, under the 0.15 limit |
+| 10 mm | 276 N (69 N sitting still) | 1.73 MPa peak: crushes the foam, so it rocks |
 
 (The pressure peaks at the back edge of the strip, because the wedge pivots about its
 front.) A bottom a little *longer* than the ledge is harmless: it just pivots on the
@@ -155,20 +173,29 @@ and nothing with jaws to vibrate loose on corrugations.
 **The neck tapers, and it's round where it matters.** It starts Ø14 at the upright and
 tapers gently to Ø10 only for the last few mm, where the socket needs room to swing.
 There's no sharp shoulder at the most-stressed point, which matters for vibration
-fatigue. Printing a ball on its side needs something under it, so:
+fatigue. This is the exact neck you test-fitted, and the ball joint worked well on it.
+Printing a ball on its side needs something under it, so:
 
-- The root and most of the taper have a keel running down to the plate, with sides no
-  steeper than 40°.
-- Only the last ~4 mm before the ball is cut flat underneath and prints as a short bridge.
+- The root has a keel running down to the plate, with sides no steeper than 40°.
+- The rest is cut flat underneath and prints as a ~9 mm bridge, as on your test print.
+  The keel stops at the root on purpose: the LISEN collar nut sits within about 5 mm of
+  the upright, so anything extra there would foul it.
 - The ball gets an 8 mm flat where it touches the plate.
 
 All of that is on the vent side. When you swing the charger right toward yourself, the
 collar closes on the neck's *right* side, which is kept round, so you keep the full
 range of the ball joint.
 
-**One thing to know:** with the phone square to the charger, its bottom edge clears the
-upright by about 30 mm. Tilting the screen up more than about 25° brings the phone's
-bottom edge onto the upright.
+**The back is dished.** Your trim face bulges about 4 mm toward you from top to bottom,
+so a flat back would rock on it. The wedge's back is a matching arc (`back_sag`), which
+puts the tape patches flat against the trim.
+
+**The upright leans back.** It rises straight until it's clear of the hood lip, then
+leans 25° toward the windscreen, back over the hood. The neck comes straight out of the
+leaning face, so the charger sits about 7 mm further back than on your test print and
+starts tilted back 25° toward your eyes. The ball joint does the fine aiming from there.
+Leaning back also shortens the phone's leverage on the wedge, so everything is under a
+little less load than before.
 
 ## Off-road strength
 
@@ -182,10 +209,10 @@ what the printer really makes: 6 solid perimeters around a 20 % infill core.
 |---|---|---|
 | Neck where the slim Ø10 part starts (worst point) | 6.3 MPa | 7.2 MPa |
 | Neck root at the upright (Ø14) | 3.3 MPa | 7.2 MPa |
-| Upright where it leaves the wedge (16 × 20) | 1.1 MPa | 7.2 MPa |
+| Upright where it leaves the wedge (16 × 20) | 0.9 MPa | 7.2 MPa |
 | Neck, sideways jolt | 2.4 MPa | 7.2 MPa |
 
-The EPDM under the hood peaks at 0.13 MPa at the same design case (limit 0.15 MPa, see
+The EPDM under the hood peaks at 0.12 MPa at the same design case (limit 0.15 MPa, see
 above). The slim neck is the tightest spot, which is why it's only Ø10 for the last few mm.
 Raise `design_mass_kg` for a heavier phone, or change `walls`/`infill`, and the build
 tells you if it stops adding up.
@@ -219,7 +246,7 @@ under the phone in a car parked in the sun, and PLA (≈55 °C) would sag in a d
 turn supports on with a 45° threshold just to look, Bambu should only mark two small spots.
 Any ball printed on its side has them:
 
-- the ~4 mm bridge under the neck, right next to the ball;
+- the ~9 mm bridge under the neck, which printed fine on your test piece;
 - the first ~2 mm of the ball above its flat.
 
 Both print fine with supports off; bridges get the fan burst. Don't add supports under the
@@ -233,9 +260,11 @@ a rough lower edge on the ball, tell Claude.
 | Doesn't fit the notch | `notch_h`, `notch_w`, `vent_return`, `cluster_return`, `hood_over` |
 | Wedge rocks on the ledge | `floor_drop` (the bottom's slope) |
 | Shorter wedge bottom | `block_bottom_d`; the build refuses if the EPDM would be overloaded |
-| Charger further out / closer | `upright_offset` (stays ≥ `hood_over` + 3 mm, asserted) |
+| Charger further out / closer | `upright_gap` (at least 3 mm, asserted) |
 | Charger higher / lower | `rise` (from the top of the notch) |
-| Charger aimed higher by default | `ball_pitch` |
+| Charger further back / forward | `upright_lean` (0 = straight up). How low the bend can go depends on `hood_t` |
+| Charger aimed higher / lower by default | `neck_tilt` |
+| Back face curve | `back_sag` (0 = flat) |
 | Upright on the cluster side | `beam_side = "right"`, but note the neck's keel then sits on the driver side and limits how far the charger swings right |
 | Ball too tight / loose in the socket | `asa_shrink` |
 | Thicker USB-C lead | `cable_d` |
