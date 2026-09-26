@@ -558,7 +558,8 @@ function fing_samples() = let(p = fing_path())
 // two rails on the front frame. A peg on its front face runs in a cam track cut in the slide's
 // cam plate (heart plane, below the U heart), so the slide lifts the V into a star slot in the
 // first bolt_ramp[1] mm of the stroke and pulls it out again on the return. Positive both ways:
-// no spring to fight. The V also centres the units arbor exactly on its tooth grid.
+// no spring to fight. The V also centres the units arbor on its tooth grid (the slots are indexed
+// to the ratchet's rest positions), which takes out any drag before the bolt arrived.
 bolt_w     = 5;                                        // bolt width (x)
 bolt_vh    = star_depth + 0.3;                         // V height (flanks do the locking)
 bolt_v_out = dial_z - star_r - 0.5;                    // V tip, retracted (0.5 below the star tips)
@@ -568,8 +569,13 @@ bolt_peg_d = 3;
 bolt_peg_z = dial_z - ht_rmax - 8;                     // peg centre, retracted (below the U heart)
 bolt_z0    = bolt_peg_z - bolt_peg_d/2 - 2.2;          // bolt bottom, retracted
 bolt_t     = (y_ff_front - y_ht_back) - 0.6;           // star-zone depth less 0.3 each side
-bolt_ramp  = [0.3, 3.3];                               // slide travel: ramp start, lock fully in
+bolt_ramp  = [0.3, 5.3];                               // slide travel: ramp start, lock fully in (26.6° ramp)
 bolt_rail_w = 2.5;  bolt_rail_top = bolt_v_out - bolt_vh - 0.8;
+// retention in Y: the bolt's wide rear part (bolt_w) runs behind 45°-undercut lips on the rails;
+// its narrow front part (bolt_wf) and the peg pass between the lips (slides in from below)
+bolt_step  = 1.6;                                       // depth of the narrow front part
+bolt_wf    = 3.4;                                       // narrow front width
+bolt_lip   = 0.8;                                       // lip overhang inward
 trk_w      = bolt_peg_d + 0.5;                         // cam track width
 cam_pad    = 1.8;                                      // cam plate material around the track
 cam_z0     = bolt_peg_z - trk_w/2 - cam_pad;
@@ -577,13 +583,19 @@ cam_z1     = bolt_peg_z + bolt_lift + trk_w/2 + cam_pad;
 hang_x     = [sl_x1 - w5, sl_x1];                      // cam hanger (right end of the slide)
 // return leaf (front-frame + star plane, free in a window cut through the front frame so it can
 // bend): a vertical cantilever left of the H dial; a tab on the slide bar presses its right face.
+// The tab is a short rib at the top of the bar, so the leaf is loaded at a known height lf_zc
+// (a flat tab face always touches the bent leaf at the tab's lowest edge).
 lf_x_free = -34;  lf_z0 = pl_z0 + 5;  lf_z1 = sl_z0 + sl_h - 0.5;  lf_t = w4;  lf_pre = 7;
-lf_L      = lf_z1 - lf_z0;
+lf_tab_h  = 2.5;  lf_zc = sl_z0 + sl_h - lf_tab_h;     // contact height (tab rib's lower edge)
+lf_L      = lf_zc - lf_z0;                            // loaded length
 lf_b      = ff_t + 0.4 + star_t - 0.2;                 // leaf depth (through the frame + star plane)
 lf_tab_w  = 4;
-function lf_defl(z, d_tip) = let(xi = max(0, (z - lf_z0)/lf_L)) d_tip*xi*xi*(3 - xi)/2;
+// deflection of the leaf's centreline at height z for a deflection d at the contact (cantilever
+// with an end load; straight tangent above the contact)
+function lf_defl(z, d) = let(xi = (z - lf_z0)/lf_L)
+    z <= lf_z0 ? 0 : z <= lf_zc ? d*xi*xi*(3 - xi)/2 : d*(1 + 1.5*(z - lf_zc)/lf_L);
 lf_F_rest = 2000*lf_b*pow(lf_t, 3)*lf_pre/(4*pow(lf_L, 3));                   // N (E ≈ 2 GPa)
-lf_strain = 3*lf_t*(lf_pre + 0)/(2*lf_L*lf_L);                                   // at rest
+lf_strain_max = 3*lf_t*(lf_pre + reset_stroke)/(2*lf_L*lf_L);                   // at full stroke
 // reset plunger: flat bar through a rectangular bore in the right wall, snap barbs inside, head
 // outside. It only pushes the slide; the head bottoms on the guide boss at full stroke.
 pl_bar     = [5.0, 6.0];                                // plunger bar section (use y, z)
@@ -599,12 +611,13 @@ module plate2d() difference() {
 }
 module arbor_holes2d() for (x = dial_x) translate([x, dial_z]) circle(d = bore_bear);
 
-// leaf window: the leaf's swept area (rest preload → full stroke) + 1 mm, through the frame plate
+// leaf window: the leaf's swept area at full stroke (+0.6 slot spare) + 1.5 mm, through the plate
+lf_win_c = 1.5;
 module leaf_window2d() {
-    d_max = lf_pre + reset_stroke + 1;
-    hull() for (k = [0:8]) let(z = lf_z0 + 0.5 + (lf_L + 1)*k/8)
-        translate([lf_x_free - lf_defl(z, d_max) - 1, z]) square([lf_defl(z, d_max) + lf_t + 2, fudge]);
-    translate([lf_x_free - 1, lf_z0 - fudge]) square([lf_t + 2, 1]);
+    d_max = lf_pre + reset_stroke + 0.6;
+    hull() for (k = [0:16]) let(z = lf_z0 + 0.5 + (lf_z1 + 1 - lf_z0 - 0.5)*k/16)
+        translate([lf_x_free - lf_defl(z, d_max) - lf_win_c, z]) square([lf_defl(z, d_max) + lf_t + 2*lf_win_c, fudge]);
+    translate([lf_x_free - lf_win_c, lf_z0 - fudge]) square([lf_t + 2*lf_win_c, 1]);
 }
 module front_frame() {
     zf = ff_t;                                                    // front face (print top)
@@ -622,10 +635,14 @@ module front_frame() {
                 cylinder(d = sl_pin_d + 2.4, h = (y_ff_front - y_ht_back) + fudge);
                 cylinder(d = sl_pin_d, h = hz_depth - 0.3 + fudge);
             }
-            // lock-bolt rails (star plane), either side of the bolt under the units arbor
+            // lock-bolt rails (star plane), either side of the bolt under the units arbor, with lips
             translate([0, 0, zf - fudge]) linear_extrude(bolt_t + 0.3 + fudge)
                 for (sx = [-1, 1]) translate([dial_x[3] + sx*(bolt_w/2 + 0.3) + (sx < 0 ? -bolt_rail_w : 0), bolt_z0 - 1])
                     square([bolt_rail_w, bolt_rail_top - bolt_z0 + 1]);
+            let(xi = bolt_w/2 + 0.3, zt = zf + bolt_t + 0.3, zs = zf + 0.3 + bolt_t - bolt_step - 0.1)
+            translate([dial_x[3], 0, 0]) for (m = [0, 1]) mirror([m, 0, 0])
+                translate([0, bolt_rail_top, 0]) rotate([90, 0, 0]) linear_extrude(bolt_rail_top - bolt_z0 + 1)
+                    polygon([[xi + fudge, zs], [xi + fudge, zt], [xi - bolt_lip, zt], [xi - bolt_lip, zs + bolt_lip]]);
             // return leaf: root block on the window's lower edge, leaf free in the window, printed
             // from the bed (full frame + star depth) so nothing fuses it to the plate
             linear_extrude(lf_b) {
@@ -658,13 +675,13 @@ module dial_marks2d(i) {
         for (k = [0:9]) let(a = 90 - d*36*k) {
             rotate(a) translate([tick_r[0], -0.45]) square([tick_r[1] - tick_r[0], 0.9]);
             translate(num_r*[cos(a), sin(a)])
-                text(str(k), size = num_size, font = "Liberation Sans:style=Bold", halign = "center", valign = "center");
+                text(str(k), size = num_size, font = "Liberation Sans:style=Bold", $fn = 24, halign = "center", valign = "center");
         }
         // direction arrow between 0 and 1 just inside the ring
         rotate(90 - d*18) translate([dial_d/2 - 2.6, 0]) rotate(d > 0 ? 180 : 0)
             polygon([[-1.1, -1.4], [-1.1, 1.4], [1.3, 0]]);
         translate([0, -dial_d/2 - 5]) text(str("×", dial_lbl[i]), size = 3.6,
-            font = "Liberation Sans:style=Bold", halign = "center", valign = "center");
+            font = "Liberation Sans:style=Bold", $fn = 24, halign = "center", valign = "center");
     }
 }
 module dial_face_plate() difference() {
@@ -677,12 +694,12 @@ module dial_face_plate() difference() {
 module dial_face_marks() translate([0, 0, dial_t - fudge]) linear_extrude(num_h + fudge) {
     for (i = [0:3]) dial_marks2d(i);
     translate([0, pl_z1 - 8]) text("MILLIMETRES OF RAIN", size = 5.2,
-        font = "Liberation Sans:style=Bold", halign = "center", valign = "center");
+        font = "Liberation Sans:style=Bold", $fn = 24, halign = "center", valign = "center");
     translate([pl_x1 - 9, sl_pin_z]) text("RESET", size = 3.4,
-        font = "Liberation Sans:style=Bold", halign = "right", valign = "center");
+        font = "Liberation Sans:style=Bold", $fn = 24, halign = "right", valign = "center");
     translate([pl_x1 - 7.8, sl_pin_z]) polygon([[0, -1.8], [0, 1.8], [3, 0]]);     // arrow → plunger
     translate([0, pl_z0 + 10.5]) text("read left to right · take the lower figure", size = 3,   // above the screw heads
-        font = "Liberation Sans", halign = "center", valign = "center");
+        font = "Liberation Sans", $fn = 24, halign = "center", valign = "center");
 }
 module dial_face() union() { dial_face_plate(); dial_face_marks(); }   // one part; colour-change at z = dial_t
 
@@ -717,7 +734,7 @@ module slide() {
             }
             // spring tab: the return leaf is bent lf_pre to the LEFT of this tab on assembly and
             // presses the tab's left face (the model shows the leaf straight, right of the tab)
-            translate([lf_x_free - lf_pre + lf_t, sl_z0, ht_t - fudge]) cube([lf_tab_w, sl_h, tab_d + fudge]);
+            translate([lf_x_free - lf_pre + lf_t, lf_zc, ht_t - fudge]) cube([lf_tab_w, lf_tab_h, tab_d + fudge]);
         }
         // lock-bolt cam track (through)
         translate([0, 0, -fudge]) linear_extrude(ht_t + 2*fudge) track2d(trk_w);
@@ -731,11 +748,12 @@ module slide() {
 // lock bolt: printed rear face down (front view XZ in the print plane), peg up (= toward the front)
 module lock_bolt() {
     v_base = bolt_v_out - bolt_vh;
-    linear_extrude(bolt_t) {
-        translate([dial_x[3] - bolt_w/2, bolt_z0]) square([bolt_w, v_base - bolt_z0 + fudge]);
-        translate([dial_x[3], v_base]) polygon([[-bolt_vh*tan(star_v/2), 0], [bolt_vh*tan(star_v/2), 0], [0, bolt_vh]]);
-    }
-    translate([dial_x[3], bolt_peg_z, bolt_t - fudge]) cylinder(d = bolt_peg_d, h = 0.3 + ht_t - 0.3 + fudge, $fn = 24);
+    wb = bolt_t - bolt_step;                                      // wide rear part depth
+    translate([dial_x[3] - bolt_w/2, bolt_z0, 0]) cube([bolt_w, v_base - bolt_z0 + fudge, wb]);
+    translate([dial_x[3] - bolt_wf/2, bolt_z0, wb - fudge]) cube([bolt_wf, v_base - bolt_z0 + fudge, bolt_step + fudge]);
+    linear_extrude(bolt_t) translate([dial_x[3], v_base - fudge])
+        polygon([[-bolt_vh*tan(star_v/2), 0], [bolt_vh*tan(star_v/2), 0], [0, bolt_vh + fudge]]);
+    translate([dial_x[3], bolt_peg_z, bolt_t - fudge]) cylinder(d = bolt_peg_d, h = ht_t + fudge, $fn = 24);
 }
 
 // reset plunger: printed flat. Local x = 0 at the barb tips (inside), +x outward; print y = use z;
@@ -808,7 +826,7 @@ module arm() {
         translate([0, -0.5, arm_t + 0.6]) cube([arm_ear[1] + 1, 1.0, arm_hub_l]);   // clamp slit
         // M3 across both ears (along print Y = use Z): teardrop bore, head on +y, nut pocket on −y
         translate([(arm_ear[0] + arm_ear[1])/2, arm_ear[2] + 1, arm_clamp_z]) rotate([90, 0, 0])
-            linear_extrude(2*arm_ear[2] + 2) rotate(90) teardrop2d(m3_clear);
+            linear_extrude(2*arm_ear[2] + 2) teardrop2d(m3_clear);                   // point up (+z)
         translate([(arm_ear[0] + arm_ear[1])/2, -arm_ear[2] - 1, arm_clamp_z]) rotate([-90, 0, 0])
             cylinder(d = m3_nut_af/cos(30) + 0.3, h = 1 + m3_nut_t + 0.3, $fn = 6);   // flats top/bottom (3.2 mm bridge)
         translate([-arm_r, 0, -fudge]) cylinder(d = m3_tap, h = 20);            // pawl pivot screw
@@ -981,8 +999,9 @@ module housing_lid() {
             translate([0, 0, lid_t - 1.7]) cylinder(d1 = m3_clear, d2 = 6.2, h = 1.7 + fudge);
         }
         translate([level_pos[0], level_pos[1], lid_t + 4 - 4.2]) cylinder(d = 15.6, h = 5);   // 15 mm bubble level
-        // groove on the underside that captures the bezel's top tongue
-        translate([-hs_half_w + 8, y_front - 1, -fudge]) cube([2*hs_half_w - 16, 7.0, 1.6]);
+        // groove on the underside that captures the bezel's top tongue (0.1 mm in front: it takes
+        // the bezel-lip preload at the top)
+        translate([-hs_half_w + 8, y_front - 0.1, -fudge]) cube([2*hs_half_w - 16, 5.6 + 0.4, 1.6]);
         // bottom edge elephant-foot chamfer
         translate([0, 0, -fudge]) linear_extrude(ef) difference() {
             offset(delta = 5) lid_outline2d(); offset(delta = -ef) lid_outline2d(); }
@@ -1130,6 +1149,7 @@ module place_rear_up(y0)  multmatrix([[1, 0, 0, 0], [0, 0, 1, y0], [0, 1, 0, 0],
 module rod(p0, p1, d = rod_d) color("silver") hull() { translate(p0) sphere(d = d, $fn = 16); translate(p1) sphere(d = d, $fn = 16); }
 demo_reading = [1, 2, 3, 4];                                 // shows 1234 mm (K, H, T, U)
 gear_ph = let(h = 180/zw, t = h, hh = h - t/10, k = h - hh/10) [k, hh, t];   // K, H, T wheel phase (deg)
+rt_phase = face_top - (rt_pitch_ang - 0.6);                  // ratchet on its grid (a drive face at face_top)
 function bolt_pos(s) = bolt_lift*min(1, max(0, (s - bolt_ramp[0])/(bolt_ramp[1] - bolt_ramp[0])));
 function dial_turn(i) = let(v = i == 3 ? demo_reading[3] :
                             demo_reading[i] + (demo_reading[i+1] + (i + 2 <= 3 ? demo_reading[i+2]/10 : 0))/10)
@@ -1146,7 +1166,7 @@ module assembly() {
     color("darkorange") translate([dial_x[1], -0.2*ex, dial_z]) place_rear_up(gp_front(2)) rotate(gear_ph[1]) wheel_H();
     color("orange") translate([dial_x[0], -0.1*ex, dial_z]) place_rear_up(gp_front(3)) rotate(gear_ph[0]) wheel_K();
     color("darkorange") translate([dial_x[3], -0.3*ex, dial_z]) place_rear_up(y_ff_back + 0.3) pinion_U();
-    color("tomato") translate([dial_x[3], 0.3*ex, dial_z]) place_rear_up(y_rt_face - rt_h - rt_base) ratchet_U();
+    color("tomato") translate([dial_x[3], 0.3*ex, dial_z]) place_rear_up(y_rt_face - rt_h - rt_base) rotate(rt_phase) ratchet_U();
     color("steelblue") translate([dial_x[3], -0.8*ex, dial_z]) place_front_up(y_star_back) rotate(18) lock_star();  // slot at 6 o'clock
     color("royalblue") translate([0, -0.7*ex, bolt_pos(reset_pos*reset_stroke)]) place_front_up(y_ff_front - 0.3) lock_bolt();
     for (i = [0:3]) translate([dial_x[i], -1.0*ex, dial_z]) {
@@ -1228,16 +1248,27 @@ assert(fing_end_clear >= 0.8, str("finger body hits its own heart at the end of 
 // lock bolt + cam track
 assert(bolt_v_out <= dial_z - star_r - 0.4, "retracted bolt clears the star tips");
 assert(bolt_v_in < dial_z - (star_r - star_depth) && bolt_v_in - (dial_z - star_r) >= 1.5, "engaged bolt sits deep in a slot");
-assert(bolt_ramp[0] >= 0.2 && bolt_ramp[1] <= 3.5,
-       "lock fully in within 3.5 mm (a units arbor dragged <½ tooth before then is pulled back onto the grid by the V)");
-assert(atan(bolt_lift/(bolt_ramp[1] - bolt_ramp[0])) <= 45, "cam track pressure angle");
+assert(bolt_ramp[0] >= 0.2 && bolt_ramp[1] <= 5.5, "lock fully in within 5.5 mm of travel");
+// ramp must stay far from self-locking with dry PETG (μ 0.45 locks at 90° − 2·atan μ ≈ 41.6°)
+assert(atan(bolt_lift/(bolt_ramp[1] - bolt_ramp[0])) <= 30, "cam track pressure angle");
+// earliest touch of the U hammer on the U heart over the units rest positions (k counts after zero;
+// the heart turns 36° clockwise per count), and how deep the V is in a slot at that moment
+function u_touch_x(k) = max([for (a = [-12:0.1:12]) let(r = heart_r(a + 36*k), py = r*sin(a))
+                             if (abs(py) <= nose_r) r*cos(a) + sqrt(nose_r*nose_r - py*py)]);
+u_touch_s = min([for (k = [1:9]) x_nose_rest - u_touch_x(k)]);
+v_depth_at_touch = bolt_v_out + bolt_pos(u_touch_s) - (dial_z - star_r);
+assert(v_depth_at_touch >= 0.5, str("lock bolt only ", v_depth_at_touch, " mm into a slot when the units hammer touches"));
 assert(cam_z1 <= dial_z - ht_rmax - 1.5, "cam plate passes under the units heart");
 assert(hang_x[0] - reset_stroke >= dial_x[3] + ht_rmax + 1.5, "cam hanger clears the units heart at full stroke");
 assert(hang_x[0] - (dial_x[3] + x_nose_rest + fing_beak + fing_dx + fing_t/2) >= 2, "hanger clears the U finger");
 assert(bolt_rail_top <= dial_z - sqrt(star_r*star_r - pow(bolt_w/2 + 0.3 + bolt_rail_w, 2)) - 1, "rails under the star");
+assert(2*bolt_vh*tan(star_v/2) <= bolt_wf && bolt_peg_d <= bolt_wf - 0.3, "V and peg fit the narrow front of the bolt");
+assert((bolt_w/2 + 0.3 - bolt_lip) - bolt_wf/2 >= 0.3 - 1e-6 && bolt_w/2 - (bolt_w/2 + 0.3 - bolt_lip) >= 0.4,
+       "rail lips clear the bolt's narrow front (≥0.3) and overlap its wide rear part (≥0.4)");
 // return leaf, plunger
 assert(lf_F_rest >= 0.35, str("return leaf too weak at rest: ", lf_F_rest, " N"));
-assert(3*lf_t*(lf_pre + reset_stroke)/(2*lf_L*lf_L) <= 0.016, "return leaf strain at full stroke");
+assert(lf_strain_max <= 0.016, str("return leaf strain at full stroke ", 100*lf_strain_max, " %"));
+assert(lf_zc <= lf_z1 - 1.5 && lf_zc >= sl_z0 + 3, "leaf contact inside the bar height, below the leaf tip");
 assert(lf_x_free - lf_pre - reset_stroke - 1 > dial_x[0] + 3, "leaf clears the K arbor");
 assert(abs(sl_x1 - (hs_in_half - pl_barb[1] - pl_tip_gap)) < 1e-6, "slide end vs plunger tip");
 assert(pl_y - pl_bar[0]/2 - y_dial_back >= 0.8 && y_ff_front - (pl_y + pl_bar[0]/2) >= 0.8, "plunger fits between frame and dial");
@@ -1247,6 +1278,8 @@ assert(pl_y - pl_boss_d/2 >= y_base_front, "plunger boss inside the housing fron
 assert(norm(pawl_tip)*pawl_cg_lean(pawl_tip)*PI/180 >= rt_h + 1.5,
        str("pawl over-centre margin: CG lean ", pawl_cg_lean(pawl_tip), " deg"));
 echo(str("DESIGN: finger clearance at rest ", fing_rest_clear, " mm, at full stroke ", fing_end_clear, " mm"));
+echo(str("DESIGN: units hammer first touches at ", u_touch_s, " mm travel, bolt V then ", v_depth_at_touch,
+         " mm into a slot"));
 echo(str("DESIGN: lock bolt lift ", bolt_lift, " mm in the first ", bolt_ramp[1], " mm; return leaf ", lf_F_rest,
-         " N at rest, strain ", 100*3*lf_t*(lf_pre + reset_stroke)/(2*lf_L*lf_L), " % at full stroke; pawl CG lean ",
+         " N at rest, strain ", 100*lf_strain_max, " % at full stroke; pawl CG lean ",
          pawl_cg_lean(pawl_tip), "° (tip lift to flop ", norm(pawl_tip)*pawl_cg_lean(pawl_tip)*PI/180, " mm)"));

@@ -21,7 +21,7 @@ batteries or magnets.
 
 ## How it works
 
-![Mechanism without the housing](preview-mechanism.png)
+![Mechanism from behind with the housing hidden: tipping bucket, drive arm and pawls, face ratchet, register plates](preview-mechanism.png)
 
 1. **Collector.** Rain lands in a sharp-rimmed collector that is vertical inside and bevelled
    outside, per WMO-No. 8. It runs down a **50° funnel** through a leaf screen and a drip nozzle.
@@ -43,14 +43,17 @@ batteries or magnets.
 5. **Reset.** Each pointer, its **heart cam** and its sleeve are friction-gripped on the arbor, so
    only the pointers move during a reset and the gear train is never back-driven. Pressing the
    plunger moves a slide:
-   - In the first 3.3 mm of travel a cam track on the slide lifts a **V lock bolt** into a 10-slot
+   - In the first 5.3 mm of travel a cam track on the slide lifts a **V lock bolt** into a 10-slot
      star on the units arbor. That holds the units arbor on its tooth grid, and it matters: if the
-     arbor were dragged even half a tooth, every later reading would be offset. The track pulls
+     arbor were left even half a tooth off, every later reading would be offset. The V also pulls
+     the arbor back onto the grid if a heart dragged it before the bolt arrived. The track pulls
      the bolt out again on the way back, so there is no lock spring to fight.
    - Four compliant hammer fingers push the hearts round until their notches face the hammers.
      At that point every pointer reads 0.
    - A printed leaf spring returns the slide.
    The pointers can also be turned by hand at any time.
+
+![Reset mechanism with the dial face removed: hammer fingers, hearts, lock bolt under the ×1 star, and the plunger](preview-reset.png)
 
 ### Reading it
 
@@ -80,6 +83,8 @@ electrically. The mechanism here combines meter-register, impulse-counter and ch
 ---
 
 ## Design analysis (the numbers the model asserts)
+
+![Section through the collector axis: funnel, nozzle, tipping bucket on its stop, and the register](preview-section.png)
 
 **Bucket statics** (`analysis/bucket_statics.py`, reproduced by `tip_volume_ml()` in the .scad):
 flat floors 8 mm below the axle, 34 mm compartments, 30 mm divider, 6 g printed ballast, 25 g
@@ -147,11 +152,12 @@ slide's guide slots never take the push.
 
 | Asserted check | Value |
 |---|---|
-| Lock bolt | V 0.5 mm clear of the star at rest; lifts 2.5 mm (1.8 mm into a slot) within the first 3.3 mm of travel; cam track pressure angle 40° |
-| Why 3.3 mm is soon enough | a units arbor dragged less than half a tooth before the bolt arrives is pulled back onto the grid by the V |
+| Lock bolt | V 0.5 mm clear of the star at rest; lifts 2.5 mm (2 mm into a slot) within the first 5.3 mm of travel. The ramp is 27°, well clear of self-locking even with dry PETG (which would lock at ~42°) |
+| Timing | the ×1 hammer can first touch its heart at 3.1 mm of travel, when the V is already 0.9 mm into a slot. Earlier drag by the other hearts is taken out by the V, since the slots are indexed to the ratchet's rest positions |
+| Bolt retention | its wide rear half runs behind 45°-undercut lips on the rails, so it can't tip forward into the heart plane |
 | Cam plate and hanger | pass under / beside the units heart's swept circle with ≥ 1.5 mm at every travel |
-| Return leaf | 1.8 × 6.8 × 67.5 mm, free in a window through the front frame; 0.45 N at rest, 1.6 N and 1.45 % strain at full stroke |
-| Push force | ≈ 7 N at the very end (four fingers ≈ 1.3 N each at 1.5 mm overtravel + leaf 1.6 N); less before the noses seat |
+| Return leaf | 1.8 × 6.8 mm, loaded 65.5 mm from its root by a rib at the top of the slide bar; free in a window through the front frame that clears its full-stroke shape by 1.5 mm; 0.49 N at rest, 1.7 N and 1.55 % strain at full stroke |
+| Push force | ≈ 7 N at the very end (four fingers ≈ 1.3 N each at 1.5 mm overtravel + leaf 1.7 N); less before the noses seat |
 
 **Pawls.** Both pawls stand on their pivots and are held on the ratchet face by gravity. Their CG
 leans 20° ahead of the pivot, so a pawl tip could be lifted ~4.8 mm before it flopped backwards;
@@ -214,7 +220,8 @@ the ratchet ramps lift it 2.2 mm (asserted with ≥ 1.5 mm margin).
    - Fit the rods through the back-plate posts and the front frame, then screw the frame to the
      posts.
 3. **Lock bolt and slide.**
-   - Drop `lock_bolt` between its two rails under the units arbor, V up and peg facing you.
+   - Slide `lock_bolt` up into its two rails from below the plate's bottom edge, V up and peg
+     facing you: the wide back half goes behind the rail lips, the peg passes between them.
    - Bend the return leaf (in the window left of the ×100 dial) about 12 mm to the left and hold
      it there. Lower the slide onto its three guide pins so the bolt's peg enters the cam track,
      then let the leaf spring back against the left face of the slide's spring tab. The leaf is
@@ -273,7 +280,7 @@ the ratchet ramps lift it 2.2 mm (asserted with ≥ 1.5 mm margin).
 
 ## Verification (OpenSCAD nightly 2026.09.23, Manifold)
 
-- **Build gate:** all 26 `part=` values compile with `--hardwarnings`, exit 0, with non-empty STLs
+- **Build gate:** all 28 `part=` values compile with `--hardwarnings`, exit 0, with non-empty STLs
   and clean stderr.
 - **Slicer manifold:** every STL passes the edge-manifold check (0 non-manifold edges), and every
   single part exports as **one connected piece** (this check caught the first draft's wheels,
@@ -289,6 +296,10 @@ the ratchet ramps lift it 2.2 mm (asserted with ≥ 1.5 mm margin).
   - the collector clears the lid (its ribs just touch the spigot top).
   The only overlaps are intended: pawl teeth resting on ratchet ramps, and the bezel lip's
   0.5 mm preload on the dial face.
+- **Return leaf:** its bent shape (loaded at the tab height) clears the window edge, the slide's
+  guide-pin shoulders and the tab itself from rest to full stroke plus the slot's spare travel.
+- **Bambu projects:** every `bambu/*.3mf` re-imports through lib3mf with the same size and volume
+  as the model.
 
 **Residuals that need a test print:**
 - the grip finger's pointer torque (target 0.3–0.5 N·mm)
@@ -305,7 +316,7 @@ The `test_coupons` part and the calibration procedure cover the first three.
 
 - `rain_gauge.scad`: the single parametric model; every part is in print orientation.
 - `analysis/bucket_statics.py`, `analysis/heart_reset_sim.py`: the design calculations.
-- `stl/`: one STL per part and per plate.
+- `stl/`: one STL per part (ASCII; the plates are in the Bambu projects).
 - `bambu/`: Bambu Studio project files (X1C, PETG HF, settings baked in) for each plate: the
   housing base, lid, collector, bezel, bucket, dial face, frames, register wheels and small parts.
   Add the dial face's filament change at 2.4 mm in Bambu Studio.
