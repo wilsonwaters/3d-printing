@@ -1,0 +1,255 @@
+# Mechanical Rain Gauge (Opus 5.5)
+
+A fully mechanical tipping-bucket rain gauge with an old-style **four-dial clock register**,
+like an electricity or water meter. It reads **0–9999 mm** of rain on dials marked ×1000, ×100,
+×10 and ×1, and a **reset plunger** returns every pointer to zero. There are no electronics,
+batteries or magnets.
+
+![Assembled gauge](preview-iso.png)
+
+| | |
+|---|---|
+| Collector | **Ø159.6 mm = 200 cm²**: the WMO-recommended size and the world's most common national gauge (Hellmann). **1 mm of rain = exactly 20 mL.** |
+| Bucket | tips every **10 mL = 0.5 mm**; two stop screws calibrate it |
+| Register | 1 count per bucket cycle (2 tips) = **1.0 mm**. The units dial turns once per 10 mm. Dials are geared 10:1 and alternate direction like a power meter |
+| Reset | plunger on the right side; heart cams return all four pointers to 0 |
+| Size | 222 × 186 × ~250 mm assembled, 28 printed parts in PETG, no supports |
+| Printer | Bambu Lab X1C (256³); the largest part (housing) is 228 × 179 mm |
+| Hardware | 3 mm stainless rod, a few M3 screws and nuts, optional 2 mm acrylic window |
+
+---
+
+## How it works
+
+![Mechanism without the housing](preview-mechanism.png)
+
+1. **Collector.** Rain lands in a sharp-rimmed collector that is vertical inside and bevelled
+   outside, per WMO-No. 8. It runs down a **50° funnel** through a leaf screen and a drip nozzle.
+   A 50 mm vertical splash wall stops drops bouncing out.
+2. **Tipping bucket.** The bucket is a see-saw with a central divider. Its axle is a 3 mm rod that
+   **rolls on flat seats** instead of turning in a hole. The bucket rests at 28° on an M3 stop screw
+   while the raised compartment fills, and it tips when it holds **10 mL**. The other compartment
+   then sits under the nozzle.
+3. **Drive.** An arm clamped on the bucket axle carries a **gravity pawl**. Every second tip (one
+   full bucket cycle = 20 mL = **1.0 mm**) the pawl pushes a **face ratchet** on the units arbor on
+   by one tooth. A gravity **click pawl** at 12 o'clock stops it turning back. The drive is
+   crossed-axis: the arbors run front to back, the bucket rocks front to back, and the ratchet's
+   teeth are on its rear face. Both pawls pivot on pins parallel to the bucket axle, so they stay
+   in plane at every bucket angle. There are no springs in the counting path.
+4. **Register.** Four arbors in a row carry single-mesh **8 : 80** gears (module 1, profile
+   shifted ±0.55) between neighbouring dials. Each dial turns at a tenth of the speed of the one
+   to its right, and in the opposite direction, which is why real meter dials alternate. The dial
+   numbering alternates to match.
+5. **Reset.** Each pointer, its **heart cam** and its sleeve are friction-gripped on the arbor, so
+   only the pointers move during a reset and the gear train is never back-driven. Pressing the
+   plunger moves a slide:
+   - After 0.8 mm of travel a **V-lock** drops into a 10-slot star on the units arbor, so nothing
+     can drag the train.
+   - Four compliant hammer fingers then push the hearts round until their notches face the
+     hammers. At that point every pointer reads 0.
+   - A printed leaf spring returns the slide.
+   The pointers can also be turned by hand at any time.
+
+### Reading it
+
+Read like a power meter. Go left to right and take the **lower** figure a pointer has passed.
+If a pointer looks exactly on a number, check the dial to its right: if that dial hasn't yet
+passed 0, use the number below. The ×1 dial moves in whole-millimetre steps.
+
+---
+
+## What the research settled
+
+| Question | Finding | Sources |
+|---|---|---|
+| Collector size | WMO-No. 8 (CIMO Guide, Ch. 6): 200–500 cm² "most convenient"; area known to ±0.5 %; rim sharp, vertical inside, bevelled outside; splash lines must strike the wall below the rim. **200 cm² (Hellmann)** is the most common national gauge, ~44 % of ~123 000 gauges (Germany, Russia, India …). Australia/USA use 8" (324 cm²), UK 5" (127 cm²). | [WMO-No. 8](https://community.wmo.int/site/knowledge-hub/programmes-and-initiatives/instruments-and-methods-of-observation-programme-imop/guide-instruments-and-methods-of-observation-wmo-no-8), [Kidd et al. 2017](https://ntrs.nasa.gov/api/citations/20170003703/downloads/20170003703.pdf), [KNMI TR399](https://cdn.knmi.nl/knmi/pdf/bibliotheek/knmipubTR/TR399.pdf) |
+| Tip size | WMO asks for ≤ 0.2 mm per tip in electronic gauges. **0.5 mm** is used by JMA gauges, some UK Environment Agency sites and the fully mechanical **Perin R05** recorder (ratchet + heart cam). A mechanical register needs the energy of the bigger tip. | [Tamaya](https://tamaya-technics.com/en/rainfall01/), [Météo-France R05](https://bibliotheque.meteo.fr/pub/INV00000879-pluviographe-simplifie-augets-basculeurs-r05-3025.html) |
+| Precedent | Negretti & Zambra sold a **"mechanical dial rain gauge, zero setting, tipping-bucket type"** in 1890, which is this concept. Wren (1662) and Hooke (1670s) built the first tipping-bucket recorders. | [Science Museum](https://collection.sciencemuseumgroup.org.uk/objects/co55130/mechanical-tilting-bucket-rain-gauge-1890), [Biswas 1967](https://royalsocietypublishing.org/doi/10.1098/rsnr.1967.0009) |
+| Pivot friction | Commercial buckets use jewels, knife edges or **rolling pins** (Casella, SBS500). Modelled here: a 3 mm pin turning in a hole adds ~11 % to the tip volume; a rolling rod adds ~2 %. | [Casella](https://www.casellasolutions.com/content/dam/casella/ecommerce/documents/datasheets/tipping-bucket/Tipping-Bucket-Rain-Gauge-Datasheet-English.pdf), `analysis/bucket_statics.py` |
+| Calibration | Stop screws set the rest angle. Commercial gauges quote ½ turn ≈ 2–3 % (TE525); here 1 turn ≈ 1° ≈ 5 %. Calibrate at a steady low rate, because fast pouring under-reads (water enters during the ~0.5 s tip). | [TE525 manual](https://s.campbellsci.com/documents/us/miscellaneous/old-manuals/TE525,%20TE525WS,%20and%20TE525MM%20Texas%20Electronics%20Rain%20Gages.pdf), [Duchon 2014](https://doi.org/10.1175/JTECH-D-13-00169.1) |
+| Dial registers | Meter registers use single-mesh 1:10 stages (Westinghouse used 14 : 140), so neighbouring dials alternate direction, and pointers are friction-fitted. | [US4072267A](https://patents.google.com/patent/US4072267A/en), [US4490672A](https://patents.google.com/patent/US4490672A/en) |
+| Reset | The heart cam + hammer is the classic zero-set, and its **dead point** (heart tip facing the hammer) is a documented jam (Kienzle). Cams self-lock when the pressure angle is below the friction angle. Counters unlock or hold the train before zeroing (Hengstler, Veeder-Root). | [US3248051A](https://patents.google.com/patent/US3248051A/en), [US3244368A](https://patents.google.com/patent/US3244368A/en), [US4506373A](https://patents.google.com/patent/US4506373A/en), [US4877169A](https://patents.google.com/patent/US4877169A/en) |
+| Rocking → stepping | Impulse counters turn a rocking armature into steps with pawl/anchor star-wheel drives (Sodeco, Hengstler). Bucket-driven registers go back to Baird (1884). | [US3184982A](https://patents.google.com/patent/US3184982A/en), [US295095A](https://patents.google.com/patent/US295095A/en), [US1092082A](https://patents.google.com/patent/US1092082A/en) |
+| 3D-printed gauges | The 3D-PAWS ASA gauge tracked a reference at r = 0.98–1.00 on daily totals. PLA absorbed water (BoSL), so use PETG/ASA, 100 % infill for the bucket, and seal it. | [Theisen 2020](https://amt.copernicus.org/articles/13/4699/2020/), [BoSL](https://www.bosl.com.au/wiki/Rain_gauge) |
+
+I found **no patent for a purely mechanical tipping-bucket counter**; every one I checked counted
+electrically. The mechanism here combines meter-register, impulse-counter and chronograph practice.
+
+---
+
+## Design analysis (the numbers the model asserts)
+
+**Bucket statics** (`analysis/bucket_statics.py`, reproduced by `tip_volume_ml()` in the .scad):
+flat floors 8 mm below the axle, 34 mm compartments, 30 mm divider, 6 g printed ballast, 25 g
+empty with the CG 6.7 mm above the axle.
+
+| Rest angle | 22° | 24° | 26° | **28°** | 30° | 32° | 34° |
+|---|---|---|---|---|---|---|---|
+| Tip volume (mL) | 7.35 | 8.15 | 8.95 | **9.85** | 10.85 | 11.95 | 13.20 |
+
+- **Sensitivity:** ≈ 0.5 mL per degree. The stop screws sit ~28 mm out, so one M3 turn
+  (0.5 mm) ≈ 1° ≈ 5 %.
+- **Friction:** a rolling axle adds ~0.02 N·mm of friction, which is +2 %. A pin in a hole adds
+  0.15 N·mm, which is +11 %.
+- **Built-in allowances:** the axle hub displaces ~0.2 mL. Calibration takes both of these out.
+
+**Ratchet drive.**
+- The pawl pivot is 14 mm from the axle, so the ±28° swing gives a 13.1 mm stroke. That is
+  **1.74 teeth** of a 10-tooth face ratchet at 10.8 mm contact radius.
+- After each push, a tooth face sits at the pawl's top position. So a later small back-drag
+  (limited to 0.2 tooth by the click) or forward nudge is corrected on the next stroke.
+  Asserted: 1.2 ≤ stroke ≤ 1.8 teeth, and stroke − 1 ≥ click backlash + 0.2.
+- The first ~⅓ of each swing is idle, so the counter never loads the bucket at the moment it
+  starts to tip.
+
+**Gears.** 8 : 80, module 1, 20° pressure angle, profile shift +0.55 / −0.55, so the centre
+distance stays 44.0 mm.
+
+| Asserted check | Value |
+|---|---|
+| Contact ratio | ε = 1.23 (≥ 1.1 still with 0.1 mm centre error) |
+| Tip lands | 0.46 mm pinion, 0.59 mm wheel |
+| Pinion undercut / interference | none: √(ra²−rb²) = 14.94 < a·sin α = 15.05 |
+| Clearance from 80-tooth wheel tips to the next arbor but one | ≥ 1.5 mm |
+
+Backlash comes from thinning the teeth by 0.25 mm on the wheel and 0.05 mm on the pinion. The
+centre distance is never opened.
+
+**Heart cams.** Log-spiral hearts, r 3 → 18 mm, with the tip placed 162° from the notch.
+- **Main flanks:** pressure angles 29° and 24°, above PETG's friction angle with PTFE dry lube
+  (μ 0.35).
+- **Notch:** the first 14° each side of the notch is a steep 55° spiral, forming a self-centring
+  70° V. It centres even dry (μ 0.45).
+- **Hammer path:** each hammer pushes along the notch axis, so the zero doesn't depend on
+  friction.
+- **Dead point:** an earlier simulation (`analysis/heart_reset_sim.py`) showed a flat hammer face
+  jams within ±17° of the heart tip; a narrow rounded nose leaves a dead zone of only ~2°. The
+  asymmetric tip keeps that zone ≥ 18° away from every units-dial rest position (asserted).
+- **Fingers:** they clear the neighbouring heart by 1.5 mm at rest, and their own zeroed heart by
+  1.0 mm at full stroke (asserted).
+
+---
+
+## Parts
+
+| Part (`-D part="…"`) | Qty | Orientation (as modelled) | Layer | Notes |
+|---|---|---|---|---|
+| `collector` | 1 | rim up; skirt and throat on the bed | 0.2 | 3 walls. Measure the rim ID after printing (see calibration) |
+| `screen`, `nozzle` | 1 each | spigot / outlet down | 0.12 | |
+| `housing_base` | 1 | upright | 0.2 | 228 × 179 mm: place it at the back of the plate, clear of the front-left cutter corner |
+| `housing_lid` | 1 | flat, bottom down | 0.2 | |
+| `bezel` | 1 | front face down | 0.2 | optional 2 mm acrylic window slides in from the top |
+| `bucket` | 1 | upright on its flat floor | 0.2 | **100 % infill** (it must not absorb water); smooth the inside with a dab of epoxy |
+| `arm`, `drive_pawl`, `click_pawl` | 1 each | flat | 0.12 | 100 % infill |
+| `front_frame`, `back_plate` | 1 each | flat, features up | 0.2 | |
+| `dial_face` | 1 | numerals up | 0.2 | **Filament change at 2.4 mm** for black numerals on white |
+| `slide` | 1 | front face down | 0.12 | 100 % infill; the fingers and spring must not have infill voids |
+| `wheel_T`, `wheel_H` | 1 each | wheel face down | 0.12 | |
+| `wheel_K`, `pinion_U`, `ratchet_U` | 1 each | flat | 0.12 | |
+| `lock_star` | 1 | flat | 0.12 | pressed on during assembly (see step 6) |
+| `heart` | **4** | plate down | 0.12 | 100 % infill |
+| `pointer` | **4** | face up | 0.12 | black |
+| `plunger` | 1 | head down | 0.2 | |
+| `small_parts` | – | one plate of all the small parts | 0.12 | convenience |
+| `test_coupons` | – | gear-mesh jig + bore gauge | 0.12 | **print these first** |
+
+**Hardware**
+
+| Item | Use |
+|---|---|
+| 3 mm stainless rod, ~400 mm | bucket axle 80 mm; units arbor 64 mm; three arbors 38 mm |
+| M3 × 12 socket cap + 2 nuts each, ×2 | calibration stop screws (captive nut plus jam nut) |
+| M3 × 25 pan head ×7 | dial face → front frame → back-plate posts |
+| M3 × 10 ×9 | lid ×4, collector ×3, bezel ×2 |
+| M3 × 12 + nut | arm pinch clamp |
+| M3 × 10 ×2 | drive- and click-pawl pivots (threaded into the arm and post) |
+| 15 mm bubble level (optional) | pocket in the lid |
+| 2 mm clear acrylic ~212 × 88 mm (optional) | window |
+| PTFE dry lube | hearts, pawls, ratchet face, rolling seats |
+
+---
+
+## Assembly
+
+1. **Test coupons first.**
+   - Put the pinion and a wheel on rods in the jig: they should turn freely with a little backlash.
+   - Rod fits: the rod must press into bore **P**, turn in **B** and run free in **R**.
+2. **Register.**
+   - Press the gears onto the arbors (bore 3.22): `pinion_U` and `ratchet_U` on the long units
+     rod, and the compounds on the others, with the wheel faces toward the front.
+   - Fit the rods through the back-plate posts and the front frame, then screw the frame to the
+     posts.
+3. **Pointers and hearts.** Slide a heart onto each arbor front (the grip finger should need a
+   firm push) and press a pointer onto each D-sleeve.
+4. **Reset.** Drop the slide onto its three guide pins with the return leaf bent to the left of
+   the spring tab. The leaf is printed straight, so bending it puts the preload in.
+5. **Housing.** Put the plunger through the right wall from the inside, then slide the movement
+   in from the front until the back plate meets the chamber wall.
+6. **Lock-star phase.**
+   - Tip the bucket so the drive arm is up.
+   - Turn the units arbor backwards until the ratchet rests on the drive pawl.
+   - Hold the plunger in and press `lock_star` onto the units arbor so the lock tooth sits in a
+     slot.
+   - Add a drop of CA glue.
+7. **Dial face and bezel.** Fit the dial face with the seven M3 × 25 screws, slide in the window
+   if you're using one, then screw on the bezel.
+8. **Bucket.**
+   - Rest the bucket in the chamber.
+   - Push the axle rod through the right-hand window, the bucket hub (press fit) and the left
+     window.
+   - Clamp the arm on the rod's right end with the pawl pivot pointing forward, and hang the drive
+     pawl on its M3 pivot.
+   - Fit the click pawl on its post, then the stop screws with captive and jam nuts.
+9. **Lid, nozzle and collector.** Fit the lid, press the nozzle into the collector throat, drop
+   in the leaf screen, and screw the collector down.
+
+## Calibration
+
+1. **Level the gauge.** Tilt shifts each tip by ~5 % per degree, although counting the pair of
+   tips cancels most of it.
+2. **Work out the test volume.** Measure the rim's inside diameter D in mm at three places and
+   average. 10 mm of rain = π/4 × D² × 10 / 1000 mL, which is 200 mL for D = 159.6.
+3. **Pour it.** Pour **400 mL (20 mm)** slowly, over at least 20 minutes (a drip bottle or IV
+   bag). Fast pouring under-reads.
+4. **Check the reading.** It should read **20**. Each count is one bucket cycle. You can also
+   watch single tips: 20 mL per pair.
+5. **Adjust.** If it reads high, the bucket tips too early: screw **both** stops **down** equally.
+   If it reads low, screw them up. One turn ≈ 5 %. Tighten the jam nuts.
+6. **Reset** with the plunger.
+
+## Siting and care
+
+- **Height and exposure:** mount it on a post with the rim level and 0.3–1 m above short grass.
+  Keep it at least twice an obstacle's height away from that obstacle, and keep it off roofs and
+  paving (splash).
+- **Cleaning:** clean the leaf screen and nozzle regularly, and flush the bucket occasionally.
+- **UV:** PETG loses ~20–30 % of its strength over 1–2 years in full sun. Use white filament, and
+  reprint the collector and bucket when they chalk.
+
+---
+
+## Verification (OpenSCAD nightly 2026.09.23, Manifold)
+
+- **Build gate:** all 25 `part=` values compile with `--hardwarnings`, exit 0, with non-empty STLs
+  and clean stderr.
+- **Slicer manifold:** every STL passes the edge-manifold check (0 non-manifold edges).
+- **Contracts:** asserts pass for orifice area, tip volume, ratchet quantisation, gear geometry,
+  heart flank angles and dead point, finger and lock clearances, flexure strains, and bed fit.
+- **Clash checks:** the bucket, arm and pawls clear the housing and movement at −28°, 0° and +28°.
+  The only overlaps are intended ones: pawl teeth resting on ratchet ramps, and the preloaded leaf
+  and lock flexures.
+
+**Residuals that need a test print:**
+- the grip finger's pointer torque (target 0.3–0.5 N·mm)
+- how the gear mesh feels
+- the real tip volume and its repeatability
+- reset reliability
+- whether the drive pawl drops cleanly at speed
+
+The `test_coupons` part and the calibration procedure cover these.
+
+## Files
+
+- `rain_gauge.scad`: the single parametric model; every part is in print orientation.
+- `analysis/bucket_statics.py`, `analysis/heart_reset_sim.py`: the design calculations.
+- `stl/`: one STL per part. `preview-*.png`: renders.
