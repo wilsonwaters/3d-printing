@@ -115,18 +115,31 @@ distance stays 44.0 mm.
 Backlash comes from thinning the teeth by 0.25 mm on the wheel and 0.05 mm on the pinion. The
 centre distance is never opened.
 
-**Heart cams.** Log-spiral hearts, r 3 → 18 mm, with the tip placed 162° from the notch.
-- **Main flanks:** pressure angles 29° and 24°, above PETG's friction angle with PTFE dry lube
-  (μ 0.35).
-- **Notch:** the first 14° each side of the notch is a steep 55° spiral, forming a self-centring
-  70° V. It centres even dry (μ 0.45).
-- **Hammer path:** each hammer pushes along the notch axis, so the zero doesn't depend on
-  friction.
-- **Dead point:** an earlier simulation (`analysis/heart_reset_sim.py`) showed a flat hammer face
-  jams within ±17° of the heart tip; a narrow rounded nose leaves a dead zone of only ~2°. The
-  asymmetric tip keeps that zone ≥ 18° away from every units-dial rest position (asserted).
-- **Fingers:** they clear the neighbouring heart by 1.5 mm at rest, and their own zeroed heart by
-  1.0 mm at full stroke (asserted).
+**Heart cams.** Log-spiral hearts, r 3 → 18 mm, with the tip placed 168° from the notch.
+- **Notch:** the first 10° either side of the notch is a steep 55° spiral, forming a
+  self-centring 70° V. Its growth rate then blends over 6° into the main flanks, so there is no
+  corner to snag on.
+- **Main flanks:** 28.5° and 25.2°.
+- **Hammer path:** each hammer's rounded nose pushes along the notch axis.
+- **Dead point:** the tip sits 12° away from every ×1-dial rest position (asserted).
+
+Simulated with `analysis/heart_reset_sim.py` (quasi-static, Coulomb friction, 0.6 mm nose,
+start angles every 10°):
+
+| Friction μ | Starts that reset to zero | Zero accuracy |
+|---|---|---|
+| 0.25 (PTFE-lubricated PETG) | 36 / 36 | ±0.1° |
+| 0.35 | 36 / 36 | ±0.1° |
+| 0.45 (dry printed PETG, worst case) | 25 / 36 | stalls on the 25° flank |
+
+**PTFE dry lube on the heart edges and hammer noses is therefore required, not optional.**
+There is also one designed ~2° dead zone, where the heart tip points straight at the nose: a
+flat hammer face would jam over ±17° instead. If a pointer ever sticks, press again or nudge it,
+since the pointers are friction-fit.
+
+Fingers clear the neighbouring heart by 1.5 mm at rest and their own zeroed heart by 1.1 mm at
+full stroke (asserted). The units-arbor V-lock engages 0.8 mm into the 17.6 mm stroke, before any
+hammer can touch.
 
 ---
 
@@ -165,7 +178,7 @@ centre distance is never opened.
 | M3 × 10 ×2 | drive- and click-pawl pivots (threaded into the arm and post) |
 | 15 mm bubble level (optional) | pocket in the lid |
 | 2 mm clear acrylic ~212 × 88 mm (optional) | window |
-| PTFE dry lube | hearts, pawls, ratchet face, rolling seats |
+| PTFE dry lube (**required on the hearts and hammer noses**) | hearts, hammer noses, pawls, ratchet face, rolling seats |
 
 ---
 
