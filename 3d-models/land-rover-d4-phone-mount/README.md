@@ -90,8 +90,9 @@ stock steel hook clip to grab.
 1. **Dry-fit first.** Push the bracket in with the EPDM strip on and no tape, and check
    it seats against the back face and feels wedged.
 2. Stick a strip of **closed-cell EPDM foam tape**, about 3 mm (compresses to 2), on the
-   block's top face, the part that goes under the hood. Use EPDM rather than felt:
-   felt takes a set and the wedge goes loose.
+   block's top face, the part that goes under the hood. Run it right to the back edge and
+   across the full width: the back edge is where it does the work. Use EPDM rather than
+   felt, because felt takes a set and the wedge goes loose.
 3. Lay a length of **braided fishing line** in the groove across the back face. Tuck
    its ends down the two sides of the block, where they'll sit in the gaps beside the
    notch walls. This is the rip cord.
@@ -100,7 +101,9 @@ stock steel hook clip to grab.
    makes VHB grip far better.
 5. Put **two patches of 3M VHB 5952** (black, 1.1 mm), about 20 × 25 mm each, on the
    back face below the rip-cord groove: one high, one low. That's plenty. The notch
-   takes the load, and the tape only stops the block sliding out.
+   takes the load, and the tape only stops the block sliding out. **Don't drive with it
+   dry-fitted**, though: the sloping ledge nudges the wedge outward, and without the tape
+   it will slowly walk out on corrugations.
 6. Slide the block straight in, EPDM first under the hood lip, until the tape meets the
    back face, then press hard for 30 s. Leave it 24 h before hanging the charger on it.
 7. Unscrew the W116 head's collar, pop the head onto the printed ball, tighten the
@@ -129,8 +132,12 @@ model works this out and asserts it:
 
 | Wedge bottom on the ledge | Push on the EPDM in a 4 g bump | Pressure on the EPDM |
 |---|---|---|
-| **30 mm (the whole ledge, default)** | **97 N** (24 N sitting still) | **0.09 MPa**, fine |
-| 10 mm | 394 N (99 N sitting still) | 1.17 MPa: crushes the foam, so it rocks |
+| **30 mm (the whole ledge, default)** | **73 N** (18 N sitting still) | **0.13 MPa** peak, under the 0.15 limit |
+| 10 mm | 296 N (74 N sitting still) | 1.75 MPa peak: crushes the foam, so it rocks |
+
+(The pressure peaks at the back edge of the strip, because the wedge pivots about its
+front.) A bottom a little *longer* than the ledge is harmless: it just pivots on the
+ledge's edge.
 
 So the bottom follows your ledge's slope all the way out. It's still a wedge, just
 30 mm at the bottom rather than 10. The plastic itself would be fine either way; it's
@@ -150,8 +157,9 @@ tapers gently to Ø10 only for the last few mm, where the socket needs room to s
 There's no sharp shoulder at the most-stressed point, which matters for vibration
 fatigue. Printing a ball on its side needs something under it, so:
 
-- The root runs down to the plate with 45° sides.
-- The rest is cut flat underneath and prints as a ~9 mm bridge.
+- The root and most of the taper have a keel running down to the plate, with sides no
+  steeper than 40°.
+- Only the last ~4 mm before the ball is cut flat underneath and prints as a short bridge.
 - The ball gets an 8 mm flat where it touches the plate.
 
 All of that is on the vent side. When you swing the charger right toward yourself, the
@@ -177,7 +185,7 @@ what the printer really makes: 6 solid perimeters around a 20 % infill core.
 | Upright where it leaves the wedge (16 × 20) | 1.1 MPa | 7.2 MPa |
 | Neck, sideways jolt | 2.4 MPa | 7.2 MPa |
 
-The EPDM under the hood sees 0.09 MPa at the same design case (limit 0.15 MPa, see
+The EPDM under the hood peaks at 0.13 MPa at the same design case (limit 0.15 MPa, see
 above). The slim neck is the tightest spot, which is why it's only Ø10 for the last few mm.
 Raise `design_mass_kg` for a heavier phone, or change `walls`/`infill`, and the build
 tells you if it stops adding up.
@@ -197,7 +205,7 @@ under the phone in a car parked in the sun, and PLA (≈55 °C) would sag in a d
 | Walls | **6 perimeters** (2.7 mm), which makes the neck and ball mostly solid |
 | Infill | 20 % gyroid |
 | Top / bottom shells | 5 layers |
-| Supports | **None** |
+| Supports | **Off** (see below) |
 | Cooling | Part fan off, except a 30–50 % burst on bridges (Bambu's ASA profiles already do this) |
 | Brim | 8 mm, outer only |
 | Elephant-foot compensation | **0**, it's built into the model |
@@ -207,9 +215,16 @@ under the phone in a car parked in the sun, and PLA (≈55 °C) would sag in a d
 `d4-phone-mount-v1.3mf` is a Bambu Studio project with all of this already applied
 (X1C, 0.20 mm Standard, Generic ASA). Open it, check the plate, slice.
 
-The one steep spot is the first ~1 mm of the ball next to its flat, as on any ball
-printed on its side. If your ASA droops there, paint a tiny tree support under the ball
-only. It isn't where the socket grips.
+**About Bambu's support preview.** Every overhang on the part is 40° or less. So if you
+turn supports on with a 45° threshold just to look, Bambu should only mark two small spots.
+Any ball printed on its side has them:
+
+- the ~4 mm bridge under the neck, right next to the ball;
+- the first ~2 mm of the ball above its flat.
+
+Both print fine with supports off; bridges get the fan burst. Don't add supports under the
+ball, because support marks there would sit where the socket grips. If the ball test shows
+a rough lower edge on the ball, tell Claude.
 
 ## Tuning
 

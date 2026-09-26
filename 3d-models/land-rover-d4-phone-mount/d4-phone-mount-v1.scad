@@ -40,7 +40,8 @@
 //     where the socket fingers need it slim. The stress check is taken where the Ø10
 //     section starts (its highest-moment point), with the hollow infill core allowed for.
 //     Cross-sections are teardrops: the root runs down to the plate (support-free), the
-//     rest is cut flat underneath and prints as a ~9mm bridge. The keel/flat side is the
+//     keel runs on to keel_end (clear of the socket collar), and only the last ~4mm before
+//     the ball is cut flat underneath and prints as a short bridge. The keel/flat side is the
 //     plate side = the vent (left) side for beam_side="left", which the collar never
 //     swings toward when you angle the charger right, toward the driver. (For
 //     beam_side="right" the keel lands on the driver side and limits rightward swing.)
@@ -48,7 +49,7 @@
 //     clear of the gauges; it rises from the block top, not from the floor, so it is
 //     a short, stiff cantilever (~52mm) instead of a long one.
 //   - Notch sides: each side's angled return is its own [inset, depth] (vent_return,
-//     cluster_return) — photos suggest they differ. The plate-side cut is kept <=45deg
+//     cluster_return) — photos suggest they differ. The plate-side cut is kept <=overhang_max
 //     (support-free) by cutting a little extra if the measured return is steeper.
 //   - Cable clip: a snap-in groove down the upright's driver-facing face tidies the
 //     USB-C lead so it doesn't flog about off-road.
@@ -109,9 +110,10 @@
 // Walls/Perimeters: 6 (2.7mm) — the neck and ball are mostly perimeter
 // Infill: 20% gyroid (stresses are tiny in the block; the walls carry the neck)
 // Top/bottom shells: 5 layers
-// Supports: None required. All overhangs <=45deg; the neck underside is a ~9mm bridge;
-//   the ball's cut-flat cap is the one steep spot (6-8 layers at the plate, like any
-//   printed ball on its side).
+// Supports: None required, and leave them OFF. Every overhang is <=40deg (overhang_max), so
+//   a 45deg support threshold in the slicer flags nothing except the two spots any ball
+//   printed on its side has: the ~4mm bridge under the neck next to the ball, and the ball's
+//   first ~2mm above its flat. Both print fine unsupported.
 // Orientation: bracket and ball_test as modelled — lying on the side, the upright's flat
 //   face on the plate. gauge: flat (2.4mm plates).
 // Notes: Enclosed printer, door and lid closed. Part fan off except bridges (30-50%
@@ -133,6 +135,8 @@ build_x = 256;
 build_y = 256;
 build_z = 256;
 bed_margin = 20;       // keep clear of the edges / front-left cutter exclusion
+overhang_max = 40;     // steepest overhang anywhere (deg from vertical) — margin under a 45deg
+                       // slicer support threshold, which flags faces at exactly 45deg
 
 // --- Notch measurements (MEASURE THESE — defaults are estimated from photos) ---
 notch_h = 65;          // floor ledge -> underside of the leather hood, at the back face (measured)
@@ -144,6 +148,7 @@ hood_t = 20;           // hood lip thickness, underside -> top of the leather (r
 floor_depth = 30;      // how far the floor ledge runs out from the back face (measured, approx)
 floor_drop = 6;        // how much lower the ledge is at floor_depth than at the back face (ESTIMATE)
 block_bottom_d = floor_depth; // how much of the ledge the wedge's sloped bottom sits on
+bottom_overrun = 3;    // the bottom may run this far past the ledge edge (harmless)
 
 // --- Where the charger goes ---
 upright_offset = 45;   // notch back face -> dash-side face of the upright (hood is 40, so ~4-5 cm out)
@@ -166,7 +171,7 @@ up_d = 20;             // upright depth (out direction) — sets fore/aft stiffn
 beam_w = 16;           // upright lateral width (Z as printed)
 gusset = 6;            // 45deg gusset where the upright's open side meets the block top
 corner_r = 3;          // convex corner radius on the side profile
-fillet_r = 4;          // concave fillet where the upright meets the block top
+fillet_r = 3;          // concave fillet where the upright meets the block top (2mm clear of the lip)
 top_ch = 1.0;          // 45deg chamfer round the top (as printed) faces — no sharp edges by the hand
 
 // --- 17mm ball ---
@@ -180,6 +185,8 @@ neck_len = 20;         // upright face -> ball centre, along the neck (collar sw
 root_len = 3;          // full-diameter root beyond the upright face, down to the plate
 neck_v_depth = 0.8;    // teardrop tip below the round neck before it is cut flat (bridge)
 stem_w = 1.2;          // keel width at the plate if a small root teardrop can't reach it
+keel_end = 8;          // upright face -> where the neck's plate-reaching keel stops
+collar_min_s = 11.5;   // the socket collar's rim never comes closer than this to the upright face
 max_taper = 25;        // steepest neck taper half-angle (deg) — keeps the shoulder gentle
 
 // --- Cable clip ---
@@ -218,8 +225,9 @@ extrusion_width = nozzle_diameter * 1.125;   // 0.45
 wall_thickness = extrusion_width * walls;     // 6 perimeters = 2.7mm
 fudge = 0.01;                                 // boolean overlap
 tolerance = 0.4;                              // ASA/ABS clearance (not used for mating here)
-ef_chamfer = 0.4;                             // elephant-foot relief on the plate face
-ef_steps = round(ef_chamfer / layer_height);  // relief applied one layer at a time
+ef_chamfer = 0.3;                             // elephant-foot relief on the plate face
+ef_steps = ceil(ef_chamfer / (layer_height * tan(overhang_max))); // steps no steeper than overhang_max
+td_k = 1 / sin(overhang_max);                 // teardrop apex distance / radius
 top_steps = round(top_ch / layer_height);     // top chamfer applied one layer at a time
 big = 1000;                                   // "infinite" for 2D half-plane cuts
 clip_pad = 10;                                // margin round the part for the plate clip
@@ -239,11 +247,11 @@ bottom_drop = floor_drop * block_bottom_d / floor_depth; // ledge drop at that p
 wedge_pts = [[0, 0], [bottom_x, -bottom_drop], [up_x1, block_h], [0, block_h]];
 
 // Back-corner cuts [inset (Z), depth (X)] on the plate side (Z=0) and the top side.
-// Plate side must stay <=45deg (inset >= depth); a steeper return gets a 45deg cut of
-// size = depth, which still clears it.
+// Plate side must stay <=overhang_max; a steeper return gets a cut widened to that angle,
+// which still clears it.
 plate_ret = beam_side == "left" ? vent_return : cluster_return;
 top_ret = beam_side == "left" ? cluster_return : vent_return;
-plate_cut = [max(plate_ret[0], plate_ret[1]), plate_ret[1]];
+plate_cut = [max(plate_ret[0], plate_ret[1] / tan(overhang_max)), plate_ret[1]];
 top_cut = top_ret;
 back_face_w = block_w - plate_cut[0] - top_cut[0];
 
@@ -254,9 +262,12 @@ neck_r = neck_d / 2;
 root_r = root_d / 2;
 z_c = ball_r - ball_flat;                     // neck/ball axis height above the plate
 neck_t = neck_r + neck_v_depth;               // neck underside (flat bridge) below the axis
-step_len = z_c - neck_t;                      // root underside climbs to the bridge at 45deg
-taper_s0 = root_len + step_len;               // taper Ø14 -> Ø10 runs from here...
-taper_angle = atan((root_r - neck_r) / (neck_start - taper_s0)); // ...to neck_start
+step_len = (z_c - neck_t) * tan(overhang_max); // keel underside climbs to the bridge this steeply
+bridge_s0 = keel_end + step_len;              // flat-bottomed (bridged) neck starts here
+taper_angle = atan((root_r - neck_r) / (neck_start - root_len)); // Ø14 at root_len -> Ø10 at neck_start
+function neck_r_at(s) = s <= root_len ? root_r
+                      : s >= neck_start ? neck_r
+                      : root_r - (root_r - neck_r) * (s - root_len) / (neck_start - root_len);
 s_junction = sqrt(ball_r * ball_r - neck_r * neck_r);        // ball centre -> neck junction
 ball_y = notch_h + rise;                      // ball centre height above the floor
 root_y = ball_y - neck_len * sin(ball_pitch); // neck crosses the upright's outer face here
@@ -269,6 +280,9 @@ cable_mouth = cable_d - cable_snap;
 cable_depth = sqrt(cable_r * cable_r - (cable_mouth / 2) * (cable_mouth / 2)); // bore centre inside the face
 cable_z = beam_w / 2;
 cable_top = root_y - root_r - 2;
+// the groove runs down until it leaves the part through the wedge's sloping front
+cable_exit_x = up_x1 - cable_depth - cable_r;
+cable_bottom = (cable_exit_x - bottom_x) / (up_x1 - bottom_x) * (block_h + bottom_drop) - bottom_drop - 1;
 
 // Overall extents (raw, before mirroring)
 part_len_x = ball_x + ball_r;
@@ -290,13 +304,17 @@ sigma_neck = f_vert * lever_neck / z_round(neck_d);
 sigma_root = f_vert * (cg_offset + neck_len) / z_round(root_d);
 sigma_upright = f_vert * (up_d / 2 + neck_len * cos(ball_pitch) + cg_offset) / z_rect(beam_w, up_d);
 sigma_neck_lat = f_lat * lever_neck / z_round(neck_d);
-bridge_span = neck_len - sqrt(ball_r * ball_r - neck_t * neck_t) - taper_s0;
+bridge_span = neck_len - sqrt(ball_r * ball_r - neck_t * neck_t) - bridge_s0;
 // Rocking: the phone tries to tip the wedge forward about the bottom's front edge. Only the
 // hood contact BEHIND that edge pushes back, so its lever is short and the pad sees the load.
 x_cg = ball_x + cg_offset * cos(ball_pitch);  // combined charger + phone centre of mass
-pad_len = min(bottom_x, hood_x);              // hood contact behind the pivot
-pad_force = f_vert * (x_cg - bottom_x) / (bottom_x - pad_len / 2);
-pad_mpa = pad_force / (pad_len * block_w);
+pivot_x = min(bottom_x, floor_depth - tape_t); // a bottom longer than the ledge pivots on its edge
+pad_len = min(pivot_x, hood_x);               // hood contact behind the pivot
+// The rigid wedge squashes the pad in proportion to distance from the pivot, so pressure is
+// triangular, peaking at the back edge: p(x) = k * (pivot_x - x).
+pad_k = f_vert * (x_cg - pivot_x) / (block_w * (pow(pivot_x, 3) - pow(pivot_x - pad_len, 3)) / 3);
+pad_force = pad_k * block_w * (pivot_x * pad_len - pad_len * pad_len / 2);
+pad_mpa = pad_k * pivot_x;                    // peak, at the back edge of the pad
 
 echo(block_h = block_h, block_w = block_w, back_face_w = back_face_w,
      plate_cut = plate_cut, top_cut = top_cut);
@@ -309,10 +327,10 @@ echo(sigma_neck = sigma_neck, sigma_root = sigma_root, sigma_upright = sigma_upr
 echo(pad_force_design_N = pad_force, pad_force_static_N = pad_force / design_g, pad_mpa = pad_mpa,
      max_pad_mpa = max_pad_mpa);
 echo(bbox_raw = [part_len_x, part_len_y - part_min_y, block_w]);
-assert(block_bottom_d <= floor_depth, "block_bottom_d is deeper than the ledge it sits on");
+assert(block_bottom_d <= floor_depth + bottom_overrun, "block_bottom_d runs well past the ledge");
 assert(pad_mpa <= max_pad_mpa,
        str("wedge too shallow at the bottom: the EPDM under the hood would see ", pad_mpa,
-           " MPa in a 4g bump (limit ", max_pad_mpa, ") and the bracket would rock. ",
+           " MPa peak in a 4g bump (limit ", max_pad_mpa, ") and the bracket would rock. ",
            "Raise block_bottom_d toward floor_depth."));
 
 // Fit
@@ -332,15 +350,17 @@ assert(rip_y - rip_h / 2 > 0 && rip_y_from_top - rip_h / 2 > corner_r,
 assert(neck_d <= ball_d - 6, "neck too fat for the socket fingers to wrap the ball");
 assert(neck_len >= min_collar_room, "ball too close to the upright for the collar to swing");
 assert(ball_flat <= 1.0 + fudge, "ball_flat > 1mm puts the flat under the socket's contact ring");
-assert(neck_t > neck_r && neck_t < neck_r * sqrt(2), "neck_v_depth out of range");
-assert(neck_t >= root_r / sqrt(2), "root too fat: its flat underside would lose the 45deg sides");
+assert(neck_t > neck_r && neck_t < neck_r * td_k, "neck_v_depth out of range");
+assert(neck_t >= root_r * sin(overhang_max), "root too fat: its flat underside would lose the V sides");
+assert(keel_end >= root_len && bridge_s0 <= neck_start, "keel_end must sit inside the neck taper");
+assert(bridge_s0 <= collar_min_s, "neck keel reaches where the socket collar swings");
 assert(z_c - neck_t >= 2 * layer_height, "neck bridge too close to the plate");
 assert(z_c + root_r <= beam_w, "neck root wider than the upright");
-assert(neck_start > taper_s0 && taper_angle <= max_taper,
+assert(neck_start > root_len && taper_angle <= max_taper,
        str("neck taper too abrupt (", taper_angle, "deg) — raise neck_start"));
 assert(neck_start <= neck_len - s_junction, "neck_start is inside the ball");
 assert(bridge_span <= max_bridge,
-       str("neck bridge ", bridge_span, "mm > ", max_bridge, "mm: shorten neck_len or lengthen root_len"));
+       str("neck bridge ", bridge_span, "mm > ", max_bridge, "mm: raise keel_end or shorten neck_len"));
 // Strength (design case: design_mass_kg at design_g, hot, with safety factor)
 assert(sigma_neck <= allow_mpa,
        str("neck overstressed: ", sigma_neck, " > ", allow_mpa, " MPa — raise neck_start or neck_d"));
@@ -353,7 +373,8 @@ assert(part_len_x <= build_x - 2 * bed_margin && part_len_y - part_min_y <= buil
 
 // === MODULES ===
 
-// Linear extrude with a stepped elephant-foot relief on the plate face and a stepped 45deg
+// Linear extrude with a stepped elephant-foot relief on the plate face (steps no steeper
+// than overhang_max) and a stepped 45deg
 // chamfer on the top face (one step per layer, so the slicer prints exactly this).
 module chamfer_extrude(h) {
     for (i = [0 : ef_steps - 1])
@@ -419,13 +440,13 @@ module rip_groove() {
 }
 
 // 2D teardrop in a neck cross-section (x = across the neck in the side-profile plane,
-// y = print Z). Runs down to the plate (y = -zc) with <=45deg sides whatever r is.
+// y = print Z). Runs down to the plate (y = -zc) with sides <= overhang_max whatever r is.
 module td_bed(r, zc) {
     intersection() {
         translate([-big / 2, -zc]) square([big, big]);
         hull() {
             circle(r);
-            translate([0, -r * sqrt(2)]) square(fudge, center = true);
+            translate([0, -r * td_k]) square(fudge, center = true);
             translate([-stem_w / 2, -zc]) square([stem_w, fudge]);
         }
     }
@@ -437,7 +458,7 @@ module td_flat(r, t) {
         translate([-big / 2, -t]) square([big, big]);
         hull() {
             circle(r);
-            translate([0, -r * sqrt(2)]) square(fudge, center = true);
+            translate([0, -r * td_k]) square(fudge, center = true);
         }
     }
 }
@@ -455,14 +476,19 @@ module ball_mount(inner = up_d / 2) {
         slab(-inner) td_bed(root_r, z_c);
         slab(root_len) td_bed(root_r, z_c);
     }
-    // underside climbs from the plate to the bridge height at 45deg, still full root size
+    // gentle taper Ø14 -> Ø10 starts; the keel still reaches the plate out to keel_end
     hull() {
         slab(root_len) td_bed(root_r, z_c);
-        slab(taper_s0) td_flat(root_r, neck_t);
+        slab(keel_end) td_bed(neck_r_at(keel_end), z_c);
     }
-    // gentle taper Ø14 -> Ø10 (no shoulder at the highest-stress section)
+    // keel underside climbs to the bridge height, no steeper than overhang_max
     hull() {
-        slab(taper_s0) td_flat(root_r, neck_t);
+        slab(keel_end) td_bed(neck_r_at(keel_end), z_c);
+        slab(bridge_s0) td_flat(neck_r_at(bridge_s0), neck_t);
+    }
+    // taper finishes (no shoulder at the highest-stress section), flat underneath
+    hull() {
+        slab(bridge_s0) td_flat(neck_r_at(bridge_s0), neck_t);
         slab(neck_start) td_flat(neck_r, neck_t);
     }
     // slender neck: round where the socket sits, flat underneath (bridge)
@@ -473,14 +499,18 @@ module ball_mount(inner = up_d / 2) {
     translate([neck_len, 0, 0]) sphere(d = ball_dm);
 }
 
-// Snap-in cable groove down the upright's outer face; teardrop ceiling (support-free).
+// Snap-in cable groove down the upright's outer face. Its roof is a pointed arch no steeper
+// than overhang_max (support-free) that closes to a sharp ridge — no flat at the top.
 module cable_groove() {
     translate([up_x1 - cable_depth, cable_top, cable_z])
         rotate([90, 0, 0])
-            linear_extrude(cable_top + fudge)
+            linear_extrude(cable_top - cable_bottom)
                 hull() {
                     circle(cable_r);
-                    translate([0, cable_r * sqrt(2)]) square(fudge, center = true);
+                    // tip sliver lies exactly on the arch's sides, so it adds no steeper facet
+                    polygon([[-fudge, cable_r * td_k - fudge / tan(overhang_max)],
+                             [fudge, cable_r * td_k - fudge / tan(overhang_max)],
+                             [0, cable_r * td_k]]);
                 }
 }
 
