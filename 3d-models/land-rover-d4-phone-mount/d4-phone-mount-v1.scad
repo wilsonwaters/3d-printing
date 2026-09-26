@@ -5,15 +5,16 @@
 // the cluster surround, directly under the leather binnacle hood. It carries a
 // LISEN W116 Qi2.2 25W magnetic wireless charger on a standard 17mm ball, holding the
 // phone ~5cm higher than a charger clipped straight into the notch, on an upright that
-// leans back toward the windscreen once it clears the hood lip (test-fitted, then revised).
+// leans back toward the windscreen once it clears the hood lip, with the ball stalk angled
+// down toward the driver (three test fits, then revised).
 // Lisen's own adhesive base can't go here (they rule out leather, seams and uneven
 // surfaces), which is why this exists.
 //
 // Physical context: the notch is a box — floor = top of the lower dash panel (a ~30mm
-// ledge that slopes down toward the driver), back = matte trim face that bulges ~4mm
-// toward the driver top-to-bottom, ceiling =
-// underside of the leather hood (overhangs 40mm), sides = the vent surround's angled
-// return and the cluster surround. Load is a ~0.45kg charger + phone
+// ledge that slopes down steeply toward the driver, ~16mm over 30mm), back = matte trim
+// face (near enough flat: a 4mm dish test-fitted too deep), ceiling =
+// underside of the leather hood (overhangs 40mm), sides = the vent surround (square) and
+// the cluster surround's small angled return. Load is a ~0.45kg charger + phone
 // (in a case) cantilevered out on the ball; the design case is 4g peak vertical on
 // corrugations / washouts (four-wheel driving), plus a hot parked cabin in Australian
 // sun (dash surfaces well over 70C).
@@ -29,8 +30,8 @@
 //     ~13x the pressure (asserted via pad_mpa). A flat bottom on a sloping ledge would
 //     touch only at its back corner and leave the tape holding the phone in peel. The tape
 //     only has to stop it sliding out, so two small patches do — which keeps it
-//     removable (rip-cord groove across the back). The back is dished (back_sag, a
-//     circular arc) to sit on the bulging trim face instead of rocking on it.
+//     removable (rip-cord groove across the back). back_sag can dish the back (a circular
+//     arc) for a curved trim face; the D4's test-fitted flat.
 //   - Printed lying on its side (the side profile is flat on the plate). The phone's
 //     weight bends the block, upright, neck and ball stalk in the side-profile plane,
 //     so every bending stress runs ALONG the layers — nothing is loaded across a layer
@@ -44,24 +45,31 @@
 //     section starts (its highest-moment point), with the hollow infill core allowed for.
 //     Cross-sections are teardrops: the root runs down to the plate (support-free), then
 //     the neck is cut flat underneath and prints as a ~9mm bridge. This is the exact neck
-//     that test-fitted well: the LISEN collar nut sits within ~5mm of the upright face, so
-//     a longer keel there fouls it (keel_end, collar_min_s). The keel/flat side is the
+//     that test-fitted well: the LISEN collar nut sits within ~5mm of the face the neck
+//     leaves, so a longer keel there fouls it (keel_end, collar_min_s). The keel/flat side is the
 //     plate side = the vent (left) side for beam_side="left", which the collar never
 //     swings toward when you angle the charger right, toward the driver. (For
 //     beam_side="right" the keel lands on the driver side and limits rightward swing.)
 //   - The upright rides on the vent side of the block (beam_side) so the charger stays
 //     clear of the gauges; it rises from the block top, not from the floor, so it is
-//     a short, stiff cantilever instead of a long one. It rises vertically until it clears
-//     the hood lip, then leans back toward the windscreen by upright_lean (the knee is put
-//     as low as the lip allows, from hood_t), and the neck comes straight out of the
-//     leaning face, so the charger sits further back and faces up by the same angle.
+//     a short, stiff cantilever instead of a long one. Its driver-side face stays where it
+//     test-fitted (upright_front) and it is 25mm deep, filling the room seen behind it. It
+//     rises vertically until it clears the hood lip (knee_above_hood, as test-fitted), then
+//     leans back toward the windscreen by upright_lean.
+//   - Head: the ball stalk points neck_angle below level, so the phone stands up and tips
+//     its top toward the driver. It leaves a "head" jutting from the leaning part whose flat
+//     face is square to the stalk: the collar nut sees the same flat face it swung freely
+//     against on the test print. The leaning face below the head rises toward the collar
+//     at head_turn, so the flat runs head_below under the stalk (collar_room asserted).
 //   - Notch sides: each side's angled return is its own [inset, depth] (vent_return,
 //     cluster_return) — photos suggest they differ. The plate-side cut is kept <=overhang_max
 //     (support-free) by cutting a little extra if the measured return is steeper.
-//   - Cable clip: a snap-in groove down the upright's driver-facing face tidies the
-//     USB-C lead so it doesn't flog about off-road.
-//   - Clearance note: the neck already points 25deg up, so the charger starts reclined;
-//     the phone's bottom edge clears the wedge front by ~60mm at that angle.
+//   - Cable clip: a snap-in groove down the wedge's sloping front, straight under the
+//     charger's USB-C port, tidies the lead so it doesn't flog about off-road. Near the
+//     bottom it turns straight down, so the lead drops off in front of the ledge's edge
+//     instead of being pinched under the wedge's pivot edge (cable_drop_clear).
+//   - Clearance note: with the stalk 20deg down and the joint centred, the phone's bottom
+//     edge still clears the wedge front by ~20mm.
 //
 // Terminology -> code:
 //   "the notch"                 -> notch_h, notch_w, vent_return, cluster_return
@@ -69,18 +77,20 @@
 //   "the floor ledge"           -> floor_depth, floor_drop (its slope)
 //   "the block / base / wedge"  -> block_h, block_w, block_bottom_d, wedge_pts, profile_block()
 //   "rocking / pad load"        -> pad_force, pad_mpa, max_pad_mpa
-//   "the upright / post"        -> up_d, beam_w, upright_gap, upright_pts, profile_frame()
-//   "lean / knee"               -> upright_lean, y_knee (from hood_t, lean_clear)
-//   "dished back / curve"       -> back_sag, back_x(), back_pts
-//   "how far out"               -> upright_gap  (hood lip -> upright inner face)
-//   "where measurements start"  -> hood_over / floor_depth: from the trim where it meets the
-//                                  hood / ledge (back_x() behind the bulge at x = 0)
+//   "the upright / post"        -> up_d, beam_w, upright_front, upright_pts, profile_frame()
+//   "lean / knee"               -> upright_lean, knee_above_hood, y_knee, lip_clear
+//   "the head"                  -> head_below, head_turn, head_bot, collar_d, collar_room
+//   "dished back / curve"       -> back_sag (0 = flat), back_x(), back_pts
+//   "how far out"               -> upright_front (wall -> upright's driver-side face)
+//   "where measurements start"  -> hood_over / upright_front / floor_depth: from the trim where
+//                                  it meets the hood / ledge (wall_x; with back_sag > 0 that is
+//                                  back_x() behind the bulge at x = 0)
 //   "how high"                  -> rise            (notch top / hood underside -> ball centre:
 //                                                   how much higher than a charger clipped
 //                                                   straight into the notch)
 //   "the ball / 17mm ball"      -> ball_d, asa_shrink, ball_flat, ball_mount()
-//   "the neck / stalk"          -> neck_d, neck_start, root_d, neck_len, neck_tilt, neck_pitch
-//   "cable clip / groove"       -> cable_d, cable_groove()
+//   "the neck / stalk"          -> neck_d, neck_start, root_d, root_in, neck_len, neck_angle
+//   "cable clip / groove"       -> cable_d, cable_drop_clear, cable_groove()
 //   "rip cord / removal"        -> rip_y, rip_groove()
 //   "gauges / templates"        -> part = "gauge" (side template + plan template)
 //   "ball test"                 -> part = "ball_test"
@@ -92,13 +102,15 @@
 //   Wedge rocks on the ledge    -> floor_drop (bottom slope); over-estimate by <=1mm so it
 //                                  lands on the ledge's front edge, not its back corner
 //   Shorter wedge bottom        -> block_bottom_d (the pad_mpa assert says how short is safe)
-//   Charger further out / in    -> upright_gap (>= hood_clear)
+//   Charger further out / in    -> upright_front (up_d grows the upright toward the dash; the
+//                                  build refuses if it would reach behind the hood lip)
 //   Charger higher / lower      -> rise (from the notch top = hood underside, where a charger
 //                                  clipped straight into the notch would sit; the echo also
 //                                  reports height above the hood top using hood_t)
-//   Charger further back / fwd  -> upright_lean (0 = vertical); how far it can lean from how
-//                                  low depends on hood_t — measure it
-//   Charger aimed higher / lower-> neck_tilt (relative to straight out of the leaning upright)
+//   Charger further back / fwd  -> upright_lean (0 = vertical)
+//   Lean starts higher / lower  -> knee_above_hood (lip_clear says whether it still clears the
+//                                  lip; that depends on hood_t — measure it)
+//   Charger aimed higher / lower-> neck_angle (+ = up, - = down toward you); the head turns with it
 //   Back face curve             -> back_sag (0 = flat)
 //   Upright on the other side   -> beam_side = "right" (see keel note above)
 //   Ball too tight / loose      -> asa_shrink (1.004 looser ... 1.008 tighter), or ball_d
@@ -107,7 +119,7 @@
 //                                  stacks up, and say which section
 //   Slicer walls / infill       -> walls, infill (the stress check uses them)
 //
-// Overall dimensions (defaults): ~84 x 130 x 38 mm (X x Y x Z as printed), ~75g ASA;
+// Overall dimensions (defaults): ~89 x 149 x 38 mm (X x Y x Z as printed), ~90g ASA;
 //   fits the X1C bed with room to spare, clear of the front-left cutter exclusion zone.
 // Coordinate system (as printed): X = out of the notch toward the driver (for
 //   beam_side="left" the model is mirrored so "out" runs toward -X), Y = up in the car,
@@ -155,27 +167,36 @@ overhang_max = 40;     // steepest overhang anywhere (deg from vertical) — mar
 // --- Notch measurements (MEASURE THESE — defaults are estimated from photos) ---
 notch_h = 65;          // floor ledge -> underside of the leather hood, at the back face (measured)
 notch_w = 40;          // notch width across its mouth
-vent_return = [8, 8];  // vent-side wall: [how far it steps in by the back face, how deep that angled bit runs]
+vent_return = [0, 0];  // vent-side wall: [how far it steps in by the back face, how deep that angled bit
+                       // runs]. Square: the test fit showed no chamfer is needed on this side
 cluster_return = [2, 2]; // cluster-side wall, same meaning ([0, 0] = square corner)
 hood_over = 40;        // hood's front lip -> the back face where it meets the hood (measured)
 hood_t = 20;           // hood lip thickness, underside -> top of the leather (ESTIMATE) — sets how
                        // low the upright can start leaning without hitting the lip
-back_sag = 4;          // back face bulges toward you: a ruler held up-and-down rocks on it with
-                       // this gap at each end (measured). The wedge's back is dished to match.
+back_sag = 0;          // back face bulges toward you: a ruler held up-and-down rocks on it with
+                       // this gap at each end. 0 = flat: a 4mm dish test-fitted ~4mm too deep
 back_n = 16;           // segments in the dished back
 floor_depth = 30;      // ledge's front edge -> the back face where it meets the ledge (measured, approx)
-floor_drop = 6;        // how much lower the ledge is at floor_depth than at the back face (ESTIMATE)
+floor_drop = 16;       // how much lower the ledge is at floor_depth than at the back face (test fit:
+                       // the wedge's front-bottom can sit ~10mm lower than the first guess of 6)
 block_bottom_d = floor_depth; // how much of the ledge the wedge's sloped bottom sits on
 bottom_overrun = 3;    // the bottom may run this far past the ledge edge (harmless)
 
 // --- Where the charger goes ---
-upright_gap = 5;       // hood lip -> dash-side face of the upright (the upright stands just clear of it)
+upright_front = 65;    // wall -> the upright's driver-side face, tape included (as test-fitted; the
+                       // upright grows toward the dash from here, see up_d)
 rise = 50;             // ball centre above the notch top / hood underside — i.e. 5cm higher than
                        // the charger would sit clipped straight into the top of the notch ("5 cm up")
-upright_lean = 25;     // upright leans back toward the windscreen above the hood lip (deg)
-neck_tilt = 0;         // neck angle relative to straight out of the leaning upright (+ = up)
-hood_clear = 3;        // minimum gap between the upright and the hood's front lip
-lean_clear = 5;        // gap between the leaning part and the lip's top corner (hood_t is a guess)
+knee_above_hood = 24;  // the lean starts this far above the hood underside (test fit: 22 cleared the
+                       // lip 5mm in front of it; the deeper upright's back corner now sits right over
+                       // the lip, so 2mm higher)
+upright_lean = 15;     // upright leans back toward the windscreen above the knee (deg)
+neck_angle = -20;      // ball stalk angle above level (deg). Negative points it down toward you, so
+                       // the phone stands up and tips its top toward you. The stalk leaves a flat
+                       // "head" square to it on the leaning upright.
+head_below = 10;       // head's flat face below the neck axis, before it meets the leaning face
+collar_d = 26;         // the W116 socket's collar nut across its corners (ESTIMATE from photos)
+collar_gap = 1;        // centred collar nut -> the leaning face below the head, minimum
 
 // --- Fixing ---
 tape_t = 1.1;          // 3M VHB 5952 on the back face
@@ -187,11 +208,13 @@ rip_h = 1.6;           // rip-cord groove height
 min_tape_w = 15;       // narrowest back face worth taping
 
 // --- Structure ---
-up_d = 20;             // upright depth (out direction) — sets fore/aft stiffness; top of wedge = 65
+up_d = 25;             // upright depth (out direction) — 5mm deeper toward the dash than the test
+                       // fit, which showed room behind it; sets fore/aft stiffness
 beam_w = 16;           // upright lateral width (Z as printed)
 gusset = 6;            // 45deg gusset where the upright's open side meets the block top
 corner_r = 3;          // convex corner radius on the side profile
-fillet_r = 3;          // concave fillet where the upright meets the block top (2mm clear of the lip)
+fillet_r = 2;          // concave fillet where the upright meets the block top (<= top_pad: it sits
+                       // under the hood lip now)
 top_ch = 1.0;          // 45deg chamfer round the top (as printed) faces — no sharp edges by the hand
 
 // --- 17mm ball ---
@@ -203,6 +226,7 @@ neck_start = 11;       // upright face -> start of the slender Ø10 section (tap
 root_d = 14;           // neck root at the upright
 neck_len = 20;         // upright face -> ball centre, along the neck (collar swing room)
 root_len = 3;          // full-diameter root beyond the upright face, down to the plate
+root_in = 5;           // neck root buried this far behind the head face
 neck_v_depth = 0.8;    // teardrop tip below the round neck before it is cut flat (bridge)
 stem_w = 1.2;          // keel width at the plate if a small root teardrop can't reach it
 keel_end = 3;          // upright face -> where the neck's plate-reaching keel stops (= root_len:
@@ -214,6 +238,7 @@ max_taper = 25;        // steepest neck taper half-angle (deg) — keeps the sho
 cable_d = 4.0;         // USB-C lead diameter
 cable_play = 0.4;      // bore oversize for the lead
 cable_snap = 0.6;      // mouth narrower than the lead by this much (snap-in)
+cable_drop_clear = 1.5; // the lead drops off the wedge this far in front of the ledge's edge
 
 // --- Gauges (fit templates) and ball test ---
 gauge_t = 2.4;         // template thickness
@@ -263,9 +288,10 @@ block_w = notch_w - 2 * side_clear;           // lateral (Z) width
 back_R = back_sag > 0 ? (pow(notch_h / 2, 2) + back_sag * back_sag) / (2 * back_sag) : 0;
 function back_x(y) = back_sag <= 0 ? 0
     : let(yc = min(max(y, 0), notch_h) - notch_h / 2) -(back_R - sqrt(back_R * back_R - yc * yc));
-hood_x = hood_over + back_x(notch_h) - tape_t; // hood lip (measured from where the back meets the hood)
-up_x0 = hood_x + upright_gap;                 // upright inner face
-up_x1 = up_x0 + up_d;                         // upright outer (driver-side) face
+wall_x = back_x(notch_h) - tape_t;            // the trim where it meets the hood (measuring datum)
+hood_x = hood_over + wall_x;                  // hood lip (measured from where the back meets the hood)
+up_x1 = upright_front + wall_x;               // upright outer (driver-side) face, same datum
+up_x0 = up_x1 - up_d;                         // upright inner (dash-side) face
 rip_y = block_h - rip_y_from_top;             // rip-cord groove height
 // Wedge: sloped bottom sits on the ledge out to bottom_x, then the front face climbs to
 // the upright's outer face at block-top height.
@@ -299,42 +325,65 @@ function neck_r_at(s) = s <= root_len ? root_r
                       : root_r - (root_r - neck_r) * (s - root_len) / (neck_start - root_len);
 s_junction = sqrt(ball_r * ball_r - neck_r * neck_r);        // ball centre -> neck junction
 ball_y = notch_h + rise;                      // ball centre height above the floor
-// Leaning upright: vertical from the wedge top to the knee, then leaning back by
-// upright_lean. The knee is as low as it can be while the leaning inner face still clears
-// the hood lip's top-front corner by lean_clear.
+// Leaning upright: vertical from the wedge top to the knee (at the test-fitted height, clear of
+// the hood lip), then leaning back by upright_lean. Near the top a "head" juts out whose flat
+// face is square to the neck, so the socket's collar nut sees a flat face just as it did on
+// the test print, whatever the neck angle.
 lean = upright_lean;
-neck_pitch = lean + neck_tilt;                // absolute neck angle above horizontal
+neck_pitch = neck_angle;                      // absolute neck angle above horizontal
+head_turn = lean - neck_pitch;                // head face is turned this far from the leaning face
 up_u = [-sin(lean), cos(lean)];               // up the leaning part
 up_n = [cos(lean), sin(lean)];                // out of its driver-side face
+n_h = [cos(neck_pitch), sin(neck_pitch)];     // along the neck, out of the head face
+u_h = [-sin(neck_pitch), cos(neck_pitch)];    // up the head face
 x_c = up_x0 + up_d / 2;                       // upright centreline below the knee
 knee_h2 = up_d / 2 * tan(lean / 2);           // knee corners sit this far above/below the centreline knee
-hood_corner_y = notch_h + hood_t;
-knee_min = lean > 0 ? hood_corner_y + knee_h2 - (up_x0 - hood_x - lean_clear) / tan(lean) : block_h;
-y_knee = max(block_h + fillet_r + 1, knee_min);
-knee_c = [x_c, y_knee];
-// place the neck so the ball centre lands at ball_y, straight out of the leaning face
-t_root = (ball_y - neck_len * sin(neck_pitch) - up_d / 2 * sin(lean) - y_knee) / cos(lean);
-neck_o = knee_c + t_root * up_u + up_d / 2 * up_n; // neck axis leaves the driver-side face here
-ball_x = neck_o[0] + neck_len * cos(neck_pitch);
-t_top = t_root + root_r + corner_r + 1;       // leaning part extends this far past the knee
-up_top_o = knee_c + t_top * up_u + up_d / 2 * up_n;
-up_top_i = knee_c + t_top * up_u - up_d / 2 * up_n;
-upright_pts = [[up_x0, block_h - 1], [up_x1, block_h - 1], [up_x1, y_knee + knee_h2],
-               up_top_o, up_top_i, [up_x0, y_knee - knee_h2]];
+y_knee = notch_h + knee_above_hood;
+knee_o = [up_x1, y_knee + knee_h2];           // outer (driver-side) knee corner
+knee_i = [up_x0, y_knee - knee_h2];           // inner (dash-side) knee corner
+// the head face meets the leaning outer face head_below under the neck axis; place it so the
+// ball centre lands at ball_y
+t_head = (ball_y - neck_len * n_h[1] - head_below * u_h[1] - knee_o[1]) / up_u[1];
+head_bot = knee_o + t_head * up_u;
+neck_o = head_bot + head_below * u_h;         // neck axis leaves the head face here
+ball_x = neck_o[0] + neck_len * n_h[0];
+head_top_o = neck_o + (root_r + corner_r + 1) * u_h;   // face ends just above the root
+head_top_b = head_top_o - (root_in + corner_r) * n_h;  // top runs back square to the face over the root
+head_fall = 45;                               // ...then falls back to the inner face at this angle
+function cross2(a, b) = a[0] * b[1] - a[1] * b[0];
+function meet(p, d, q, e) = p + d * (cross2(q - p, e) / cross2(d, e)); // line p+s*d meets q+t*e
+up_top_i = meet(head_top_b, [-cos(head_fall), -sin(head_fall)], knee_i, up_u);
+upright_pts = [[up_x0, block_h - 1], [up_x1, block_h - 1], knee_o, head_bot,
+               head_top_o, head_top_b, up_top_i, knee_i];
+// the leaning face below the head rises toward the collar at head_turn: room left under the
+// centred collar nut (its near face sits collar_min_s out from the head face)
+collar_room = collar_min_s - tan(head_turn) * max(0, collar_d / 2 - head_below);
+// the hood lip's top-front corner must stay behind the leaning inner face (hood_t is a guess)
+lip_corner = [hood_x, notch_h + hood_t];
+lip_clear = lip_corner[1] <= knee_i[1] ? up_x0 - hood_x : -(lip_corner - knee_i) * up_n;
 
-// Cable groove on the upright's outer face
+// Cable groove down the wedge's sloping front, straight under the charger's USB-C port. Near the
+// bottom the lead turns straight down and drops off in front of the ledge's edge, so it is never
+// trapped under the wedge's pivot edge.
 cable_r = (cable_d + cable_play) / 2;
 cable_mouth = cable_d - cable_snap;
 cable_depth = sqrt(cable_r * cable_r - (cable_mouth / 2) * (cable_mouth / 2)); // bore centre inside the face
-cable_z = beam_w / 2;
-cable_s_top = t_root - root_r - 2;           // groove stops below the neck root (along the lean)
-// the groove runs down until it leaves the part through the wedge's sloping front
-cable_exit_x = up_x1 - cable_depth - cable_r;
-cable_bottom = (cable_exit_x - bottom_x) / (up_x1 - bottom_x) * (block_h + bottom_drop) - bottom_drop - 1;
+cable_z = z_c;                                // same lateral position as the ball / charger
+front_b = [bottom_x, -bottom_drop];           // wedge front face, bottom corner...
+front_t = [up_x1, block_h];                   // ...to the top, where it meets the upright
+front_len = norm(front_t - front_b);
+front_dir = (front_t - front_b) / front_len;  // up the front face
+front_n = [front_dir[1], -front_dir[0]];      // out of it (toward you, a little down)
+front_ang = atan2(front_n[1], front_n[0]);
+cable_drop_x = floor_edge_x + cable_d / 2 + cable_drop_clear; // lead centreline once it hangs free
+cable_s_end = (cable_drop_x - front_b[0] + cable_depth * front_n[0]) / front_dir[0];
+cable_end_f = front_b + cable_s_end * front_dir; // groove ends here on the face...
+cable_end_c = cable_end_f - cable_depth * front_n; // ...with the lead's centre here
+cable_top = front_t + 2 * cable_r * front_dir; // groove starts a little above the face (lead-in)
 
 // Overall extents (raw, before mirroring)
-part_len_x = max(ball_x + ball_r, up_x1);
-part_len_y = max(up_top_o[1], up_top_i[1], ball_y + ball_r);
+part_len_x = max(ball_x + ball_r, up_x1, head_top_o[0]);
+part_len_y = max(head_top_o[1], head_top_b[1], ball_y + ball_r);
 part_min_y = -bottom_drop;                   // the sloped bottom dips below the floor datum
 
 // === DESIGN CHECKS ===
@@ -370,11 +419,15 @@ pad_mpa = pad_k * pad_d1;                     // peak, at the back edge of the p
 echo(block_h = block_h, block_w = block_w, back_face_w = back_face_w,
      plate_cut = plate_cut, top_cut = top_cut);
 echo(knee_above_hood_underside = y_knee - notch_h, lean = lean, neck_pitch = neck_pitch,
-     back_sag = back_sag);
-echo(upright_from_bulge = up_x0 + tape_t, ball_from_bulge = ball_x + tape_t,
-     ball_from_hood_lip = ball_x - hood_x, pivot_from_bulge = pivot_x + tape_t,
-     ball_above_hood_underside = ball_y - notch_h, ball_above_hood_top = ball_y - notch_h - hood_t,
-     ball_above_floor = ball_y);
+     head_turn = head_turn, collar_room = collar_room, lip_clear = lip_clear,
+     knee_back_above_hood_top = knee_i[1] - notch_h - hood_t, head_back_top = up_top_i, back_sag = back_sag);
+// distances "from the wall" count from the trim where it meets the hood, tape included
+echo(upright_back_from_wall = up_x0 - wall_x, upright_front_from_wall = up_x1 - wall_x,
+     upright_back_to_hood_lip = up_x0 - hood_x, ball_from_wall = ball_x - wall_x,
+     pivot_from_wall = pivot_x - wall_x, ball_above_hood_underside = ball_y - notch_h,
+     ball_above_hood_top = ball_y - notch_h - hood_t, ball_above_floor = ball_y,
+     part_top_above_hood_underside = part_len_y - notch_h);
+echo(cable_groove_end_above_floor = cable_end_f[1], cable_drop_from_wall = cable_drop_x - wall_x);
 echo(sigma_neck = sigma_neck, sigma_root = sigma_root, sigma_upright = sigma_upright,
      sigma_neck_lat = sigma_neck_lat, allow_mpa = allow_mpa, bridge_span = bridge_span,
      taper_angle = taper_angle);
@@ -388,19 +441,32 @@ assert(pad_mpa <= max_pad_mpa,
            "Raise block_bottom_d toward floor_depth."));
 
 // Fit
-assert(upright_gap >= hood_clear,
-       str("upright would rub the hood lip: gap ", upright_gap, "mm < hood_clear ", hood_clear, "mm"));
-assert(up_x0 - fillet_r >= hood_x + 1 - fudge,
-       "upright fillet reaches under the hood lip: lower fillet_r or raise upright_gap");
+assert(up_x0 >= hood_x - fudge,
+       str("the upright's back would reach ", hood_x - up_x0, "mm behind the hood lip (hood_over). If the ",
+           "test fit shows room there, measure hood_over at the upright's side of the notch"));
+assert(up_x0 - fillet_r >= hood_x + 1 - fudge || block_h + fillet_r <= notch_h + fudge,
+       "upright fillet would push up into the hood lip: keep fillet_r <= top_pad");
+assert(lip_clear >= -fudge,
+       str("the leaning part would hit the hood lip's top corner (", lip_clear, "mm): ",
+           "raise knee_above_hood (or measure hood_t)"));
+assert(y_knee - knee_h2 >= block_h + fillet_r + 1, "knee too close to the wedge top");
 assert(block_h >= 30, "notch_h too small for a wedge block");
-assert(t_root >= root_r + fillet_r + 1,
-       str("the ball is too low for this lean: the neck would start at the knee. Raise rise, ",
-           "lower upright_lean, or measure hood_t (knee is ", y_knee - notch_h, "mm above the hood underside)"));
+assert(head_turn >= 0, "neck_angle above the leaning face's normal isn't supported: raise upright_lean");
+assert(t_head >= corner_r + fillet_r + 1,
+       str("the ball is too low for this lean: the head would start at the knee. Raise rise, ",
+           "lower upright_lean, or lower knee_above_hood"));
+assert(up_top_i[1] >= knee_i[1] + corner_r + 1, "head too low: its back runs into the knee");
+assert(collar_room >= collar_gap,
+       str("the leaning face under the head would foul the collar nut (", collar_room,
+           "mm room): raise head_below"));
 assert(back_sag < notch_h / 4, "back_sag looks too big — check the measurement");
 assert(block_w >= beam_w + gusset, "notch too narrow for the upright + gusset");
 assert(back_face_w >= min_tape_w,
        str("back face only ", back_face_w, "mm wide after the side cuts — check vent_return / cluster_return"));
 assert(plate_cut[1] < bottom_x && top_cut[1] < bottom_x, "side return deeper than the wedge bottom");
+assert(cable_s_end > 2 * cable_r && cable_s_end < front_len - 4 * cable_r,
+       "cable groove has no room on the wedge front: check floor_drop / cable_drop_clear");
+assert(cable_z - cable_r >= 2 && cable_z + cable_r * td_k <= block_w - 2, "cable groove too near a side");
 assert(rip_y - rip_h / 2 > 0 && rip_y_from_top - rip_h / 2 > corner_r,
        "rip-cord groove runs into the rounded top edge of the back face");
 // Ball joint
@@ -563,9 +629,9 @@ module ball_mount(inner = up_d / 2) {
     translate([neck_len, 0, 0]) sphere(d = ball_dm);
 }
 
-// Snap-in cable groove down the upright's driver-side face: down the leaning part, round the
-// knee, then down the vertical part until it leaves through the wedge's sloping front. Its
-// roof is a pointed arch no steeper than overhang_max (support-free) with a sharp ridge.
+// One straight run of the cable groove: p is on the face, ang turns local +X to the face's
+// outward normal, and it runs len down local -Y. Its roof is a pointed arch no steeper than
+// overhang_max (support-free) with a sharp ridge.
 module cable_run(p, ang, len) {
     translate([p[0], p[1], cable_z]) rotate([0, 0, ang]) translate([-cable_depth, 0, 0])
         rotate([90, 0, 0])
@@ -578,11 +644,12 @@ module cable_run(p, ang, len) {
                              [0, cable_r * td_k]]);
                 }
 }
+// Snap-in groove down the wedge's sloping front, then a straight-down drop that leaves the
+// wedge in front of the ledge's edge (the runs overlap 1mm at the bend).
 module cable_groove() {
-    knee_o = [up_x1, y_knee + knee_h2];        // outer knee corner
-    if (cable_s_top > -knee_h2)
-        cable_run(knee_c + cable_s_top * up_u + up_d / 2 * up_n, lean, cable_s_top + knee_h2 + 1);
-    cable_run(knee_o + [0, 1], 0, knee_o[1] + 1 - cable_bottom);
+    cable_run(cable_top, front_ang, norm(cable_top - cable_end_f) + 1);
+    cable_run([cable_drop_x + cable_depth, cable_end_c[1] + 1], 0,
+              cable_end_c[1] + 1 + bottom_drop + cable_r + 1);
 }
 
 // Gusset where the upright's open side meets the block top (top-facing 45deg slope).
@@ -610,7 +677,7 @@ module bracket_raw() {
                 chamfer_extrude(block_w) profile_block();
                 chamfer_extrude(beam_w) profile_frame();
                 lateral_gusset();
-                translate([neck_o[0], neck_o[1], z_c]) rotate([0, 0, neck_pitch]) ball_mount();
+                translate([neck_o[0], neck_o[1], z_c]) rotate([0, 0, neck_pitch]) ball_mount(root_in);
             }
             back_cuts();
             rip_groove();
@@ -633,7 +700,7 @@ module gauge() {
                 profile_frame();
                 translate(neck_o) rotate(neck_pitch) {
                     hull() {
-                        translate([-up_d / 2, 0]) circle(root_r);
+                        translate([-root_in, 0]) circle(root_r);
                         translate([neck_len, 0]) circle(neck_r);
                     }
                     translate([neck_len, 0]) circle(ball_r);
