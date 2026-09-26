@@ -13,8 +13,8 @@ batteries or magnets.
 | Bucket | tips every **10 mL = 0.5 mm**; two stop screws calibrate it |
 | Register | 1 count per bucket cycle (2 tips) = **1.0 mm**. The units dial turns once per 10 mm. Dials are geared 10:1 and alternate direction like a power meter |
 | Reset | plunger on the right side; heart cams return all four pointers to 0 |
-| Size | 222 × 186 × ~250 mm assembled, 28 printed parts in PETG, no supports |
-| Printer | Bambu Lab X1C (256³); the largest part (housing) is 228 × 179 mm |
+| Size | 222 × 191 × ~252 mm assembled (254 mm wide including the reset button), 29 printed parts in PETG, no supports |
+| Printer | Bambu Lab X1C (256³); the largest part (housing) is 230 × 176 mm |
 | Hardware | 3 mm stainless rod, a few M3 screws and nuts, optional 2 mm acrylic window |
 
 ---
@@ -43,10 +43,12 @@ batteries or magnets.
 5. **Reset.** Each pointer, its **heart cam** and its sleeve are friction-gripped on the arbor, so
    only the pointers move during a reset and the gear train is never back-driven. Pressing the
    plunger moves a slide:
-   - After 0.8 mm of travel a **V-lock** drops into a 10-slot star on the units arbor, so nothing
-     can drag the train.
-   - Four compliant hammer fingers then push the hearts round until their notches face the
-     hammers. At that point every pointer reads 0.
+   - In the first 3.3 mm of travel a cam track on the slide lifts a **V lock bolt** into a 10-slot
+     star on the units arbor. That holds the units arbor on its tooth grid, and it matters: if the
+     arbor were dragged even half a tooth, every later reading would be offset. The track pulls
+     the bolt out again on the way back, so there is no lock spring to fight.
+   - Four compliant hammer fingers push the hearts round until their notches face the hammers.
+     At that point every pointer reads 0.
    - A printed leaf spring returns the slide.
    The pointers can also be turned by hand at any time.
 
@@ -138,8 +140,22 @@ flat hammer face would jam over ±17° instead. If a pointer ever sticks, press 
 since the pointers are friction-fit.
 
 Fingers clear the neighbouring heart by 1.5 mm at rest and their own zeroed heart by 1.1 mm at
-full stroke (asserted). The units-arbor V-lock engages 0.8 mm into the 17.6 mm stroke, before any
-hammer can touch.
+full stroke (asserted).
+
+**Reset mechanism.** Stroke 17.6 mm; the button bottoms on its boss exactly at full stroke, so the
+slide's guide slots never take the push.
+
+| Asserted check | Value |
+|---|---|
+| Lock bolt | V 0.5 mm clear of the star at rest; lifts 2.5 mm (1.8 mm into a slot) within the first 3.3 mm of travel; cam track pressure angle 40° |
+| Why 3.3 mm is soon enough | a units arbor dragged less than half a tooth before the bolt arrives is pulled back onto the grid by the V |
+| Cam plate and hanger | pass under / beside the units heart's swept circle with ≥ 1.5 mm at every travel |
+| Return leaf | 1.8 × 6.8 × 67.5 mm, free in a window through the front frame; 0.45 N at rest, 1.6 N and 1.45 % strain at full stroke |
+| Push force | ≈ 7 N at the very end (four fingers ≈ 1.3 N each at 1.5 mm overtravel + leaf 1.6 N); less before the noses seat |
+
+**Pawls.** Both pawls stand on their pivots and are held on the ratchet face by gravity. Their CG
+leans 20° ahead of the pivot, so a pawl tip could be lifted ~4.8 mm before it flopped backwards;
+the ratchet ramps lift it 2.2 mm (asserted with ≥ 1.5 mm margin).
 
 ---
 
@@ -154,16 +170,19 @@ hammer can touch.
 | `bezel` | 1 | front face down | 0.2 | optional 2 mm acrylic window slides in from the top |
 | `bucket` | 1 | upright on its flat floor | 0.2 | **100 % infill** (it must not absorb water); smooth the inside with a dab of epoxy |
 | `arm`, `drive_pawl`, `click_pawl` | 1 each | flat | 0.12 | 100 % infill |
-| `front_frame`, `back_plate` | 1 each | flat, features up | 0.2 | |
+| `front_frame`, `back_plate` | 1 each | flat, features up | 0.2 | the return leaf is part of the front frame, free in its window |
 | `dial_face` | 1 | numerals up | 0.2 | **Filament change at 2.4 mm** for black numerals on white |
-| `slide` | 1 | front face down | 0.12 | 100 % infill; the fingers and spring must not have infill voids |
+| `slide` | 1 | front face down | 0.12 | 100 % infill; the fingers and cam plate must not have infill voids |
+| `lock_bolt` | 1 | rear face down, peg up | 0.12 | 100 % infill |
 | `wheel_T`, `wheel_H` | 1 each | wheel face down | 0.12 | |
 | `wheel_K`, `pinion_U`, `ratchet_U` | 1 each | flat | 0.12 | |
 | `lock_star` | 1 | flat | 0.12 | pressed on during assembly (see step 6) |
 | `heart` | **4** | plate down | 0.12 | 100 % infill |
 | `pointer` | **4** | face up | 0.12 | black |
-| `plunger` | 1 | head down | 0.2 | |
-| `small_parts` | – | one plate of all the small parts | 0.12 | convenience |
+| `plunger` | 1 | flat | 0.12 | snaps into the right wall from outside |
+| `small_parts` | – | one plate: hearts, pointers, star, ratchet, pinion, bolt, pawls, arm, nozzle, screen, plunger, slide | 0.12 | convenience; 100 % infill |
+| `plate_frames` | – | front frame + back plate | 0.2 | convenience |
+| `plate_register` | – | the three 80-tooth wheels | 0.12 | convenience |
 | `test_coupons` | – | gear-mesh jig + bore gauge | 0.12 | **print these first** |
 
 **Hardware**
@@ -172,9 +191,11 @@ hammer can touch.
 |---|---|
 | 3 mm stainless rod, ~400 mm | bucket axle 80 mm; units arbor 64 mm; three arbors 38 mm |
 | M3 × 12 socket cap + 2 nuts each, ×2 | calibration stop screws (captive nut plus jam nut) |
-| M3 × 25 pan head ×7 | dial face → front frame → back-plate posts |
-| M3 × 10 ×9 | lid ×4, collector ×3, bezel ×2 |
-| M3 × 12 + nut | arm pinch clamp |
+| M3 × 25 countersunk ×7 | dial face → front frame → back-plate posts |
+| M3 × 10 ×4 | lid |
+| M3 × 10 countersunk ×2 | bezel → sill |
+| M3 × 8 ×3 | collector skirt → lid spigot (radial) |
+| M3 × 12 + nut | arm clamp (across both ears) |
 | M3 × 10 ×2 | drive- and click-pawl pivots (threaded into the arm and post) |
 | 15 mm bubble level (optional) | pocket in the lid |
 | 2 mm clear acrylic ~212 × 88 mm (optional) | window |
@@ -192,29 +213,38 @@ hammer can touch.
      rod, and the compounds on the others, with the wheel faces toward the front.
    - Fit the rods through the back-plate posts and the front frame, then screw the frame to the
      posts.
-3. **Pointers and hearts.** Slide a heart onto each arbor front (the grip finger should need a
-   firm push) and press a pointer onto each D-sleeve.
-4. **Reset.** Drop the slide onto its three guide pins with the return leaf bent to the left of
-   the spring tab. The leaf is printed straight, so bending it puts the preload in.
-5. **Housing.** Put the plunger through the right wall from the inside, then slide the movement
-   in from the front until the back plate meets the chamber wall.
-6. **Lock-star phase.**
-   - Tip the bucket so the drive arm is up.
-   - Turn the units arbor backwards until the ratchet rests on the drive pawl.
-   - Hold the plunger in and press `lock_star` onto the units arbor so the lock tooth sits in a
-     slot.
-   - Add a drop of CA glue.
-7. **Dial face and bezel.** Fit the dial face with the seven M3 × 25 screws, slide in the window
-   if you're using one, then screw on the bezel.
-8. **Bucket.**
+3. **Lock bolt and slide.**
+   - Drop `lock_bolt` between its two rails under the units arbor, V up and peg facing you.
+   - Bend the return leaf (in the window left of the ×100 dial) about 12 mm to the left and hold
+     it there. Lower the slide onto its three guide pins so the bolt's peg enters the cam track,
+     then let the leaf spring back against the left face of the slide's spring tab. The leaf is
+     printed straight, so this puts in its 7 mm preload. The slide should now snap back when
+     pushed.
+4. **Housing.** Slide the movement in from the front until the back plate meets the chamber wall.
+   Push the plunger into its square hole in the right wall from outside until the barbs click
+   through.
+5. **Bucket.**
    - Rest the bucket in the chamber.
    - Push the axle rod through the right-hand window, the bucket hub (press fit) and the left
      window.
    - Clamp the arm on the rod's right end with the pawl pivot pointing forward, and hang the drive
      pawl on its M3 pivot.
    - Fit the click pawl on its post, then the stop screws with captive and jam nuts.
-9. **Lid, nozzle and collector.** Fit the lid, press the nozzle into the collector throat, drop
-   in the leaf screen, and screw the collector down.
+6. **Lock-star phase.** The star's slots must line up with the ratchet's rest positions.
+   - Tip the bucket so the drive arm is up.
+   - Turn the units arbor backwards until the ratchet rests on the drive pawl.
+   - Push the reset button fully in and hold it, so the bolt is up.
+   - Press `lock_star` onto the front of the units arbor so the bolt's V sits in a slot. Add a
+     drop of CA glue.
+7. **Hearts and pointers.** Slide a heart onto each arbor front (the grip finger should need a
+   firm push) and press a pointer onto each D-sleeve. PTFE-lube the heart edges and hammer noses.
+8. **Dial face and bezel.** Fit the dial face with the seven countersunk M3 × 25 screws, slide in
+   the window if you're using one, then screw on the bezel. Its inner lip presses the dial face
+   and pushes the whole movement back against the chamber wall.
+9. **Lid, nozzle and collector.** Screw on the lid. Press the nozzle into the collector's throat
+   from below and drop the leaf screen in from above. Lower the collector over the lid's spigot
+   (the nozzle passes down through the lid hole and the ribs sit on the spigot top), then fit the
+   three radial screws.
 
 ## Calibration
 
@@ -243,26 +273,40 @@ hammer can touch.
 
 ## Verification (OpenSCAD nightly 2026.09.23, Manifold)
 
-- **Build gate:** all 25 `part=` values compile with `--hardwarnings`, exit 0, with non-empty STLs
+- **Build gate:** all 26 `part=` values compile with `--hardwarnings`, exit 0, with non-empty STLs
   and clean stderr.
-- **Slicer manifold:** every STL passes the edge-manifold check (0 non-manifold edges).
-- **Contracts:** asserts pass for orifice area, tip volume, ratchet quantisation, gear geometry,
-  heart flank angles and dead point, finger and lock clearances, flexure strains, and bed fit.
-- **Clash checks:** the bucket, arm and pawls clear the housing and movement at −28°, 0° and +28°.
-  The only overlaps are intended ones: pawl teeth resting on ratchet ramps, and the preloaded leaf
-  and lock flexures.
+- **Slicer manifold:** every STL passes the edge-manifold check (0 non-manifold edges), and every
+  single part exports as **one connected piece** (this check caught the first draft's wheels,
+  whose lightening windows had cut the rim free).
+- **Contracts:** asserts pass for orifice area, tip volume, ratchet quantisation, gear geometry and
+  wheel spokes, heart flank angles and dead point, finger clearances, lock-bolt timing and
+  clearances, return-leaf force and strain, plunger fit, pawl over-centre margin, and bed fit.
+- **Clash checks** (intersection volumes of the placed parts):
+  - the bucket, arm and pawls clear the housing and movement at −28°, 0° and +28°;
+  - the slide, lock bolt, star, plunger, front frame and dial face clear each other at rest,
+    mid-ramp and full stroke, and the cam plate and hanger clear every heart's swept circle;
+  - the three gear meshes are interference-free at their assembly phases;
+  - the collector clears the lid (its ribs just touch the spigot top).
+  The only overlaps are intended: pawl teeth resting on ratchet ramps, and the bezel lip's
+  0.5 mm preload on the dial face.
 
 **Residuals that need a test print:**
 - the grip finger's pointer torque (target 0.3–0.5 N·mm)
 - how the gear mesh feels
 - the real tip volume and its repeatability
-- reset reliability
+- reset reliability, and how much the return leaf creeps over time (re-bend it if the slide
+  stops returning fully)
 - whether the drive pawl drops cleanly at speed
+- the bolt's slide in its rails and the plunger barbs' hold
 
-The `test_coupons` part and the calibration procedure cover these.
+The `test_coupons` part and the calibration procedure cover the first three.
 
 ## Files
 
 - `rain_gauge.scad`: the single parametric model; every part is in print orientation.
 - `analysis/bucket_statics.py`, `analysis/heart_reset_sim.py`: the design calculations.
-- `stl/`: one STL per part. `preview-*.png`: renders.
+- `stl/`: one STL per part and per plate.
+- `bambu/`: Bambu Studio project files (X1C, PETG HF, settings baked in) for each plate: the
+  housing base, lid, collector, bezel, bucket, dial face, frames, register wheels and small parts.
+  Add the dial face's filament change at 2.4 mm in Bambu Studio.
+- `preview-*.png`: renders.
