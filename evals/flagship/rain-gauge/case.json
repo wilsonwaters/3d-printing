@@ -1,0 +1,113 @@
+{
+  "name": "rain-gauge",
+  "description": "Flagship: multi-part mechanism with research (tipping bucket + 4-dial counter). One-off per model or major skill change.",
+  "tiers": [
+    "flagship"
+  ],
+  "printer": {
+    "name": "Bambu Lab X1 Carbon",
+    "build_volume": [
+      256,
+      256,
+      256
+    ]
+  },
+  "max_turns": 600,
+  "timeout_s": 14400,
+  "max_scads": 2,
+  "checks": [
+    {
+      "type": "parts_min",
+      "value": 8
+    },
+    {
+      "type": "bbox_min",
+      "id": "collector_150mm",
+      "which": "any",
+      "value": [
+        5,
+        150,
+        150
+      ]
+    },
+    {
+      "type": "file_exists",
+      "id": "stl_exported",
+      "glob": "*.stl"
+    },
+    {
+      "type": "on_plate",
+      "must": false
+    },
+    {
+      "type": "shells_max",
+      "value": 1,
+      "must": false
+    },
+    {
+      "type": "overhang_max",
+      "id": "support_free",
+      "value": 3000,
+      "must": false
+    },
+    {
+      "type": "file_exists",
+      "id": "build_guide",
+      "glob": "*.md",
+      "must": false
+    },
+    {
+      "type": "structure_min",
+      "id": "file_structure",
+      "value": 0.8,
+      "must": false
+    },
+    {
+      "type": "asserts_min",
+      "id": "has_asserts",
+      "value": 10,
+      "must": false
+    },
+    {
+      "type": "tool_used",
+      "id": "researched",
+      "tool": "WebSearch",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "skill_invoked",
+      "tool": "Skill",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "ran_openscad",
+      "tool": "Bash",
+      "input_regex": "(?im)^.*(openscad(\\.exe|\\.appimage)?\\b(?!-reference)|\\$\\{?oscad\\b).*\\.scad",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "spawned_review",
+      "tool": "Agent",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    }
+  ],
+  "judge_criteria": [
+    "Four 0-9 dials that carry like an odometer (0000-9999), readable as mm of rain.",
+    "A tipping bucket that mechanically drives the counter, with a credible drive and carry mechanism (ratchet/pawl or Geneva-style) that cannot skip or double-count.",
+    "A reset mechanism that returns all four dials to zero.",
+    "A round collector of a recognised standard size (e.g. 200 cm2 / 159.6 mm, or the 203 mm / 8 inch gauge), or about 150 mm as suggested, with the choice explained.",
+    "Explicit, correct calibration: chamber volume (mL) = collector area (cm2) x rain per tip (mm) / 10, and gearing that makes one units-dial step equal 1 mm.",
+    "Every part prints on an X1C without supports, and the assembly and build guide are clear enough to make it."
+  ]
+}

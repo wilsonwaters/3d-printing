@@ -1,0 +1,86 @@
+{
+  "name": "pot-stand-edit",
+  "description": "Edit an existing model from its header (uses 3d-models/outdoor-plant-pot-stand)",
+  "tiers": [
+    "standard"
+  ],
+  "printer": {
+    "name": "Bambu Lab X1 Carbon",
+    "build_volume": [
+      256,
+      256,
+      256
+    ]
+  },
+  "max_turns": 100,
+  "timeout_s": 2400,
+  "fixtures": {
+    "pot-stand.scad": "../../../3d-models/outdoor-plant-pot-stand/pot-stand-v1.scad"
+  },
+  "checks": [
+    {
+      "type": "bbox_min",
+      "id": "grew_for_230",
+      "value": [
+        24.5,
+        205,
+        205
+      ]
+    },
+    {
+      "type": "bbox_max",
+      "id": "still_fits",
+      "value": [
+        60,
+        256,
+        256
+      ]
+    },
+    {
+      "type": "on_plate"
+    },
+    {
+      "type": "shells_max",
+      "value": 1
+    },
+    {
+      "type": "file_exists",
+      "id": "stl_exported",
+      "glob": "*.stl"
+    },
+    {
+      "type": "asserts_min",
+      "id": "kept_contracts",
+      "value": 17
+    },
+    {
+      "type": "file_regex",
+      "id": "load_updated",
+      "glob": "*.scad",
+      "pattern": "design_load_kg\\s*=\\s*4\\d",
+      "must": false
+    },
+    {
+      "type": "tool_used",
+      "id": "skill_invoked",
+      "tool": "Skill",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "ran_openscad",
+      "tool": "Bash",
+      "input_regex": "(?im)^.*(openscad(\\.exe|\\.appimage)?\\b(?!-reference)|\\$\\{?oscad\\b).*\\.scad",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    }
+  ],
+  "judge_criteria": [
+    "Suits 210-230 mm bases at 40 kg and still fits the 256 mm bed.",
+    "Nothing else about the design changed (lattice, drainage, first-layer fix).",
+    "The edit went through the model's parameters rather than hard-coded numbers."
+  ]
+}

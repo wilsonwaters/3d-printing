@@ -1,0 +1,720 @@
+{
+  "build_volume": [
+    256,
+    256,
+    256
+  ],
+  "fixtures": {
+    "outdoor-plant-pot-stand/pot-stand-v1.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 0.885,
+      "asserts": 17,
+      "parts": {
+        "default": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            197.2,
+            197.2,
+            25.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        }
+      },
+      "why": "good: full structure, 17 asserts, one-piece first layer"
+    },
+    "caster-tube-insert/caster-tube-insert-v3.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 0.846,
+      "asserts": 3,
+      "parts": {
+        "plug": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            18.75,
+            19.395,
+            18.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 36,
+          "on_plate": true
+        },
+        "section": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": [
+            17.273,
+            16.483,
+            18.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 24,
+          "on_plate": true
+        },
+        "profile": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            18.75,
+            19.395,
+            1.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        }
+      },
+      "why": "good: smallest file with the full structure"
+    },
+    "caster-tube-insert/caster-tube-insert-v2.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 0.962,
+      "asserts": 4,
+      "parts": {
+        "plug": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            19.426,
+            19.5,
+            19.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "section": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": [
+            19.426,
+            19.5,
+            19.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        }
+      },
+      "why": "printed and failed (seized pilot, snapped fins): geometry passes, judgement needed"
+    },
+    "land-rover-d4-phone-mount/d4-phone-mount-v1.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 1.0,
+      "asserts": 37,
+      "parts": {
+        "bracket": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            88.618,
+            151.218,
+            38.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 557,
+          "on_plate": true
+        },
+        "gauge": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            127.525,
+            151.218,
+            2.4
+          ],
+          "shells": 2,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "ball_test": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            52.546,
+            24.0,
+            16.097
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        }
+      },
+      "why": "good: 37 asserts; gauge part is two bodies by design"
+    },
+    "Gate Latch Leaver/gate latch leaver - v1.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 0.0,
+      "asserts": 0,
+      "parts": {
+        "default": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            178.5,
+            75.0,
+            25.0
+          ],
+          "shells": 3,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        }
+      },
+      "why": "pre-structure file: structure score 0"
+    },
+    "Gate Latch Leaver/gate latch leaver - v4.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 0.923,
+      "asserts": 8,
+      "parts": {
+        "layout": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            178.5,
+            75.0,
+            25.0
+          ],
+          "shells": 3,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "assembly": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": [
+            154.969,
+            35.0,
+            32.0
+          ],
+          "shells": 4,
+          "non_manifold_edges": 0,
+          "on_plate": false
+        },
+        "lever": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            119.0,
+            25.0,
+            15.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": false
+        },
+        "bracket": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            20.0,
+            20.0,
+            30.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "connector": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            42.0,
+            3.0,
+            7.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": false
+        }
+      },
+      "why": "known issue: lever part is a display pose, off the plate"
+    },
+    "hand-pump-bracket/hand-pump-bracket-3/hand-pump-bracket.scad": {
+      "gate_pass": true,
+      "fits_build_volume": false,
+      "structure_score": 0.885,
+      "asserts": 0,
+      "parts": {
+        "default": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            115.0,
+            70.0,
+            300.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        }
+      },
+      "why": "known bad: 300 mm tall, header claims it fits the bed"
+    },
+    "MakerX Acoustic Tile Fable/makerx acoustic tile fable - v1.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 0.962,
+      "asserts": 13,
+      "parts": {
+        "diffuser": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            250.0,
+            250.0,
+            54.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 10,
+          "on_plate": true
+        },
+        "logo": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            250.0,
+            250.0,
+            24.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 20,
+          "on_plate": true
+        }
+      },
+      "why": "known bad: non-manifold diagonal contacts Bambu Studio flagged"
+    },
+    "MakerX Acoustic Tile Fable/makerx acoustic tile fable - v2.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 0.962,
+      "asserts": 14,
+      "parts": {
+        "diffuser": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            250.0,
+            250.0,
+            54.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "logo": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            250.0,
+            250.0,
+            24.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 3,
+          "on_plate": true
+        }
+      },
+      "why": "the fix for v1 (diffuser clean)"
+    },
+    "MakerX Acoustic Tile Opus5.0/makerx-acoustic-tile-v2.scad": {
+      "gate_pass": true,
+      "fits_build_volume": false,
+      "structure_score": 0.962,
+      "asserts": 29,
+      "parts": {
+        "tile": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            190.0,
+            190.0,
+            52.0
+          ],
+          "shells": 2,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "preview": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": [
+            190.0,
+            190.0,
+            52.0
+          ],
+          "shells": 2,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "section": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": [
+            190.0,
+            95.0,
+            52.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "key": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            34.0,
+            20.0,
+            4.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "key-mount": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            34.0,
+            20.0,
+            4.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "keyplate": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            148.0,
+            68.0,
+            4.0
+          ],
+          "shells": 12,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "pair": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            380.0,
+            190.0,
+            52.0
+          ],
+          "shells": 3,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "fit": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": null,
+          "shells": null,
+          "non_manifold_edges": null,
+          "on_plate": null
+        },
+        "coupon": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            55.25,
+            55.25,
+            52.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "navy": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            190.0,
+            190.0,
+            52.0
+          ],
+          "shells": 2,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "magenta": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            187.32,
+            187.32,
+            33.2
+          ],
+          "shells": 13,
+          "non_manifold_edges": 0,
+          "on_plate": false
+        },
+        "gold": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            187.32,
+            187.32,
+            33.21
+          ],
+          "shells": 16,
+          "non_manifold_edges": 0,
+          "on_plate": false
+        },
+        "cyan": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            187.32,
+            187.32,
+            33.21
+          ],
+          "shells": 20,
+          "non_manifold_edges": 0,
+          "on_plate": false
+        }
+      },
+      "why": "fit part is an interference check that must render empty"
+    },
+    "Mechanical Rain Gauge Opus5.0/mechanical-rain-gauge-opus5-v1.scad": {
+      "gate_pass": true,
+      "fits_build_volume": true,
+      "structure_score": 0.962,
+      "asserts": 50,
+      "parts": {
+        "all": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": [
+            182.0,
+            187.0,
+            177.694
+          ],
+          "shells": 15,
+          "non_manifold_edges": 19,
+          "on_plate": true
+        },
+        "funnel": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            175.577,
+            175.577,
+            104.362
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "body": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            182.0,
+            187.0,
+            177.694
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "chassis": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            165.2,
+            165.2,
+            48.247
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "tipper": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            66.0,
+            57.6,
+            21.8
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "crank": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            24.5,
+            15.0,
+            9.99
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "wheel": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            34.336,
+            35.253,
+            25.0
+          ],
+          "shells": 3,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "pinion": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            32.987,
+            32.987,
+            6.9
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "reg_frame": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            118.7,
+            90.1,
+            38.8
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "reg_side": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            118.7,
+            90.1,
+            2.4
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "yoke": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            120.88,
+            77.5,
+            30.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "comb": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            113.9,
+            45.99,
+            3.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "register": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            120.88,
+            90.1,
+            59.856
+          ],
+          "shells": 14,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "register_reset": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            120.88,
+            90.1,
+            59.856
+          ],
+          "shells": 10,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "clash": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": null,
+          "shells": null,
+          "non_manifold_edges": null,
+          "on_plate": null
+        },
+        "clash_reset": {
+          "ok": true,
+          "printable": false,
+          "bbox_size": null,
+          "shells": null,
+          "non_manifold_edges": null,
+          "on_plate": null
+        },
+        "plunger": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            18.0,
+            18.0,
+            23.99
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "pawl": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            32.0,
+            38.472,
+            3.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        },
+        "link": {
+          "ok": true,
+          "printable": true,
+          "bbox_size": [
+            53.0,
+            7.0,
+            3.0
+          ],
+          "shells": 1,
+          "non_manifold_edges": 0,
+          "on_plate": true
+        }
+      },
+      "why": "clash parts must render empty; 50 asserts"
+    }
+  }
+}

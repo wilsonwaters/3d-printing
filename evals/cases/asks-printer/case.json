@@ -1,0 +1,38 @@
+{
+  "name": "asks-printer",
+  "description": "Step 0 behaviour: with no printer given, ask before designing",
+  "tiers": [
+    "smoke",
+    "standard"
+  ],
+  "design": false,
+  "unattended": false,
+  "max_turns": 12,
+  "timeout_s": 600,
+  "checks": [
+    {
+      "type": "reply_regex",
+      "id": "asks_printer",
+      "pattern": "printer"
+    },
+    {
+      "type": "reply_regex",
+      "id": "is_a_question",
+      "pattern": "\\?"
+    },
+    {
+      "type": "file_exists",
+      "id": "no_premature_scad",
+      "glob": "*.scad",
+      "exists": false
+    },
+    {
+      "type": "tool_used",
+      "id": "skill_invoked",
+      "tool": "Skill",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    }
+  ]
+}
