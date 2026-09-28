@@ -251,7 +251,10 @@ model or major skill version, recorded in the ledger. Two ways to run it:
   `python evals/bench/grade.py "3d-models/<folder>" --case evals/flagship/rain-gauge --scad "<final>.scad"`
   and `python evals/bench/transcript.py ~/.claude/projects/<project>/<session-id>.jsonl`
   (on Windows, `%USERPROFILE%\.claude\projects\…`; sub-agent transcripts are
-  picked up from the session's `subagents/` folder).
+  picked up from the session's `subagents/` folder). To have the design
+  session measure itself, send it a message that starts with a unique marker
+  and pass that marker as `--stop-at`, so the measuring turns aren't counted.
+  The prompt in [LEDGER.md](flagship/rain-gauge/LEDGER.md) does this.
 
 Score it with [rubric.md](flagship/rain-gauge/rubric.md) and add a row to the
 ledger. A print result outranks every other column.
@@ -313,7 +316,8 @@ These are for the skill review:
     about 46-48% of cost, cache writes about 30% and cache reads about 20%. The
     caster run produced 89k thinking tokens against 21k of visible output.
   - *The review is expensive.* The review sub-agent accounted for 52% of all
-    context on the caster run (69% on the review-only case). It is the biggest
+    context on the caster run (69% on the review-only case). It ran on
+    Sonnet 5 and cost $1.14 of the caster run's $3.22. It is the biggest
     single structural cost. It also isn't infallible: in the review case, the
     author caught a defect the reviewer missed (the gusset blocks the upper
     screw hole).

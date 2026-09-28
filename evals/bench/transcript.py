@@ -15,6 +15,10 @@ Two traps this handles:
     usage, so per-call numbers are de-duplicated by message id.
 
   python evals/bench/transcript.py run.jsonl [more.jsonl ...] [--json out.json]
+
+To measure an interactive session from inside that same session, have it
+write a marker line first and pass --stop-at MARKER: everything from that user
+message on (the measuring itself) is left out.
 """
 
 import argparse
@@ -61,11 +65,40 @@ def _events(paths):
                 yield e
 
 
+def _user_text(e):
+    c = (e.get("message") or {}).get("content")
+    if isinstance(c, str):
+        return c
+    return " ".join(b.get("text", "") for b in c or [] if isinstance(b, dict) and b.get("type") == "text")
+
+
+def cutoff(paths, marker):
+    """Timestamp of the first top-level user message containing marker."""
+    for e in _events(paths):
+        if (e.get("type") == "user" and not e.get("isSidechain") and e.get("timestamp")
+                and marker in _user_text(e)):
+            return e["timestamp"]
+    return None
+
+
 def _num(d, *keys):
     return sum(int(d.get(k) or 0) for k in keys)
 
 
-def analyse(paths, skill_root=None):
+def _skill_names(skill_root):
+    """File names that count as skill reads: this arm's copy, else the repo's."""
+    for d in (skill_root, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                       os.pardir, ".claude", "skills", SKILL_MARK)):
+        if d and os.path.isdir(d):
+            return set(os.listdir(d))
+    return None
+
+
+def analyse(paths, skill_root=None, stop_at=None):
+    stop_ts = cutoff(paths, stop_at) if stop_at else None
+    if stop_at and not stop_ts:
+        raise SystemExit("--stop-at marker %r not found in a user message" % stop_at)
+    first_ts = last_ts = None
     calls = {}  # message id -> (is_sub, model, usage)
     tools = collections.Counter()
     tool_inputs = {}
@@ -74,6 +107,12 @@ def analyse(paths, skill_root=None):
     final_text = ""
     last_main_text = ""
     for e in _events(paths):
+        ts = e.get("timestamp")
+        if stop_ts and ts and ts >= stop_ts:
+            continue
+        if ts:
+            first_ts = min(first_ts or ts, ts)
+            last_ts = max(last_ts or ts, ts)
         t = e.get("type")
         if t == "result":
             results.append(e)
@@ -85,8 +124,10 @@ def analyse(paths, skill_root=None):
         msg = e.get("message") or {}
         is_sub = bool(e.get("parent_tool_use_id") or e.get("isSidechain"))
         mid = msg.get("id") or e.get("uuid")
-        if msg.get("usage"):
-            calls[mid] = (is_sub, msg.get("model"), msg["usage"])
+        u = msg.get("usage")
+        # a message is logged once per content block; keep its fullest usage
+        if u and (mid not in calls or _num(u, "output_tokens") >= _num(calls[mid][2], "output_tokens")):
+            calls[mid] = (is_sub, msg.get("model"), u)
         for block in msg.get("content") or []:
             if not isinstance(block, dict):
                 continue
@@ -99,8 +140,12 @@ def analyse(paths, skill_root=None):
     skill_read_bytes = 0
     openscad_calls = image_reads = 0
     bash_cmds = []
+    names = _skill_names(skill_root)
+
     def skill_file(base, path=None):
         nonlocal skill_read_bytes
+        if names is not None and base not in names:
+            return
         reads[base] += 1
         for cand in (path, os.path.join(skill_root, base) if skill_root else None):
             if cand and os.path.isfile(cand):
@@ -173,14 +218,28 @@ def analyse(paths, skill_root=None):
     total_w = sum(w.values()) or 1.0
     cost_split = {k: round(v / total_w, 3) for k, v in w.items()}
     costs = [r.get("total_cost_usd") for r in results if r.get("total_cost_usd") is not None]
+    by_model = {k: {"cost_usd": v.get("costUSD"), "output": v.get("outputTokens"),
+                    "cache_read": v.get("cacheReadInputTokens"),
+                    "cache_write": v.get("cacheCreationInputTokens")}
+                for k, v in model_usage.items()}
+    if not by_model:  # interactive: which model(s) actually answered, from each call
+        for _s, model, u in calls.values():
+            if not model or model.startswith("<"):
+                continue
+            b = by_model.setdefault(model, {"api_calls": 0, "output": 0, "cache_read": 0,
+                                            "cache_write": 0, "input": 0})
+            b["api_calls"] += 1
+            b["output"] += _num(u, "output_tokens")
+            b["cache_read"] += _num(u, "cache_read_input_tokens")
+            b["cache_write"] += _num(u, "cache_creation_input_tokens")
+            b["input"] += _num(u, "input_tokens")
     return {
         "cost_usd": round(max(costs), 4) if costs else None,
         "tokens": tok,
         "cost_split": cost_split,
-        "by_model": {k: {"cost_usd": v.get("costUSD"), "output": v.get("outputTokens"),
-                         "cache_read": v.get("cacheReadInputTokens"),
-                         "cache_write": v.get("cacheCreationInputTokens")}
-                     for k, v in model_usage.items()},
+        "by_model": by_model,
+        "span": {"first": first_ts, "last": last_ts, "stopped_at": stop_ts},
+        "files": len(paths),
         "main": main,
         "subagents": dict(sub, spawned=tools.get("Agent", 0) + tools.get("Task", 0)),
         "subagent_share_of_context": (round(sub["context_volume"] /
@@ -207,8 +266,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("paths", nargs="+")
     ap.add_argument("--json")
+    ap.add_argument("--stop-at", metavar="TEXT",
+                    help="ignore everything from the first user message containing TEXT")
     args = ap.parse_args()
-    m = analyse(expand(args.paths))
+    m = analyse(expand(args.paths), stop_at=args.stop_at)
     text = m.pop("final_text")
     if args.json:
         with open(args.json, "w") as f:
@@ -218,6 +279,12 @@ def main():
           "tools %s" % (m["cost_usd"], t["context_volume"], t["cache_read"], t["cache_write"],
                         t["input"], t["output"], m["api_calls"], m["subagents"]["api_calls"],
                         sum(m["tools"].values())))
+    sp = m["span"]
+    print("files %d | span %s -> %s%s" % (m["files"], sp["first"], sp["last"],
+                                         " (stopped at marker)" if sp["stopped_at"] else ""))
+    print("models: %s" % ", ".join(
+        "%s (%s)" % (k, "%d calls" % v["api_calls"] if "api_calls" in v else "$%.2f" % (v.get("cost_usd") or 0))
+        for k, v in m["by_model"].items()))
     cs = m["cost_split"]
     print("cost split (approx): output+thinking %.0f%%, cache writes %.0f%%, cache reads %.0f%%" % (
         100 * cs["output"], 100 * cs["cache_write"], 100 * cs["cache_read"]))
