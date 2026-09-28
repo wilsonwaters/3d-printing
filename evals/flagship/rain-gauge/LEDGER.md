@@ -57,7 +57,7 @@ evals/flagship/rain-gauge/LEDGER.md. Don't change any design files.
 | 2026-07-20 | Fable 5 | 2026-07 | interactive, 4 versions | – | – | – | 21 (18) | pass | 12,269 | 14,138 | 0.89 | 17 | | `…Fable` v4; v1 bucket printed, 4 faults fixed in v2 |
 | 2026-07-26 | Opus 5 | 2026-07 | interactive | – | – | – | 19 (16) | pass | 12,491 | 8,277 | 0.96 | 50 | | `…Opus5.0` v1; clash checks clear; superseded |
 | 2026-08-03 | Opus 5 | 2026-08 | interactive, v2 | – | – | – | 23 (19) | pass | 4,824 | 6,740 | 0.96 | 61 | | `…Opus5.0 v2`; README showcase; fit-test ladder printed 3x, hole comp measured 0.30 |
-| 2026-09-28 | claude-opus-5-5 | f268aea | interactive | – | – | – | 29 (24) | pass | 396 | 6,044 | 0.89 | 54 | | `…Opus5.5` v1: 200 cm² collector, face-ratchet drive, heart-cam reset; two review rounds. Token columns pending: run the prompt above in its chat |
+| 2026-09-28 | claude-opus-5-5 (+ claude-fable-5-1 reviews) | f268aea | interactive, 5 sub-agents | – | 152,406,860 | 68 h 40 m | 29 (24) | pass | 396 | 6,044 | 0.89 | 54 | | `…Opus5.5` v1: 200 cm² collector, face-ratchet drive, heart-cam reset with cam-driven lock bolt; 3 design versions in one v1 (draft + two review rounds); nothing printed or test-fitted. Open: bucket thrust-boss relief not modelled (208 mm² of the sloped overhang), screen inner roof at 47°; tip volume, pointer grip, reset reliability and return-leaf creep need a test print. 526 calls, 1.14 M output tokens |
 
 Backfilled rows were measured on 2026-09-28 with OpenSCAD 2026.09.23 and a
 256 mm build volume. Their token cost wasn't recorded at the time; for new
