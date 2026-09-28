@@ -12,6 +12,8 @@ Use a different model from the one that did the designing where you can, and
 spot-check its verdicts against your own before trusting it (see README).
 
   python evals/bench/judge.py evals/results/<ts> --a base --b cand [--judge-model sonnet]
+
+It then rebuilds the suite's report.md and refreshes its rows in evals/history.
 """
 
 import argparse
@@ -23,6 +25,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import find_claude, load_json, save_json  # noqa: E402
+import history  # noqa: E402
+import report  # noqa: E402
 import run as runner  # noqa: E402
 
 SCHEMA = {
@@ -87,6 +91,7 @@ def main():
     ap.add_argument("--b", required=True, help="candidate arm")
     ap.add_argument("--judge-model", default="sonnet")
     ap.add_argument("--cases", help="comma-separated subset")
+    ap.add_argument("--no-record", action="store_true", help="don't refresh evals/history")
     args = ap.parse_args()
     claude = find_claude()
     cases = runner.all_cases()
@@ -134,6 +139,12 @@ def main():
         result["cases"][name] = tally
     save_json(os.path.join(out, "judge.json"), result)
     print("judge spend ~$%.2f; totals %s" % (result["cost_usd"], result["totals"]))
+    if os.path.exists(os.path.join(out, "suite.json")):
+        report.build(out)
+        print("report.md updated")
+        if not args.no_record:
+            for d in history.record(out):
+                print("history updated: %s" % os.path.relpath(d))
     return 0
 
 

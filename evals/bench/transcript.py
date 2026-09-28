@@ -233,7 +233,9 @@ def analyse(paths, skill_root=None, stop_at=None):
             b["cache_read"] += _num(u, "cache_read_input_tokens")
             b["cache_write"] += _num(u, "cache_creation_input_tokens")
             b["input"] += _num(u, "input_tokens")
+    main_models = [m for is_sub, m, _u in calls.values() if not is_sub and m and not m.startswith("<")]
     return {
+        "main_model": max(set(main_models), key=main_models.count) if main_models else None,
         "cost_usd": round(max(costs), 4) if costs else None,
         "tokens": tok,
         "cost_split": cost_split,

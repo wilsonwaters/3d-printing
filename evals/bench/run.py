@@ -27,6 +27,9 @@ Arms are NAME=REF[@MODEL]:
 Resumable: re-run with the same --out and finished runs are skipped.
 After changing the grader or a case's checks, `--regrade OUT` re-scores the
 saved outputs without calling a model.
+
+Every finished suite is added to evals/history/<model>/ (runs.jsonl and a
+generated HISTORY.md); pass --label to say what changed, --no-record to skip.
 Every run is a real model call billed to your account; --max-cost-usd stops
 launching new runs once the running total passes it.
 """
@@ -50,6 +53,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import EVALS_DIR, REPO_ROOT, SKILL_REL, find_claude, find_openscad, openscad_version, save_json  # noqa: E402
 import footprint  # noqa: E402
 import grade as grader  # noqa: E402
+import history  # noqa: E402
 import render  # noqa: E402
 import report  # noqa: E402
 import transcript as tx  # noqa: E402
@@ -111,6 +115,7 @@ def prepare_arm(name, spec, out):
             except TypeError:  # Python < 3.12
                 t.extractall(dest)
     info["plugin"] = dest
+    info["skill_hash"] = history.skill_hash(dest)
     skill_dir = os.path.join(dest, SKILL_REL)
     fp = footprint.measure(skill_dir)
     info["footprint"] = {"always_on": fp["always_on"], "profiles": fp["profiles"],
@@ -251,7 +256,7 @@ def run_one(job, args, claude, budget):
     return rec
 
 
-def regrade(out, compile_timeout):
+def regrade(out, compile_timeout, record=True):
     """Re-score saved runs with the current grader and cases: no model calls.
     Uses each run's kept files, so anything outside KEEP_EXT is gone."""
     cases = all_cases()
@@ -280,6 +285,9 @@ def regrade(out, compile_timeout):
         print("%-18s %-8s t%s  %s score=%.2f" % (rec["case"], rec["arm"], rec["trial"],
                                                 "PASS" if g["pass"] else "FAIL", g["score"]))
     print(report.build(out))
+    if record:
+        for d in history.record(out):
+            print("history updated: %s" % os.path.relpath(d))
 
 
 def main():
@@ -297,12 +305,15 @@ def main():
     ap.add_argument("--no-render", action="store_true")
     ap.add_argument("--keep-workspace", action="store_true", help="copy the whole workspace back")
     ap.add_argument("--compile-timeout", type=int, default=900)
+    ap.add_argument("--label", help="what changed, for the history (e.g. 'trim printer-profiles')")
+    ap.add_argument("--no-record", action="store_true",
+                    help="don't add this suite to evals/history/<model>/ (throwaway runs)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--list", action="store_true", help="list cases and exit")
     ap.add_argument("--regrade", metavar="OUT", help="re-score a finished results dir (free)")
     args = ap.parse_args()
     if args.regrade:
-        regrade(os.path.abspath(args.regrade), args.compile_timeout)
+        regrade(os.path.abspath(args.regrade), args.compile_timeout, record=not args.no_record)
         return 0
 
     cases = all_cases()
@@ -349,7 +360,7 @@ def main():
     save_json(os.path.join(args.out, "suite.json"), {
         "started": datetime.datetime.now().isoformat(timespec="seconds"),
         "claude_version": ver, "openscad": openscad_version(find_openscad()),
-        "model": args.model, "effort": args.effort, "trials": args.trials,
+        "label": args.label, "model": args.model, "effort": args.effort, "trials": args.trials,
         "cases": [c["name"] for c in chosen],
         "arms": [{k: v for k, v in a.items() if k != "plugin"} for a in arms]})
 
@@ -381,6 +392,9 @@ def main():
     md = report.build(args.out)
     print("\n" + md)
     print("Spent ~$%.2f. Report: %s" % (budget.spent, os.path.join(args.out, "report.md")))
+    if not args.no_record:
+        for d in history.record(args.out):
+            print("History: %s (commit it to keep the record)" % os.path.relpath(os.path.join(d, "HISTORY.md")))
     return 0
 
 

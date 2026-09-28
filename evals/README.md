@@ -18,9 +18,11 @@ evals/
     render.py         fixed-camera views for the judge and for you
     judge.py          blind, order-swapped pairwise judge (optional, costs tokens)
     report.py         per-arm tables, paired ratios, bootstrap CIs, renders
+    history.py        records every suite into history/<model>/ (A/B results over time)
   cases/            benchmark cases: task.md (the prompt) + case.json (checks)
   flagship/         the rain gauge: task, human rubric, cross-model ledger
   native/           trigger suite for `claude plugin eval` (first-party runner)
+  history/          committed: one folder per AI model, runs.jsonl + generated HISTORY.md
   fixtures.json     snapshot for fixtures.py
   footprint-profiles.json   which files a run loads, per path through the skill
   baselines/footprint.json  the committed context budget (the ratchet)
@@ -94,7 +96,7 @@ python evals/bench/scadcheck.py path/to/model.scad --build-volume 256x256x256
 # costs tokens
 python evals/bench/run.py --list
 python evals/bench/run.py --tier smoke --arms base=main,cand=WORKTREE --trials 3 \
-    --model claude-opus-5-5 --effort high --max-cost-usd 40
+    --model claude-opus-5-5 --effort high --max-cost-usd 40 --label "trim printer-profiles"
 python evals/bench/judge.py evals/results/<timestamp> --a base --b cand --judge-model sonnet
 python evals/bench/report.py evals/results/<timestamp>     # rebuild report.md with judge results
 claude plugin eval . --runs 2 --no-publish                 # trigger suite (native/)
@@ -103,6 +105,25 @@ claude plugin eval . --runs 2 --no-publish                 # trigger suite (nati
 Arms are `NAME=REF[@MODEL]`. `REF` is any git ref, `WORKTREE` (the skill as it
 is on disk) or `none` (no skill, vanilla Claude). A run is resumable: repeat the
 command with the same `--out` and finished runs are skipped.
+
+## Where results show up
+
+| What | Where | Kept |
+|---|---|---|
+| Static tier (budget, grader self-test, fixtures) | the PR's checks / Actions → *Skill Evals (static tier)*; the footprint table is on the run's Summary page | GitHub |
+| One A/B suite | `evals/results/<timestamp>/report.md` (open in a Markdown preview for the renders), `summary.json`, and per run `runs/<case>/<arm>/tN/` (`run.json`, `final_message.md`, `renders/`, `files/`, `transcript.jsonl`) | local, git-ignored |
+| **A/B results over time** | [`evals/history/<model>/HISTORY.md`](history/README.md): every suite's comparison (cost and context ratio with 95% CI, pass rate, check score, judge) and each case's trend by skill version | **committed** |
+| Trigger suite | `claude plugin eval` prints a WITH / W/OUT / Δ table and writes `report.html` (published as a private claude.ai page if your account allows) | local / claude.ai |
+| Rain gauge flagship | [LEDGER.md](flagship/rain-gauge/LEDGER.md) | committed |
+
+`run.py` records each suite into the history when it finishes. Pass `--label` to
+say what changed; that becomes the *Change* column. `--no-record` skips
+throwaway runs. Re-running `--regrade` or `judge.py` on a suite refreshes its
+rows rather than duplicating them. The history is per AI model because the
+numbers only compare within one model. Commit `evals/history/` along with the
+skill change it measured, so the record and the change travel together. The
+skill column shows the git sha and a content hash, so two runs of identical
+skill text are recognisable even when the sha says `+dirty`.
 
 ## The workflow for a token-optimisation change
 
@@ -120,7 +141,7 @@ command with the same `--out` and finished runs are skipped.
    - the judge does not prefer `base` (count `cand` wins plus ties against `base` wins);
    - you've looked at the renders.
 5. `footprint.py --update` and commit the new baseline with the change, so CI
-   holds the saving.
+   holds the saving. Commit the updated `evals/history/<model>/` too.
 
 One change at a time: if a trim and a restructure go in together and quality
 drops, you won't know which did it.
