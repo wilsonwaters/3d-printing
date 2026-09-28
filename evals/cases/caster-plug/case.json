@@ -1,0 +1,94 @@
+{
+  "name": "caster-plug",
+  "description": "Single small part with a real-world fit problem (two printed versions failed)",
+  "tiers": [
+    "smoke",
+    "standard"
+  ],
+  "printer": {
+    "name": "Bambu Lab X1 Carbon",
+    "build_volume": [
+      256,
+      256,
+      256
+    ]
+  },
+  "max_turns": 150,
+  "timeout_s": 2700,
+  "checks": [
+    {
+      "type": "parts_min",
+      "value": 1
+    },
+    {
+      "type": "bbox_max",
+      "id": "small_part",
+      "value": [
+        45,
+        45,
+        45
+      ]
+    },
+    {
+      "type": "on_plate"
+    },
+    {
+      "type": "shells_max",
+      "value": 1
+    },
+    {
+      "type": "file_exists",
+      "id": "stl_exported",
+      "glob": "*.stl"
+    },
+    {
+      "type": "overhang_max",
+      "id": "support_free",
+      "value": 150,
+      "must": false
+    },
+    {
+      "type": "structure_min",
+      "id": "file_structure",
+      "value": 0.8,
+      "must": false
+    },
+    {
+      "type": "asserts_min",
+      "id": "has_asserts",
+      "value": 1,
+      "must": false
+    },
+    {
+      "type": "tool_used",
+      "id": "skill_invoked",
+      "tool": "Skill",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "ran_openscad",
+      "tool": "Bash",
+      "input_regex": "(?im)^.*(openscad(\\.exe|\\.appimage)?\\b(?!-reference)|\\$\\{?oscad\\b).*\\.scad",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "spawned_review",
+      "tool": "Agent",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    }
+  ],
+  "judge_criteria": [
+    "Fits and grips a 17-19 mm bore within a 21 mm insertion depth, with no wobble.",
+    "The M8 interface would work in PETG. (In real tests a fine printed M8 thread failed to form and a 7.0 mm self-tap pilot seized; a ~7.5 mm self-tap pilot in a solid hub, a heat-set insert, or a captive nut are the robust options.)",
+    "Grip features bend along the print layers, not across them (thin fins loaded across layers snapped in testing).",
+    "Printable support-free on an X1C and documented so the fit can be tuned."
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "name": "cable-clip-3mf",
+  "description": "Small PLA part on a P1S through the Bambu 3MF export path (held out)",
+  "tiers": [
+    "standard",
+    "holdout"
+  ],
+  "printer": {
+    "name": "Bambu Lab P1S",
+    "build_volume": [
+      256,
+      256,
+      256
+    ]
+  },
+  "max_turns": 120,
+  "timeout_s": 2400,
+  "checks": [
+    {
+      "type": "threemf_valid",
+      "id": "bambu_3mf",
+      "glob": "*.3mf",
+      "bambu": true
+    },
+    {
+      "type": "bbox_max",
+      "id": "small_part",
+      "value": [
+        60,
+        60,
+        40
+      ]
+    },
+    {
+      "type": "on_plate"
+    },
+    {
+      "type": "shells_max",
+      "value": 1
+    },
+    {
+      "type": "overhang_max",
+      "id": "support_free",
+      "value": 60,
+      "must": false
+    },
+    {
+      "type": "structure_min",
+      "id": "file_structure",
+      "value": 0.8,
+      "must": false
+    },
+    {
+      "type": "asserts_min",
+      "id": "has_asserts",
+      "value": 1,
+      "must": false
+    },
+    {
+      "type": "tool_used",
+      "id": "skill_invoked",
+      "tool": "Skill",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "ran_openscad",
+      "tool": "Bash",
+      "input_regex": "(?im)^.*(openscad(\\.exe|\\.appimage)?\\b(?!-reference)|\\$\\{?oscad\\b).*\\.scad",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    }
+  ],
+  "judge_criteria": [
+    "Holds a 6 mm cable securely and releases it without breaking PLA.",
+    "The screw hole and head seat suit a 4 mm wood screw.",
+    "Prints support-free, flat on the plate."
+  ]
+}

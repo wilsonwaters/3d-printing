@@ -1,0 +1,61 @@
+name: Skill Evals (static tier)
+
+# The free, deterministic tier: no model calls, so it can run on every push.
+# Agent-level evals (evals/bench/run.py, claude plugin eval) cost tokens and
+# are run by hand; see evals/README.md.
+
+on:
+  push:
+    paths:
+      - '.claude/skills/**'
+      - 'evals/**'
+      - '.github/workflows/skill-evals.yml'
+  pull_request:
+    paths:
+      - '.claude/skills/**'
+      - 'evals/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Pinned so grader numbers are comparable run to run; bump deliberately and
+  # re-snapshot with `python evals/bench/fixtures.py --update`.
+  OPENSCAD_NIGHTLY: '2026.09.23'
+
+jobs:
+  footprint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Skill context budget (fails if a budget grew >2% without --update)
+        run: python evals/bench/footprint.py --check | tee -a "$GITHUB_STEP_SUMMARY"
+
+  grader:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install OpenSCAD nightly
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libegl1 libgl1 libopengl0 libglu1-mesa libfontconfig1 libxkbcommon0 >/dev/null
+          url="https://files.openscad.org/snapshots/OpenSCAD-${OPENSCAD_NIGHTLY}-x86_64.AppImage"
+          if ! curl -sSfL -o openscad.AppImage "$url"; then
+            latest=$(curl -sSf https://files.openscad.org/snapshots/ | grep -oE 'OpenSCAD-[0-9.]+-x86_64\.AppImage' | sort -u | tail -1)
+            echo "::warning::pinned nightly $OPENSCAD_NIGHTLY is gone; using $latest (re-snapshot fixtures)"
+            curl -sSfL -o openscad.AppImage "https://files.openscad.org/snapshots/$latest"
+          fi
+          chmod +x openscad.AppImage
+          ./openscad.AppImage --appimage-extract >/dev/null
+          echo "OPENSCAD=$PWD/squashfs-root/AppRun" >> "$GITHUB_ENV"
+      - name: Grader self-test (shapes with hand-computed answers)
+        run: python evals/bench/selftest.py
+      - name: Fixture snapshot (existing 3d-models re-measured)
+        run: python evals/bench/fixtures.py

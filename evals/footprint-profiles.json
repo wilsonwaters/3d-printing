@@ -1,0 +1,11 @@
+{
+  "_comment": "Which skill files a run loads, by path through the skill. Mirrors the MANDATORY READ directives in SKILL.md; update this when files are merged, split or renamed (footprint.py fails on a missing file).",
+  "profiles": {
+    "invoke": ["SKILL.md"],
+    "author_petg": ["SKILL.md", "printer-configuration.md", "printer-profiles.md", "material-petg.md", "openscad-reference.md", "verification.md"],
+    "author_pla": ["SKILL.md", "printer-configuration.md", "printer-profiles.md", "material-pla.md", "openscad-reference.md", "verification.md"],
+    "reviewer": ["design-review.md"],
+    "bambu_export": ["bambu-3mf-export.md"],
+    "typical_run_petg_bambu": ["SKILL.md", "printer-configuration.md", "printer-profiles.md", "material-petg.md", "openscad-reference.md", "verification.md", "design-review.md", "bambu-3mf-export.md"]
+  }
+}

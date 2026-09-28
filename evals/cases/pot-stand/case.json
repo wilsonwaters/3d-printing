@@ -1,0 +1,98 @@
+{
+  "name": "pot-stand",
+  "description": "Single large part, load-bearing, drainage and first-layer integrity",
+  "tiers": [
+    "standard"
+  ],
+  "printer": {
+    "name": "Bambu Lab X1 Carbon",
+    "build_volume": [
+      256,
+      256,
+      256
+    ]
+  },
+  "max_turns": 150,
+  "timeout_s": 2700,
+  "checks": [
+    {
+      "type": "bbox_min",
+      "id": "lifts_and_spans",
+      "value": [
+        24.5,
+        160,
+        160
+      ]
+    },
+    {
+      "type": "bbox_max",
+      "id": "sensible_size",
+      "value": [
+        60,
+        256,
+        256
+      ]
+    },
+    {
+      "type": "on_plate"
+    },
+    {
+      "type": "shells_max",
+      "value": 1
+    },
+    {
+      "type": "file_exists",
+      "id": "stl_exported",
+      "glob": "*.stl"
+    },
+    {
+      "type": "overhang_max",
+      "id": "support_free",
+      "value": 400,
+      "must": false
+    },
+    {
+      "type": "structure_min",
+      "id": "file_structure",
+      "value": 0.8,
+      "must": false
+    },
+    {
+      "type": "asserts_min",
+      "id": "has_asserts",
+      "value": 1,
+      "must": false
+    },
+    {
+      "type": "tool_used",
+      "id": "skill_invoked",
+      "tool": "Skill",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "ran_openscad",
+      "tool": "Bash",
+      "input_regex": "(?im)^.*(openscad(\\.exe|\\.appimage)?\\b(?!-reference)|\\$\\{?oscad\\b).*\\.scad",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "spawned_review",
+      "tool": "Agent",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    }
+  ],
+  "judge_criteria": [
+    "Carries a 30 kg pot on any square base from 170 to 200 mm without rocking.",
+    "Water from a centre drain hole falls through and escapes sideways at ground level.",
+    "Prints support-free on a 256 mm bed with a first layer that stays in one piece (many small first-layer islands lifted in a real print).",
+    "Parametric for other pot sizes."
+  ]
+}

@@ -6,3 +6,6 @@ dist/
 Thumbs.db
 __pycache__/
 *.pyc
+
+# Eval run outputs (transcripts, renders, STLs): large and per-machine
+evals/results/

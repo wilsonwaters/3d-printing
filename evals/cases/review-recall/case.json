@@ -1,0 +1,111 @@
+{
+  "name": "review-recall",
+  "description": "Design-review recall on a bracket with six seeded defects",
+  "tiers": [
+    "smoke",
+    "standard"
+  ],
+  "design": false,
+  "max_turns": 80,
+  "timeout_s": 1800,
+  "fixtures": {
+    "bracket.scad": "bracket.scad"
+  },
+  "checks": [
+    {
+      "type": "count_min",
+      "id": "found_3_of_6",
+      "value": 3,
+      "of": [
+        {
+          "type": "reply_regex",
+          "id": "teardrop",
+          "pattern": "teardrop"
+        },
+        {
+          "type": "reply_regex",
+          "id": "orientation",
+          "pattern": "re-?orient|on its side|sideways|lay(ing)? it|print(ed)? (it )?flat|orientation"
+        },
+        {
+          "type": "reply_regex",
+          "id": "wall_multiple",
+          "pattern": "1\\.5 ?mm|extrusion width|perimeter|multiple of"
+        },
+        {
+          "type": "reply_regex",
+          "id": "coincident",
+          "pattern": "coincident|fudge|z-?fight|zero[- ]thickness|co-?planar"
+        },
+        {
+          "type": "reply_regex",
+          "id": "fillet",
+          "pattern": "fillet|sharp (inside |internal |inner )?corner|stress concentrat"
+        },
+        {
+          "type": "reply_regex",
+          "id": "elephant_foot",
+          "pattern": "elephant|ef_chamfer"
+        }
+      ]
+    },
+    {
+      "type": "reply_regex",
+      "id": "teardrop",
+      "pattern": "teardrop",
+      "must": false
+    },
+    {
+      "type": "reply_regex",
+      "id": "orientation",
+      "pattern": "re-?orient|on its side|sideways|lay(ing)? it|print(ed)? (it )?flat|orientation",
+      "must": false
+    },
+    {
+      "type": "reply_regex",
+      "id": "wall_multiple",
+      "pattern": "1\\.5 ?mm|extrusion width|perimeter|multiple of",
+      "must": false
+    },
+    {
+      "type": "reply_regex",
+      "id": "coincident",
+      "pattern": "coincident|fudge|z-?fight|zero[- ]thickness|co-?planar",
+      "must": false
+    },
+    {
+      "type": "reply_regex",
+      "id": "fillet",
+      "pattern": "fillet|sharp (inside |internal |inner )?corner|stress concentrat",
+      "must": false
+    },
+    {
+      "type": "reply_regex",
+      "id": "elephant_foot",
+      "pattern": "elephant|ef_chamfer",
+      "must": false
+    },
+    {
+      "type": "file_regex",
+      "id": "file_untouched",
+      "glob": "bracket.scad",
+      "pattern": "wall = 1\\.5;"
+    },
+    {
+      "type": "tool_used",
+      "id": "skill_invoked",
+      "tool": "Skill",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "spawned_review",
+      "tool": "Agent",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "name": "pi4-case",
+  "description": "Two-part snap-fit assembly with many positional features (held out)",
+  "tiers": [
+    "standard",
+    "holdout"
+  ],
+  "printer": {
+    "name": "Bambu Lab X1 Carbon",
+    "build_volume": [
+      256,
+      256,
+      256
+    ]
+  },
+  "max_turns": 200,
+  "timeout_s": 3600,
+  "checks": [
+    {
+      "type": "parts_min",
+      "value": 2
+    },
+    {
+      "type": "bbox_min",
+      "id": "holds_the_board",
+      "value": [
+        8,
+        60,
+        88
+      ]
+    },
+    {
+      "type": "bbox_max",
+      "id": "sensible_size",
+      "value": [
+        70,
+        100,
+        130
+      ]
+    },
+    {
+      "type": "on_plate"
+    },
+    {
+      "type": "shells_max",
+      "value": 1
+    },
+    {
+      "type": "file_exists",
+      "id": "stl_exported",
+      "glob": "*.stl"
+    },
+    {
+      "type": "overhang_max",
+      "id": "support_free",
+      "value": 300,
+      "must": false
+    },
+    {
+      "type": "structure_min",
+      "id": "file_structure",
+      "value": 0.8,
+      "must": false
+    },
+    {
+      "type": "asserts_min",
+      "id": "has_asserts",
+      "value": 1,
+      "must": false
+    },
+    {
+      "type": "tool_used",
+      "id": "skill_invoked",
+      "tool": "Skill",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "ran_openscad",
+      "tool": "Bash",
+      "input_regex": "(?im)^.*(openscad(\\.exe|\\.appimage)?\\b(?!-reference)|\\$\\{?oscad\\b).*\\.scad",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    },
+    {
+      "type": "tool_used",
+      "id": "spawned_review",
+      "tool": "Agent",
+      "min": 1,
+      "must": false,
+      "weight": 0
+    }
+  ],
+  "judge_criteria": [
+    "Standoffs on the Pi 4's 58 x 49 mm M2.5 hole pattern, and port openings where the real ports are.",
+    "The snap fit would engage and release in PETG without breaking.",
+    "Both parts print support-free in their chosen orientation.",
+    "Ventilation over the SoC; microSD reachable."
+  ]
+}
