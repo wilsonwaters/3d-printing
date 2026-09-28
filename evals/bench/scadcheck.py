@@ -56,7 +56,7 @@ NON_PRINT_RE = re.compile(
 CLASH_RE = re.compile(r"^(fit|clash.*|.*interfer.*|.*collision.*)$", re.I)
 # A multi-body part with a name like these lays several parts out on the plate.
 # It must fit the bed, but counting it as a part would double every per-part metric.
-LAYOUT_RE = re.compile(r"^(plate|layout|print|bed|build)", re.I)
+LAYOUT_RE = re.compile(r"^(plate|layout|print|bed|build)|parts$|coupons$", re.I)
 OVERHANG_LIMITS = (45, 60)
 ANGLE_SLACK = 0.5  # degrees; faceting puts exact-45 chamfers at 45.0x
 FLAT_DEG = 89.0
@@ -67,6 +67,32 @@ BED_TOL = 0.02  # mm above z-min that still counts as touching the plate
 # Part discovery and compilation
 # --------------------------------------------------------------------------
 
+PART_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
+
+
+def _listed_parts(src):
+    """Part names listed in the comment on the `part = "...";` line and any
+    comment-only lines straight after it (the skill's template convention,
+    e.g. `part = "all"; // "all", "base", "lid"` or `// all | base | lid`).
+    Catches models that dispatch through a helper like show_part(part)."""
+    lines = src.splitlines()
+    for i, line in enumerate(lines):
+        m = re.match(r'^\s*part\s*=\s*"[^"]*"\s*;\s*//(.*)$', line)
+        if not m:
+            continue
+        text = [m.group(1)]
+        for nxt in lines[i + 1:]:
+            c = re.match(r"^\s*//(.*)$", nxt)
+            if not c:
+                break
+            text.append(c.group(1))
+        blob = " ".join(text)
+        quoted = re.findall(r'"([^"]+)"', blob)
+        tokens = quoted or re.split(r"[|,\s]+", blob)
+        return [t.strip(" .;:") for t in tokens if PART_NAME_RE.match(t.strip(" .;:"))]
+    return []
+
+
 def discover_parts(src):
     """Values the model's `part` selector accepts, default first."""
     code = re.sub(r"//[^\n]*", "", src)
@@ -76,6 +102,12 @@ def discover_parts(src):
         found.append(m.group(1))
     for pat in (r'\bpart\s*==\s*"([^"]+)"', r'"([^"]+)"\s*==\s*part\b'):
         found.extend(re.findall(pat, code))
+    # Names only listed in the comment count too (the selector may be dispatched
+    # through a helper), but only if the default is among them: that separates a
+    # list of part names from a prose comment like "// which part to show".
+    listed = _listed_parts(src)
+    if listed and (not found or found[0] in listed):
+        found.extend(listed)
     seen, parts = set(), []
     for p in found:
         if p not in seen:
@@ -87,7 +119,10 @@ def discover_parts(src):
 def compile_part(binary, scad, part, outdir, timeout, summary_ok):
     tag = re.sub(r"[^A-Za-z0-9_.-]+", "_", part or "default")
     stl = os.path.join(outdir, tag + ".stl")
-    cmd = [binary, "-o", stl, "--export-format", "binstl"]
+    # Text STL, not binary: binary rounds coordinates to float32, which merges
+    # vertices a hair apart and reports false non-manifold edges. Text STL is also
+    # what the skill's own edge check (verification.md 1g) reads.
+    cmd = [binary, "-o", stl, "--export-format", "asciistl"]
     js = os.path.join(outdir, tag + ".summary.json")
     if summary_ok:
         cmd += ["--summary", "all", "--summary-file", js]

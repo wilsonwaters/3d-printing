@@ -54,14 +54,15 @@ evals/flagship/rain-gauge/LEDGER.md. Don't change any design files.
 | Date | Model | Skill | How | Cost $ | Context tok | Wall | Parts (printable) | Gate | Sloped overhang mm² | Flat ceiling mm² | Structure | Asserts | Human /30 | Notes |
 |---|---|---|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---|
 | 2026-06-28 | unrecorded | pre-2026-07 | interactive | – | – | – | 11 (10) | pass | 456 | 1,157 | 0.85 | 8 | | `Mechanical Rain Gauge` v1: mechanism core only; `bucket` sits 2 mm below z=0 |
-| 2026-07-20 | Fable 5 | 2026-07 | interactive, 4 versions | – | – | – | 21 (20) | pass | 12,609 | 18,553 | 0.89 | 17 | | `…Fable` v4; v1 bucket printed, 4 faults fixed in v2 |
+| 2026-07-20 | Fable 5 | 2026-07 | interactive, 4 versions | – | – | – | 21 (18) | pass | 12,269 | 14,138 | 0.89 | 17 | | `…Fable` v4; v1 bucket printed, 4 faults fixed in v2 |
 | 2026-07-26 | Opus 5 | 2026-07 | interactive | – | – | – | 19 (16) | pass | 12,491 | 8,277 | 0.96 | 50 | | `…Opus5.0` v1; clash checks clear; superseded |
-| 2026-08-03 | Opus 5 | 2026-08 | interactive, v2 | – | – | – | 23 (21) | pass | 5,637 | 11,143 | 0.96 | 61 | | `…Opus5.0 v2`; README showcase; fit-test ladder printed 3x, hole comp measured 0.30 |
+| 2026-08-03 | Opus 5 | 2026-08 | interactive, v2 | – | – | – | 23 (19) | pass | 4,824 | 6,740 | 0.96 | 61 | | `…Opus5.0 v2`; README showcase; fit-test ladder printed 3x, hole comp measured 0.30 |
+| 2026-09-28 | claude-opus-5-5 | f268aea | interactive | – | – | – | 29 (24) | pass | 396 | 6,044 | 0.89 | 54 | | `…Opus5.5` v1: 200 cm² collector, face-ratchet drive, heart-cam reset; two review rounds. Token columns pending: run the prompt above in its chat |
 
 Backfilled rows were measured on 2026-09-28 with OpenSCAD 2026.09.23 and a
 256 mm build volume. Their token cost wasn't recorded at the time; for new
 interactive runs, keep the session id so `transcript.py` can recover it.
-Overhang and ceiling areas are summed over every printable part (print
-plates included), so they compare designs of similar part count; they are
-not "needs supports" verdicts, since bridges and designed-in chamfers land
-in the same bucket.
+Overhang and ceiling areas are summed over every printable part (print-plate
+layouts left out, so nothing is counted twice), so they compare designs of
+similar part count; they are not "needs supports" verdicts, since bridges and
+designed-in chamfers land in the same bucket.

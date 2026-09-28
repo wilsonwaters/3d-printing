@@ -56,7 +56,7 @@ sub-agents are `modelUsage` and `total_cost_usd`. Second, per-message
 | Layer | How | Decides pass? |
 |---|---|---|
 | **Gate** | Every `part=` value compiles clean with the OpenSCAD nightly, using the same fatal phrases as the skill's verification gate. Interference-check parts (`clash`, `fit`, `*interference*`) must render empty. | yes, automatic |
-| **Manifold** | Every edge of every printable part is shared by exactly two faces. Edge-only contact passes OpenSCAD but Bambu Studio flags it. | yes, automatic |
+| **Manifold** | Every edge of every printable part is shared by exactly two faces. Edge-only contact passes OpenSCAD but Bambu Studio flags it. Measured on text STL: binary STL rounds to float32 and fakes non-manifold edges. | yes, automatic |
 | **Fits the printer** | Printable-part bounding boxes against the case's build volume. | yes, automatic |
 | **Requirements** | Case checks written from the brief: size envelopes, part counts, on the plate, one body per part, STL/3MF produced (see `grade.py`'s docstring). | yes, per check |
 | **Printability** | Sloped overhang area past 45°, flat ceiling area (bridges), bed contact, shells. | optional thresholds |
@@ -329,9 +329,10 @@ These are for the skill review:
   a fatal phrase, but the current nightly prints it for any bare primitive (a
   lone `cube()` or `cylinder()` part), so a simple spacer fails the gate. The
   bench reports it but doesn't fail on it.
-- **In the existing models.** Fable tile v2's `logo` part still has 3
-  non-manifold edges, which Bambu Studio may flag. Gate latch v4's `lever`
-  part is modelled off the plate.
+- **In the existing models.** Gate latch v4's `lever` part is modelled off the
+  plate. On printability, the rain gauges have improved sharply: summed
+  sloped overhang went from about 12,300 mm² (Fable, Opus5.0 v1) to 4,824
+  (Opus5.0 v2) to 396 (Opus5.5); see the ledger.
 - **From the smoke run (Opus 5.5, current skill):**
   - *Where the money goes.* On the two design runs, output plus thinking was
     about 46-48% of cost, cache writes about 30% and cache reads about 20%. The

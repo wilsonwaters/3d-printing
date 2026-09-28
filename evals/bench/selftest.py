@@ -97,6 +97,12 @@ def main():
         "$fn = $preview ? 32 : 64;", "// === MODULES ===", 'part = "a";',
         'assert(nozzle_diameter > 0);', "// === ASSEMBLY / RENDER ===", 'if (part == "a") cube(1);',
     ])
+    listed = discover_parts('part = "assembly"; // assembly | base |\n                  // lid | small_parts\nshow_part(part);')
+    if listed != ["assembly", "base", "lid", "small_parts"]:
+        failures.append("comment-listed parts -> %r" % listed)
+    if discover_parts('part = "a"; // which part to show\ncube(1);') != ["a"]:
+        failures.append("a prose comment was read as part names")
+
     st = structure_metrics(good)
     if st["score"] != 1.0:
         failures.append("structure score for a conforming file = %s: %s" % (
