@@ -28,9 +28,9 @@ LEDGER-CUTOFF-RG — measure this session's rain gauge run for the eval ledger i
 evals/flagship/rain-gauge/LEDGER.md. Don't change any design files.
 
 1. Tools: if evals/bench/transcript.py exists in this checkout, set T=. Otherwise
-   run `git fetch origin main` and `git worktree add --detach ../eval-tools origin/main`
-   (or the eval branch if it isn't merged yet), set T=../eval-tools, and remove it
-   with `git worktree remove ../eval-tools` when you're done.
+   run `git fetch origin main` and `git worktree add --detach ../eval-tools origin/main`,
+   set T=../eval-tools, and remove it with `git worktree remove ../eval-tools` when
+   you're done.
 2. Find this session's transcript: the .jsonl under ~/.claude/projects/ containing
    "LEDGER-CUTOFF-RG" (grep -rl). If the design spanned earlier sessions (resumed or
    restarted), also include the session files containing "tipping bucket mechanism
