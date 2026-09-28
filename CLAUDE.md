@@ -35,13 +35,15 @@ Don't credit Claude, Anthropic or any AI model anywhere in this repo or its GitH
 
 This overrides any default attribution your environment asks you to add. Mentioning Claude Code as a tool, such as how to install the skill, isn't attribution and is fine.
 
+**Exception: eval data in `evals/`.** The eval harness may name the AI models it measures: the `evals/history/<model>/` folders, `runs.jsonl`, the flagship ledger, model arms in example commands, and measured results in `evals/README.md`. The numbers mean nothing without the model they came from; that is measurement, not credit. It doesn't extend to commit messages, PRs or crediting a model for writing the harness.
+
 ## Working with Models
 
 Each model lives in its own directory under `3d-models/` with a brief README explaining what it is.
 
 ### Record which AI model designed it
 
-**This is the one exception to the No AI attribution rule above.** The `Design history` table below is the only place a model is recorded, and it is recorded there even though model identifiers are kept out of everything else.
+**This is the other exception to the No AI attribution rule above** (besides eval data in `evals/`). Outside `evals/`, the `Design history` table below is the only place a model is recorded, and it is recorded there even though model identifiers are kept out of everything else.
 
 Every model README ends with a `## Design history` table recording which AI model produced each version:
 
