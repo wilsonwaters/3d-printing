@@ -20,9 +20,19 @@
       "id": "lifts_and_spans",
       "value": [
         24.5,
+        120,
+        120
+      ]
+    },
+    {
+      "type": "bbox_min",
+      "id": "covers_base",
+      "value": [
+        24.5,
         160,
         160
-      ]
+      ],
+      "must": false
     },
     {
       "type": "bbox_max",

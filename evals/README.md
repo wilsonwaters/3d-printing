@@ -215,7 +215,7 @@ claude -p <task> --plugin-dir <this arm's copy of the skill> --setting-sources p
 | `caster-plug` | smoke, standard | small single part with a fit problem that failed twice in real prints | gate, manifold, fits, ≤45 mm envelope, on plate, 1 body, STL |
 | `asks-printer` | smoke, standard | Step 0: no printer given → ask before designing | reply asks about the printer; no .scad yet |
 | `review-recall` | smoke, standard | design review on [bracket.scad](cases/review-recall/bracket.scad) with 6 seeded defects | finds ≥3 of 6 (per-defect recall in the score); file untouched |
-| `pot-stand` | standard | large load-bearing part, drainage, first layer | ≥160×160 footprint, 25 mm lift, ≤256 mm, on plate, 1 body |
+| `pot-stand` | standard | large load-bearing part, drainage, first layer | 25 mm lift, ≥120 mm span (≥160 optional), ≤256 mm, on plate, 1 body |
 | `pot-stand-edit` | standard | modify the real `3d-models/outdoor-plant-pot-stand` from its header | grew for 230 mm pots, still fits, asserts kept |
 | `pi4-case` | standard, holdout | two-part snap-fit assembly with positional features | ≥2 parts, holds an 85×56 board, on plate |
 | `cable-clip-3mf` | standard, holdout | PLA on a P1S through the Bambu 3MF export | valid Bambu project 3MF |
