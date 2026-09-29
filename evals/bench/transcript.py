@@ -99,6 +99,7 @@ def analyse(paths, skill_root=None, stop_at=None):
     if stop_at and not stop_ts:
         raise SystemExit("--stop-at marker %r not found in a user message" % stop_at)
     first_ts = last_ts = None
+    think_peaks, think_cur = 0, 0  # streamed thinking estimate: sum of per-call peaks
     calls = {}  # message id -> (is_sub, model, usage)
     tools = collections.Counter()
     tool_inputs = {}
@@ -114,6 +115,12 @@ def analyse(paths, skill_root=None, stop_at=None):
             first_ts = min(first_ts or ts, ts)
             last_ts = max(last_ts or ts, ts)
         t = e.get("type")
+        if t == "system" and e.get("subtype") == "thinking_tokens":
+            est = int(e.get("estimated_tokens") or 0)
+            if est < think_cur:  # the count restarts with each API call
+                think_peaks += think_cur
+            think_cur = est
+            continue
         if t == "result":
             results.append(e)
             if isinstance(e.get("result"), str):
@@ -209,6 +216,8 @@ def analyse(paths, skill_root=None, stop_at=None):
         tok = {k: main[k] + sub[k] for k in ("input", "output", "cache_read", "cache_write")}
         tok["thinking"] = None
     tok["context_volume"] = tok["input"] + tok["cache_read"] + tok["cache_write"]
+    # A killed run never reports its thinking; the stream's running estimate does.
+    tok["thinking_streamed"] = think_peaks + think_cur
     # Where the money goes, using list-price ratios to input (write 1.25x for the
     # 5-minute cache, 2x for 1-hour; read 0.1x; output 5x). Approximate by design:
     # it says which lever matters (thinking/output vs loaded text), not the bill.
@@ -217,6 +226,10 @@ def analyse(paths, skill_root=None, stop_at=None):
          "cache_read": 0.1 * tok["cache_read"], "input": 1.0 * tok["input"]}
     total_w = sum(w.values()) or 1.0
     cost_split = {k: round(v / total_w, 3) for k, v in w.items()}
+    # the same weighting with output raised to the streamed thinking estimate:
+    # what a killed run's cost is estimated from
+    w_out = max(tok["output"] or 0, tok["thinking_streamed"])
+    weighted_units = total_w - w["output"] + 5.0 * w_out
     costs = [r.get("total_cost_usd") for r in results if r.get("total_cost_usd") is not None]
     by_model = {k: {"cost_usd": v.get("costUSD"), "output": v.get("outputTokens"),
                     "cache_read": v.get("cacheReadInputTokens"),
@@ -239,6 +252,7 @@ def analyse(paths, skill_root=None, stop_at=None):
         "cost_usd": round(max(costs), 4) if costs else None,
         "tokens": tok,
         "cost_split": cost_split,
+        "weighted_units": round(weighted_units),
         "by_model": by_model,
         "span": {"first": first_ts, "last": last_ts, "stopped_at": stop_ts},
         "files": len(paths),

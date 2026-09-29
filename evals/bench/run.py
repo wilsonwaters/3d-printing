@@ -123,6 +123,28 @@ def prepare_arm(name, spec, out):
     return info
 
 
+class Activity:
+    """When the transcript last grew with a real event (keep-alives don't count).
+    A session that hits its output cap mid-thought, or waits on a sub-agent that
+    went silent, can otherwise sit for the rest of its timeout doing nothing."""
+
+    def __init__(self, path):
+        self.path, self.pos, self.last = path, 0, time.time()
+
+    def poll(self):
+        try:
+            with open(self.path, "rb") as f:
+                f.seek(self.pos)
+                chunk = f.read()
+        except OSError:
+            return self.last
+        if chunk:
+            self.pos += len(chunk)
+            if any(ln.strip() and b'"keep_alive"' not in ln for ln in chunk.splitlines()):
+                self.last = time.time()
+        return self.last
+
+
 def child_env():
     # A parent session's id, or its effort level, would otherwise leak into every
     # child run; effort is set only by --effort so both arms get the same one.
@@ -182,17 +204,20 @@ def preflight(claude, arm, env):
     return "no init event from claude -p (is it logged in?)"
 
 
-# $ per context token, from the smoke runs (Opus 5.5, xhigh): used to estimate a
-# killed run's cost until this suite has finished runs of its own to learn from.
-DEFAULT_USD_PER_CONTEXT_TOKEN = 1.2e-6
+# $ per weighted token unit (transcript.py: input 1, cache write 1.25-2, cache
+# read 0.1, output 5), from the smoke runs; used to estimate a killed run's cost
+# until this suite has finished runs of its own to learn from.
+DEFAULT_USD_PER_UNIT = 4.3e-6
+STALL_S = 900  # no stream activity for this long = the run is stuck (see run_one)
 
 
-def estimate_cost(metrics, usd_per_token):
+def estimate_cost(metrics, usd_per_unit):
     """A run killed by its timeout never prints a result event, so it has no
-    cost. Estimate one from its context tokens so the ceiling and the report
-    still see the spend; flagged as estimated."""
-    if metrics.get("cost_usd") is None and (metrics.get("tokens") or {}).get("context_volume"):
-        metrics["cost_usd"] = round(metrics["tokens"]["context_volume"] * usd_per_token, 4)
+    cost. Estimate one from its tokens, counting the thinking the stream
+    reported (a stuck run's cost is mostly thinking), so the ceiling and the
+    report still see the spend; flagged as estimated."""
+    if metrics.get("cost_usd") is None and metrics.get("weighted_units"):
+        metrics["cost_usd"] = round(metrics["weighted_units"] * usd_per_unit, 4)
         metrics["cost_estimated"] = True
     return metrics
 
@@ -208,15 +233,14 @@ class Budget:
 
     def rate(self):
         with self.lock:
-            return (self.real_usd / self.real_tokens if self.real_tokens
-                    else DEFAULT_USD_PER_CONTEXT_TOKEN)
+            return self.real_usd / self.real_tokens if self.real_tokens else DEFAULT_USD_PER_UNIT
 
     def add(self, metrics):
         with self.lock:
             self.spent += metrics.get("cost_usd") or 0.0
             if metrics.get("cost_usd") and not metrics.get("cost_estimated"):
                 self.real_usd += metrics["cost_usd"]
-                self.real_tokens += (metrics.get("tokens") or {}).get("context_volume") or 0
+                self.real_tokens += metrics.get("weighted_units") or 0
 
 
 def run_one(job, args, claude, budget):
@@ -243,13 +267,24 @@ def run_one(job, args, claude, budget):
     tpath = os.path.join(run_dir, "transcript.jsonl")
     t0 = time.time()
     timed_out = False
+    stalled = False
     with open(tpath, "w") as out, open(os.path.join(run_dir, "stderr.log"), "w") as err:
         proc = subprocess.Popen(cmd, cwd=ws, stdout=out, stderr=err, stdin=subprocess.DEVNULL, env=env)
-        try:
-            code = proc.wait(timeout=case.get("timeout_s", 2700))
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            code, timed_out = proc.wait(), True
+        deadline = t0 + case.get("timeout_s", 2700)
+        stall_s = case.get("stall_s", STALL_S)
+        activity = Activity(tpath)
+        while True:
+            try:
+                code = proc.wait(timeout=30)
+                break
+            except subprocess.TimeoutExpired:
+                pass
+            now = time.time()
+            if now > deadline or now - activity.poll() > stall_s:
+                stalled = now <= deadline
+                proc.kill()
+                code, timed_out = proc.wait(), True
+                break
     wall = round(time.time() - t0, 1)
     metrics = estimate_cost(tx.analyse([tpath], skill_root=arm["plugin"]), budget.rate())
     metrics["_tool_matches"] = grader.tool_matches(case, [tpath])
@@ -273,7 +308,7 @@ def run_one(job, args, claude, budget):
         f.write(final or "")
     rec = {"case": case["name"], "arm": arm["name"], "trial": trial, "ref": arm["ref"],
            "sha": arm.get("sha"), "model": arm.get("model") or args.model, "effort": args.effort,
-           "exit_code": code, "timed_out": timed_out, "wall_s": wall,
+           "exit_code": code, "timed_out": timed_out, "stalled": stalled, "wall_s": wall,
            "metrics": metrics, "grade": g}
     save_json(rec_path, rec)
     budget.add(metrics)
@@ -289,8 +324,9 @@ def regrade(out, compile_timeout, record=True):
     recs = sorted(glob.glob(os.path.join(out, "runs", "*", "*", "t*", "run.json")))
     real = [json.load(open(p)).get("metrics") or {} for p in recs]
     real = [m for m in real if m.get("cost_usd") and not m.get("cost_estimated")]
-    tokens = sum((m.get("tokens") or {}).get("context_volume") or 0 for m in real)
-    rate = sum(m["cost_usd"] for m in real) / tokens if tokens else DEFAULT_USD_PER_CONTEXT_TOKEN
+    real = [tx_m for tx_m in real if tx_m.get("weighted_units")]
+    units = sum(m["weighted_units"] for m in real)
+    rate = sum(m["cost_usd"] for m in real) / units if units else DEFAULT_USD_PER_UNIT
     for rec_path in recs:
         with open(rec_path) as f:
             rec = json.load(f)
@@ -301,7 +337,7 @@ def regrade(out, compile_timeout, record=True):
         tpath = os.path.join(run_dir, "transcript.jsonl")
         plugin = os.path.join(out, "arms", rec["arm"], "plugin")
         skill_root = os.path.join(plugin, SKILL_REL) if os.path.isdir(plugin) else None
-        metrics = estimate_cost(tx.analyse([tpath], skill_root=skill_root), rate)
+        metrics = estimate_cost(tx.analyse([tpath], skill_root=skill_root), rate)  # fresh, so re-estimated
         metrics["_tool_matches"] = grader.tool_matches(case, [tpath])
         files = os.path.join(run_dir, "files")
         os.makedirs(files, exist_ok=True)
