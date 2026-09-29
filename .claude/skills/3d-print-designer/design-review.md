@@ -110,4 +110,4 @@ For assemblies, also render an **assembled** view, an **exploded** view (`-D exp
 
 ## Return format
 
-Return a findings list, each: **severity · what · where · suggested fix**. State findings as critique, not commands — the author triages, fixing real issues and pushing back on findings that are wrong or out of scope. Flag any acceptance criterion that only a real print can confirm as a residual rather than passing or failing it.
+Start with the exact model ID you run as (from your system prompt), or `unknown`. Then return a findings list, each: **severity · what · where · suggested fix**. State findings as critique, not commands — the author triages, fixing real issues and pushing back on findings that are wrong or out of scope. Flag any acceptance criterion that only a real print can confirm as a residual rather than passing or failing it.

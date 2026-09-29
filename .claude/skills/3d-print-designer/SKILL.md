@@ -98,7 +98,7 @@ Every generated .scad file follows this structure:
 // Coordinate system: X = [axis], Y = [axis], Z = height from build plate
 // NOTE: Model is in print orientation — OpenSCAD preview matches the print.
 //   [If use orientation differs: "In use, Z becomes the wall-facing axis"]
-// Final review: [YYYY-MM-DD once the project's final review has run]
+// Final review: [YYYY-MM-DD, reviewer model ID, once the project's final review has run]
 
 // === PRINT SETTINGS ===
 // Material: PLA (or PETG, etc.)
@@ -207,7 +207,7 @@ A **fresh-eyes peer review** by a sub-agent. It covers what the gate can't: whet
 **Which model reviews.** It's fixed, so reviews are consistent from run to run:
 
 - **Intermediate review:** any full review while the design is still changing, e.g. after initial generation of a multi-part project, or after a structural change. Use `model: "sonnet"`.
-- **Final review:** **once per project**, when the design is complete and about to be printed for the first time: every part built, earlier findings fixed, gate green. Use `model: "fable"`, or `"opus"` if Fable isn't available. A simple part finished in one pass gets only this review. It's expensive, so never run a second one. Record it in the DESCRIPTION header (`// Final review: 2026-09-29`). Every later full review of that project, including edits in later sessions, is intermediate, unless the user asks for another final review.
+- **Final review:** **once per project**, when the design is complete and about to be printed for the first time: every part built, earlier findings fixed, gate green. Use `model: "fable"`, or `"opus"` if Fable isn't available. A simple part finished in one pass gets only this review. It's expensive, so never run a second one. Record it in the DESCRIPTION header with the model ID the reviewer reports (`// Final review: 2026-09-29, claude-fable-5-1`). Every later full review of that project, including edits in later sessions, is intermediate, unless the user asks for another final review.
 
 **Spawn it** with the Agent tool on that model, in the foreground, since the next step needs its findings. Give it:
 
