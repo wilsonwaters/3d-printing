@@ -112,6 +112,8 @@ def rows_for(out):
                              calls_median=_median([x["calls"] for x in f]),
                              wall_median=_median([x["wall_s"] for x in f]),
                              sub_share=_mean([x["sub_share"] for x in f]),
+                             timeouts=sum(1 for r in cr if r.get("timed_out")),
+                             cost_estimated=sum(1 for r in cr if (r.get("metrics") or {}).get("cost_estimated")),
                              failing=fails, **arms[a["name"]]))
     names = [a["name"] for a in suite.get("arms", []) if a["name"] in arms]
     if len(names) >= 2 and summary.get("paired"):
@@ -224,11 +226,14 @@ def render_model(d):
         for r in reversed(cr):
             L.append("| %s | %s | %s | %s | %s | %d/%d | %.2f | %s | %s | %s | %s | %s | %s | %s |" % (
                 r["date"], r["suite"], r["arm"], _skill(r), r["effort"], r["passes"], r["trials"],
-                r["score"] or 0, _n(r.get("cost_median"), money=True), _n(r.get("context_median")),
+                r["score"] or 0, _n(r.get("cost_median"), money=True) + (
+                    " (%d est.)" % r["cost_estimated"] if r.get("cost_estimated") else ""),
+                _n(r.get("context_median")),
                 _n(r.get("calls_median")), _n(r.get("wall_median")),
                 _n((r.get("sub_share") or 0) * 100) + "%" if r.get("sub_share") is not None else "-",
                 _n(r.get("static_tokens")),
-                ", ".join("%s x%d" % kv for kv in sorted((r.get("failing") or {}).items()))))
+                ", ".join(["%s x%d" % kv for kv in sorted((r.get("failing") or {}).items())]
+                          + (["timeout x%d" % r["timeouts"]] if r.get("timeouts") else []))))
         L.append("")
     with open(os.path.join(d, "HISTORY.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(L))

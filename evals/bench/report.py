@@ -181,6 +181,8 @@ def build(out):
         cs = by_case(runs, a, "pass")
         per["pass_hat_k"] = mean([1.0 if all(v == 1.0 for v in vs) else 0.0 for vs in cs.values()])
         per["total_cost"] = sum(r["_flat"]["cost_usd"] or 0 for r in rs)
+        per["estimated"] = sum(1 for r in rs if (r.get("metrics") or {}).get("cost_estimated"))
+        per["timeouts"] = sum(1 for r in rs if r.get("timed_out"))
         summary["arms"][a] = per
     rows = [("pass rate (Wilson 95%)", lambda p: "%s [%s-%s] (%d/%d)" % (
         fmt(p["pass"]), fmt(p["pass_ci"][0]), fmt(p["pass_ci"][1]), p["pass_n"], p["runs"])),
@@ -188,6 +190,7 @@ def build(out):
     rows += [(lbl, (lambda key: lambda p: fmt(p[key]))(key))
              for key, lbl in QUALITY_METRICS[1:] + COST_METRICS + INFO_METRICS]
     rows.append(("total spend $", lambda p: fmt(p["total_cost"])))
+    rows.append(("timed-out runs (cost estimated)", lambda p: "%d (%d)" % (p["timeouts"], p["estimated"])))
     for lbl, f in rows:
         L.append("| %s | %s |" % (lbl, " | ".join(f(summary["arms"][a]) for a in arms)))
     L.append("")

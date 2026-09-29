@@ -182,17 +182,41 @@ def preflight(claude, arm, env):
     return "no init event from claude -p (is it logged in?)"
 
 
+# $ per context token, from the smoke runs (Opus 5.5, xhigh): used to estimate a
+# killed run's cost until this suite has finished runs of its own to learn from.
+DEFAULT_USD_PER_CONTEXT_TOKEN = 1.2e-6
+
+
+def estimate_cost(metrics, usd_per_token):
+    """A run killed by its timeout never prints a result event, so it has no
+    cost. Estimate one from its context tokens so the ceiling and the report
+    still see the spend; flagged as estimated."""
+    if metrics.get("cost_usd") is None and (metrics.get("tokens") or {}).get("context_volume"):
+        metrics["cost_usd"] = round(metrics["tokens"]["context_volume"] * usd_per_token, 4)
+        metrics["cost_estimated"] = True
+    return metrics
+
+
 class Budget:
     def __init__(self, ceiling):
         self.ceiling, self.spent, self.lock = ceiling, 0.0, threading.Lock()
+        self.real_usd = self.real_tokens = 0.0
 
     def ok(self):
         with self.lock:
             return self.ceiling is None or self.spent < self.ceiling
 
-    def add(self, usd):
+    def rate(self):
         with self.lock:
-            self.spent += usd or 0.0
+            return (self.real_usd / self.real_tokens if self.real_tokens
+                    else DEFAULT_USD_PER_CONTEXT_TOKEN)
+
+    def add(self, metrics):
+        with self.lock:
+            self.spent += metrics.get("cost_usd") or 0.0
+            if metrics.get("cost_usd") and not metrics.get("cost_estimated"):
+                self.real_usd += metrics["cost_usd"]
+                self.real_tokens += (metrics.get("tokens") or {}).get("context_volume") or 0
 
 
 def run_one(job, args, claude, budget):
@@ -227,7 +251,7 @@ def run_one(job, args, claude, budget):
             proc.kill()
             code, timed_out = proc.wait(), True
     wall = round(time.time() - t0, 1)
-    metrics = tx.analyse([tpath], skill_root=arm["plugin"])
+    metrics = estimate_cost(tx.analyse([tpath], skill_root=arm["plugin"]), budget.rate())
     metrics["_tool_matches"] = grader.tool_matches(case, [tpath])
     g = grader.grade(ws, case, metrics, fixtures=fixtures, timeout=args.compile_timeout)
     everything = grader.list_files(ws)  # includes fixtures an edit case changed in place
@@ -252,7 +276,7 @@ def run_one(job, args, claude, budget):
            "exit_code": code, "timed_out": timed_out, "wall_s": wall,
            "metrics": metrics, "grade": g}
     save_json(rec_path, rec)
-    budget.add(metrics.get("cost_usd"))
+    budget.add(metrics)
     return rec
 
 
@@ -262,7 +286,12 @@ def regrade(out, compile_timeout, record=True):
     cases = all_cases()
     suite = os.path.join(out, "suite.json")
     arms = {a["name"]: a for a in (json.load(open(suite))["arms"] if os.path.exists(suite) else [])}
-    for rec_path in sorted(glob.glob(os.path.join(out, "runs", "*", "*", "t*", "run.json"))):
+    recs = sorted(glob.glob(os.path.join(out, "runs", "*", "*", "t*", "run.json")))
+    real = [json.load(open(p)).get("metrics") or {} for p in recs]
+    real = [m for m in real if m.get("cost_usd") and not m.get("cost_estimated")]
+    tokens = sum((m.get("tokens") or {}).get("context_volume") or 0 for m in real)
+    rate = sum(m["cost_usd"] for m in real) / tokens if tokens else DEFAULT_USD_PER_CONTEXT_TOKEN
+    for rec_path in recs:
         with open(rec_path) as f:
             rec = json.load(f)
         case = cases.get(rec["case"])
@@ -272,7 +301,7 @@ def regrade(out, compile_timeout, record=True):
         tpath = os.path.join(run_dir, "transcript.jsonl")
         plugin = os.path.join(out, "arms", rec["arm"], "plugin")
         skill_root = os.path.join(plugin, SKILL_REL) if os.path.isdir(plugin) else None
-        metrics = tx.analyse([tpath], skill_root=skill_root)
+        metrics = estimate_cost(tx.analyse([tpath], skill_root=skill_root), rate)
         metrics["_tool_matches"] = grader.tool_matches(case, [tpath])
         files = os.path.join(run_dir, "files")
         os.makedirs(files, exist_ok=True)
@@ -385,9 +414,10 @@ def main():
                 print("[%d/%d] %s/%s t%d skipped (%s)" % (done, len(jobs), r["case"], r["arm"], r["trial"], r["skipped"]))
                 continue
             m, g = r["metrics"], r["grade"]
-            print("[%d/%d] %-18s %-8s t%d  %s score=%.2f  $%s  %ss  calls=%s%s" % (
+            print("[%d/%d] %-18s %-8s t%d  %s score=%.2f  %s$%s  %ss  calls=%s%s" % (
                 done, len(jobs), r["case"], r["arm"], r["trial"], "PASS" if g["pass"] else "FAIL",
-                g["score"], m.get("cost_usd"), r["wall_s"], m.get("api_calls"),
+                g["score"], "~" if m.get("cost_estimated") else "", m.get("cost_usd"), r["wall_s"],
+                m.get("api_calls"),
                 "  TIMEOUT" if r["timed_out"] else ""))
     md = report.build(args.out)
     print("\n" + md)
