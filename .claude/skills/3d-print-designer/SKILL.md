@@ -98,7 +98,7 @@ Every generated .scad file follows this structure:
 // Coordinate system: X = [axis], Y = [axis], Z = height from build plate
 // NOTE: Model is in print orientation — OpenSCAD preview matches the print.
 //   [If use orientation differs: "In use, Z becomes the wall-facing axis"]
-// Final review: [YYYY-MM-DD, reviewer model ID, once the project's final review has run]
+// Final review: [YYYY-MM-DD, reviewer model ID; complex projects, once it has run]
 
 // === PRINT SETTINGS ===
 // Material: PLA (or PETG, etc.)
@@ -206,8 +206,8 @@ A **fresh-eyes peer review** by a sub-agent. It covers what the gate can't: whet
 
 **Which model reviews.** It's fixed, so reviews are consistent from run to run:
 
-- **Intermediate review:** any full review while the design is still changing, e.g. after initial generation of a multi-part project, or after a structural change. Use `model: "sonnet"`.
-- **Final review:** **once per project**, when the design is complete and about to be printed for the first time: every part built, earlier findings fixed, gate green. Use `model: "fable"`, or `"opus"` if Fable isn't available. A simple part finished in one pass gets only this review. It's expensive, so never run a second one. Record it in the DESCRIPTION header with the model ID the reviewer reports (`// Final review: 2026-09-29, claude-fable-5-1`). Every later full review of that project, including edits in later sessions, is intermediate, unless the user asks for another final review.
+- **Every full review runs on `model: "sonnet"`**, including the only review a simple part gets.
+- **Complex projects also get one final review on `model: "fable"`**, or `"opus"` if Fable isn't available. Complex means a multi-part assembly, a mechanism (anything that moves, flexes or latches), or a user who asks for one. Run it once, when the design is complete and about to be printed for the first time: every part built, the Sonnet findings fixed, gate green. A Fable review costs about as much as the whole design session, so never run a second one. Record it in the DESCRIPTION header with the model ID the reviewer reports (`// Final review: 2026-09-29, claude-fable-5-1`). Later sessions see it and use Sonnet, unless the user asks for another final review.
 
 **Spawn it** with the Agent tool on that model, in the foreground, since the next step needs its findings. Give it:
 
@@ -222,7 +222,7 @@ Don't read design-review.md yourself: it's the reviewer's brief, not yours.
 
 ### Review tiers
 
-- **Full review** (the sub-agent, intermediate or final as above). Required for initial generation, major structural changes (new load-bearing features, added or removed parts, splitting), orientation changes and material changes.
+- **Full review** (the sub-agent, on the model above). Required for initial generation, major structural changes (new load-bearing features, added or removed parts, splitting), orientation changes and material changes.
 - **Lightweight check** (yourself, no sub-agent). For parameter tweaks, cosmetic changes and small non-structural features. Re-run the gate on the changed parts and ask: did this create an unsupported overhang, break a nozzle-width multiple, or introduce a coincident face?
 - After 3-5 cumulative minor changes, offer a full review. Don't force it.
 
