@@ -16,7 +16,7 @@ What it checks, by part name (the naming convention in SKILL.md):
 |---|---|
 | printable (plain name) | Compiles clean, is **one connected body**, **manifold** (every edge shared by exactly two faces), **rests on Z=0**, fits the build volume |
 | `plate_*`, `*_parts`, `*_coupons` | As printable, but several bodies are allowed |
-| `clash_*`, `*interference*`, `fit` | Renders **empty**, or faces only touch. Any overlap volume is a collision |
+| `clash_*`, `*interference*`, `fit` | Renders **empty**. Any overlap is a collision, and faces that only touch fail too: pose resting parts `fudge` apart in the clash part, so empty proves there's no overlap |
 | `check_*`, `verify_*`, `debug_*` | Compiles; may be empty |
 | `all`, `assembly*`, `explode*`, `section*`, `view*` | Compiles |
 

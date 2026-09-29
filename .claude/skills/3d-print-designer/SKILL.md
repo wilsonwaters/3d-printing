@@ -160,7 +160,7 @@ List every value in the comment on the `part =` line. A plain name is a **printe
 
 - `all`, `assembly*`, `explode*`, `section*`, `view*`: views, which must compile but are never printed.
 - `plate_*`, `*_parts`: print layouts with several bodies.
-- `clash_*`: interference checks. Each is an `intersection()` of a mating or moving pair in its assembled pose (for a mechanism, at rest, mid-travel and end of travel), and must render empty.
+- `clash_*`: interference checks. Each is an `intersection()` of a mating or moving pair in its assembled pose (for a mechanism, at rest, mid-travel and end of travel), and must render empty. Pose parts that rest on each other `fudge` apart: faces that touch still render a sheet.
 - `check_*`: your own diagnostics.
 
 ## Critical Rules

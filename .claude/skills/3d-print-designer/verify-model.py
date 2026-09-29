@@ -13,7 +13,8 @@ How each `part` value is judged, by its name:
                              exactly two faces), rests on Z=0, fits the build volume
   plate_* / *_parts / *_coupons   a print layout: as printable, but several bodies are fine
   clash_* / *interference* / fit  an interference check (an intersection() of mating parts):
-                             must render EMPTY; any solid is a collision
+                             must render EMPTY; any solid is a collision, and faces that only
+                             touch fail too (pose resting parts fudge apart)
   check_* / verify_* / debug_*    the author's diagnostics: must compile; may be empty
   all / assembly* / explode* / section* / view* / preview*   a view: must compile, not measured
 
@@ -192,8 +193,10 @@ def check_part(osc, scad, part, kind, bv, defines, tmp, export, timeout):
         if empty:
             return part, kind, True, "empty (no collision)", echo
         m = measure(read_stl(stl))
-        if m["volume"] < 0.01 or min(m["size"]) < 0.001:  # faces touch; nothing overlaps
-            return part, kind, True, "faces touch, no overlap volume", echo
+        if m["volume"] < 0.01 or min(m["size"]) < 0.001:
+            return part, kind, False, ("faces touch (a zero-thickness intersection): pose parts that "
+                                       "rest on each other fudge apart in the clash part, so empty "
+                                       "proves there is no overlap"), echo
         return part, kind, False, "COLLISION: %.2f mm3 of overlap, %.1f x %.1f x %.1f mm" % (
             m["volume"], *m["size"]), echo
     if empty:
