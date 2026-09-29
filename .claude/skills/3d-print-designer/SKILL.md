@@ -56,7 +56,7 @@ The same steps for a single part or an assembly.
 4. **Write the .scad** using the [file structure](#file-structure) below. Read [openscad-reference.md](openscad-reference.md) first. Encode each measurable criterion as an `assert()`.
 5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
 6. **Verify:** run the gate ([Verification](#verification)) and fix until it's green.
-7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](bambu-3mf-export.md)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
+7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](bambu-3mf-export.md)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Build it from the `.scad`, or with `--mesh` from the STL. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
 8. **Design review:** spawn it ([Design Review](#design-review)), triage the findings, fix and re-verify.
 9. **Hand off** ([After generation](#after-generation)).
 
@@ -98,6 +98,7 @@ Every generated .scad file follows this structure:
 // Coordinate system: X = [axis], Y = [axis], Z = height from build plate
 // NOTE: Model is in print orientation — OpenSCAD preview matches the print.
 //   [If use orientation differs: "In use, Z becomes the wall-facing axis"]
+// Final review: [YYYY-MM-DD once the project's final review has run]
 
 // === PRINT SETTINGS ===
 // Material: PLA (or PETG, etc.)
@@ -197,13 +198,18 @@ A **hard, deterministic gate** that every part must pass before the review and b
 python "<skill-dir>/verify-model.py" model.scad --build-volume 256x256x256 --export .
 ```
 
-It compiles every `part` value and checks each for clean stderr, one body, manifold, on the plate, and fits the build volume. `clash_*` parts must render empty. It prints `GATE: PASS` or the failing parts. **Read [verification.md](verification.md) before your first gate run.** It covers what each failure means, contracts, reporting, and the fallback without Python. Run the gate on initial generation and after any structural change. After a minor tweak, re-run it on just the changed parts (`--parts`).
+It compiles every `part` value and checks each for clean stderr, one body, manifold, on the plate, and fits the build volume. `clash_*` parts must render empty. It prints `GATE: PASS` or the failing parts. If OpenSCAD isn't installed where you're running, install it in your sandbox if you can (verification.md says how). Without it there's no gate and no STL, and a `.scad` alone is not something a slicer can open. **Read [verification.md](verification.md) before your first gate run.** It covers what each failure means, contracts, reporting, and the fallback without Python. Run the gate on initial generation and after any structural change. After a minor tweak, re-run it on just the changed parts (`--parts`).
 
 ## Design Review
 
 A **fresh-eyes peer review** by a sub-agent. It covers what the gate can't: whether the geometry looks right in renders, whether the mechanism makes sense, the qualitative criteria, and FDM-rule compliance.
 
-**Spawn it** with the Agent tool on a fixed model different from yours: `model: "sonnet"`, or `"opus"` if you are Sonnet. Run it in the foreground, since the next step needs its findings. Give it:
+**Which model reviews.** It's fixed, so reviews are consistent from run to run:
+
+- **Intermediate review:** any full review while the design is still changing, e.g. after initial generation of a multi-part project, or after a structural change. Use `model: "sonnet"`.
+- **Final review:** **once per project**, when the design is complete and about to be printed for the first time: every part built, earlier findings fixed, gate green. Use `model: "fable"`, or `"opus"` if Fable isn't available. A simple part finished in one pass gets only this review. It's expensive, so never run a second one. Record it in the DESCRIPTION header (`// Final review: 2026-09-29`). Every later full review of that project, including edits in later sessions, is intermediate, unless the user asks for another final review.
+
+**Spawn it** with the Agent tool on that model, in the foreground, since the next step needs its findings. Give it:
 
 - the `.scad` path and the OpenSCAD path;
 - the numbered acceptance criteria;
@@ -216,7 +222,7 @@ Don't read design-review.md yourself: it's the reviewer's brief, not yours.
 
 ### Review tiers
 
-- **Full review** (the sub-agent). Required for initial generation, major structural changes (new load-bearing features, added or removed parts, splitting), orientation changes and material changes.
+- **Full review** (the sub-agent, intermediate or final as above). Required for initial generation, major structural changes (new load-bearing features, added or removed parts, splitting), orientation changes and material changes.
 - **Lightweight check** (yourself, no sub-agent). For parameter tweaks, cosmetic changes and small non-structural features. Re-run the gate on the changed parts and ask: did this create an unsupported overhang, break a nozzle-width multiple, or introduce a coincident face?
 - After 3-5 cumulative minor changes, offer a full review. Don't force it.
 
