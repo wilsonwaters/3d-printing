@@ -54,6 +54,10 @@ NON_PRINT_RE = re.compile(
 # Interference-check parts (an intersection() of mating parts) must render
 # EMPTY: empty is the pass, any solid is a clash.
 CLASH_RE = re.compile(r"^(fit|clash.*|.*interfer.*|.*collision.*)$", re.I)
+# The author's own diagnostic parts (check_fit, verify_clearance, ...): they must
+# compile, may render empty or not, and are never printed. Some are
+# interference checks that show a designed overlap (a snap preload) at defaults.
+DIAG_RE = re.compile(r"^(check|verify|debug|probe)|_check$", re.I)
 # A multi-body part with a name like these lays several parts out on the plate.
 # It must fit the bed, but counting it as a part would double every per-part metric.
 LAYOUT_RE = re.compile(r"^(plate|layout|print|bed|build)|parts$|coupons$", re.I)
@@ -398,6 +402,16 @@ def check_scad(scad, build_volume=None, parts=None, stl_dir=None, timeout=900, j
             comp["ok"] = empty
             comp["fatal"] = [] if empty else (comp["fatal"] or ["interference: solid overlap found"])
             return p, {"compile": comp, "mesh": None, "printable": False, "clash_check": True}
+        if p is not None and DIAG_RE.search(p):
+            empty_only = not comp["stl"] and bool(comp["fatal"]) and all(
+                "empty" in ln.lower() for ln in comp["fatal"])
+            if empty_only:
+                comp["ok"], comp["fatal"] = True, []
+            mesh = mesh_metrics(read_stl(comp["stl"])) if comp["stl"] else None
+            if not stl_dir and comp["stl"]:
+                os.remove(comp["stl"])
+                comp["stl"] = None
+            return p, {"compile": comp, "mesh": mesh, "printable": False, "diagnostic": True}
         mesh = mesh_metrics(read_stl(comp["stl"])) if comp["stl"] else None
         printable = p is None or not NON_PRINT_RE.search(p)
         if mesh:

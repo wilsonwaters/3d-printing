@@ -4,4 +4,4 @@ One folder per AI model; each holds `runs.jsonl` (the data) and a generated `HIS
 
 | Model | Suites | A/B comparisons | Latest |
 |---|---:|---:|---|
-| [claude-opus-5-5](claude-opus-5-5/HISTORY.md) | 1 | 0 | 2026-09-28 |
+| [claude-opus-5-5](claude-opus-5-5/HISTORY.md) | 2 | 0 | 2026-09-28 |

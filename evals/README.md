@@ -75,8 +75,8 @@ judge and you are for.
 |---|---|---|---|
 | **0: static** | `footprint.py --check`, `selftest.py`, `fixtures.py` | every push (CI: `.github/workflows/skill-evals.yml`) | free |
 | **1a: triggers** | `claude plugin eval .` on `native/`: fires on natural phrasing, stays quiet on near misses, asks for the printer first; with and without the skill | when the description or Step 0 changes | a few dollars (~$0.11 a run) |
-| **1b: smoke A/B** | `run.py --tier smoke`: caster plug, ask-for-printer, seeded-defect review | each skill edit | ~$5 per arm per trial ([measured](#cost-per-case)) |
-| **1c: standard A/B** | `run.py --tier standard`: all 7 cases, including 2 held out | before you merge a skill change | est. $100-150 for 3 trials × 2 arms |
+| **1b: smoke A/B** | `run.py --tier smoke`: caster plug, ask-for-printer, seeded-defect review | each skill edit | ~$8 per arm per trial; 3-trial A/B ≈ $50 ([measured](#cost-per-case)) |
+| **1c: standard A/B** | `run.py --tier standard`: all 7 cases, including 2 held out | before you merge a skill change | ~$30 per arm per trial; 3-trial A/B ≈ $180 |
 | **2: flagship** | the rain gauge, 1 trial per model | a new model, or a major skill rewrite | tens of dollars |
 
 ## Quick start
@@ -230,20 +230,32 @@ skill's biggest costs, and this case measures what it catches as you slim it.
 
 ### Cost per case
 
-Measured on the current skill with Opus 5.5 (single trials, so treat as ±50%):
+Baseline: current skill, Opus 5.5 at effort `xhigh`, 3 trials per case
+(2026-09-29; full record in [history](history/claude-opus-5-5/HISTORY.md)):
 
-| Case | Cost | Wall | API calls (sub-agent) | Context tokens | Output (thinking) | Result |
-|---|---:|---:|---:|---:|---:|---|
-| `asks-printer` | $0.18 | 15 s | 3 (0) | 117k | 0.8k | pass |
-| `review-recall` | $1.49 | 10 min | 23 (15) | 1.35M | 56k | pass, 6/6 defects |
-| `caster-plug` | $3.22 | 22 min | 34 (20) | 2.75M | 110k (89k) | pass; used a printed M8 thread (see below) |
+| Case | Cost per run | Minutes | Passed | Notes |
+|---|---|---|---:|---|
+| `asks-printer` | $0.21-1.55 | 1-6 | 2/3 | one run skipped Step 0 and started designing |
+| `review-recall` | $2.60-3.00 | 9-15 | 3/3 | found 4, 4, 5 of 6 defects; coincident face missed every time |
+| `pot-stand` | $2.95-3.94 | 14-20 | 3/3 | |
+| `pot-stand-edit` | $3.24-4.97 | 13-19 | 3/3 | |
+| `caster-plug` | ~$4-6 (est.) | 45 (limit) | 1/3 | all three hit the 45 min limit: a stuck reviewer, a 128k-token think, a slow review |
+| `cable-clip-3mf` | $5.69-7.72 | 24-34 | 2/3 | the failure was the environment (below), not the skill |
+| `pi4-case` | $7.01-9.52 | 37-60 | 1/3 | one run skipped the STLs; one hit the 60 min limit before exporting |
 
-These were run at effort `xhigh` (inherited from the session that ran them;
-the harness now sets effort only through `--effort`). So a smoke A/B at 3 trials
-is about **2 arms × 3 × $5 ≈ $30**. The standard tier adds larger parts (not
-yet priced); budget roughly **$100-150** for a 3-trial A/B and set
-`--max-cost-usd`. The flagship hasn't been run through the harness yet; expect
+One trial of all 7 cases costs about **$30**. The 21-run baseline cost about
+**$93**: $70 reported, plus about $23 estimated for the four runs killed at
+their limit, which report no cost. A smoke A/B at 3 trials (2 arms × 3 cases)
+is about **$50** (about $8 per arm per trial), and a standard A/B about **$180**. Set `--max-cost-usd`
+accordingly. The flagship hasn't been run through the harness yet; expect
 tens of dollars per run.
+
+These runs were launched from a cloud session whose settings forced every
+design-review sub-agent into the background. In one cable-clip run the main
+agent ended its turn waiting for the review, and the session ended before the
+review returned. The harness now strips that setting (and the parent's effort
+level), so runs behave as they would on your own machine. Treat that
+cable-clip failure as the environment's, not the skill's.
 
 ## Using the designs already in `3d-models/`
 
@@ -347,6 +359,19 @@ These are for the skill review:
     skill text (about 37k tokens): all 6 mandatory files, `mechanical.md`, and
     `design-review.md` twice. It read them with `cat` in two Bash calls, which
     keeps the call count down.
+  - *Step 0 isn't reliable.* With no printer given, one baseline run in three
+    skipped the printer question and went straight to designing.
+  - *Runaway thinking on the caster case.* At `xhigh`, one run spent its whole
+    turn thinking until it hit the 128k output cap and never wrote a file. The
+    other two ran past 45 minutes waiting on design reviews. The skill's
+    "iterate in the file, not your head" line isn't preventing it, and nothing
+    in the skill times out or falls back when a review stalls.
+  - *The reviewer model changes run to run.* "A different model when
+    available" picked Sonnet 5, Sonnet 5.5 and Fable 5.1 on different runs.
+    That is another source of variance.
+  - *The Bambu 3MF path is expensive.* A small cable clip cost $6-8 and took
+    about 30 minutes, as much as the two-part Pi case, mostly in the export
+    step. Worth a look when slimming bambu-3mf-export.md.
   - *A lesson the skill hasn't learned.* The caster design uses a printed
     M8×1.25 thread in a cone nut. That is the approach that failed in the real
     v1 print (the thread didn't form). SKILL.md allows printed threads for "M4+",
@@ -358,9 +383,10 @@ These are for the skill review:
 - **Validated on single trials.** The pipeline has run end to end (smoke tier,
   one trial each, graded and reported), but nothing has been A/B-tested yet.
   Run an A/A once to learn the noise floor before trusting a small difference.
-- **The review case is saturated.** The current skill found 6 of 6 seeded
-  defects, so the case can catch a regression when design-review.md is slimmed,
-  but it can't show an improvement. Seed subtler defects when you need that.
+- **Review recall varies.** The smoke run found 6 of 6 seeded defects, but the
+  baseline trials found 4, 4 and 5: the coincident face was missed every time,
+  and the elephant-foot chamfer twice. That spread is the noise any change to
+  design-review.md has to beat.
 - **Regex grading of free text** (`review-recall`, `asks-printer`) can be
   fooled by a reply that mentions a term without flagging the problem. Spot-read
   the `final_message.md` of any run whose score surprises you.

@@ -17,7 +17,7 @@ from scadcheck import check_scad, discover_parts, structure_metrics  # noqa: E40
 from common import find_openscad  # noqa: E402
 
 SHAPES = r'''
-part = "cube"; // "cube", "tee", "hole", "teardrop", "two", "chamfer", "floating", "all", "clash", "interference", "plate"
+part = "cube"; // "cube", "tee", "hole", "teardrop", "two", "chamfer", "floating", "all", "clash", "interference", "plate", "check_gap", "check_fit"
 $fn = 64;
 module teardrop_x(d, len) {   // horizontal hole along X, point up
     rotate([0, 90, 0]) linear_extrude(len) rotate(90) { circle(d = d); rotate(45) square(d / 2); }
@@ -33,6 +33,8 @@ if (part == "all") { cube(10); translate([0, 0, 20]) cube(10); }
 if (part == "clash") intersection() { cube(10); translate([20, 0, 0]) cube(10); }        // clear: empty
 if (part == "interference") intersection() { cube(10); translate([5, 0, 0]) cube(10); }  // overlaps
 if (part == "plate") { cube(10); translate([20, 0, 0]) cube(10); }   // print layout of two parts
+if (part == "check_gap") intersection() { cube(10); translate([20, 0, 0]) cube(10); }  // author's check: empty
+if (part == "check_fit") intersection() { cube(10); translate([5, 0, 0]) cube(10); }   // designed overlap
 '''
 
 # part -> {metric: (expected, tolerance)}
@@ -58,7 +60,7 @@ def main():
     failures = []
     parts = discover_parts(SHAPES)
     if parts != ["cube", "tee", "hole", "teardrop", "two", "chamfer", "floating", "all", "clash",
-                 "interference", "plate"]:
+                 "interference", "plate", "check_gap", "check_fit"]:
         failures.append("discover_parts -> %r" % parts)
     with tempfile.TemporaryDirectory() as tmp:
         scad = os.path.join(tmp, "shapes.scad")
@@ -76,6 +78,10 @@ def main():
                 failures.append("%s.%s = %s, expected %s +/- %s" % (part, key, got, want, tol))
     if res["parts"]["floating"]["mesh"]["on_plate"]:
         failures.append("floating part reported as on the plate")
+    if not (res["parts"]["check_gap"]["compile"]["ok"] and res["parts"]["check_fit"]["compile"]["ok"]):
+        failures.append("the author's check_* parts must pass whether empty or not")
+    if res["parts"]["check_fit"]["printable"]:
+        failures.append("a check_* part is a diagnostic, not a printable part")
     if not res["parts"]["plate"]["layout"] or res["parts"]["two"]["layout"]:
         failures.append("a multi-body 'plate' part is a print layout; 'two' is not")
     if res["parts"]["all"]["printable"]:
