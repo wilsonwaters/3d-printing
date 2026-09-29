@@ -2,6 +2,8 @@
 
 Generated from `runs.jsonl` by `python evals/bench/history.py render`; don't edit by hand. Numbers compare only within this model, and only at the same effort. The skill column is `ref` sha · content hash (same hash = same skill text).
 
+Costs ($) are US dollars at Anthropic's list API prices (https://platform.claude.com/docs/en/about-claude/pricing), as Claude Code reports them in `total_cost_usd`, sub-agents included. Runs killed at their time limit report no cost, so theirs is estimated from their tokens (marked est.). A Claude subscription isn't billed this way: the runs draw on its usage limits instead.
+
 ## Skill A/B comparisons
 
 | Date | Suite | Change | Effort | Base → Cand | Cases × trials | Pass rate | Check score Δ | Cost ratio [95% CI] | Context ratio [95% CI] | Judge cand/base/tie |
