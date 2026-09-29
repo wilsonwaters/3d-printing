@@ -4,6 +4,23 @@ Which model should run the skill's design review? The skill's full A/B can't ans
 
 Results are in **[RESULTS.md](RESULTS.md)**, one section per suite. The raw rows are in `runs.jsonl`.
 
+## What it has shown so far
+
+2026-09-29: Sonnet 5.5 against Fable 5.1, both at effort `high`, 6 fixtures × 3 trials.
+
+- **Vital defects:** Sonnet found 29/30 and Fable 30/30.
+- **Minor defects:** Sonnet found 26/27 and Fable 27/27.
+- **Extra real findings:** a similar number per review from each.
+- **False alarms:** neither raised a serious false alarm on the clean control.
+- **Cost:** Sonnet's reviews cost a seventh as much ($0.14 against $0.98 median) and took half the time.
+
+Sonnet's one vital miss was a judgement call, not an oversight. In 1 of 3 trials it looked at the saucer's 0.8 mm floor and called it "fine for water". Fable flagged it every time.
+
+That supports the skill's policy: Sonnet for every review, and Fable only as a once-per-project final review of complex work. Two caveats:
+
+- **Ceiling effect.** Both models found nearly everything, so these textbook defects are easier than a real design's.
+- **Complex projects weren't tested.** Multi-part fit and mechanisms, where the Fable review is kept, need fixtures of their own.
+
 ## How it works
 
 `fixtures/` holds small single-part designs, written like the skill's own output, that all pass the build gate (`verify-model.py`). Each fixture has:
