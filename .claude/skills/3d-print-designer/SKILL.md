@@ -56,7 +56,7 @@ The same steps for a single part or an assembly.
 4. **Write the .scad** using the [file structure](#file-structure) below. Read [openscad-reference.md](openscad-reference.md) first. Encode each measurable criterion as an `assert()`.
 5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
 6. **Verify:** run the gate ([Verification](#verification)) and fix until it's green.
-7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. Make the Bambu 3MF now too if the user wants one ([bambu-3mf-export.md](bambu-3mf-export.md)). Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
+7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](bambu-3mf-export.md)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
 8. **Design review:** spawn it ([Design Review](#design-review)), triage the findings, fix and re-verify.
 9. **Hand off** ([After generation](#after-generation)).
 
@@ -222,10 +222,10 @@ Don't read design-review.md yourself: it's the reviewer's brief, not yours.
 
 ## After Generation
 
-Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any renders. Then give a short summary: what the gate verified (its PASS line), what the review changed, and the residuals only a print can confirm.
+Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any renders. Never hand off only the `.scad`: slicers can't open it. Name the file to open first (the `.3mf` on a Bambu printer, otherwise the STL). Then give a short summary: what the gate verified (its PASS line), what the review changed, and the residuals only a print can confirm.
 
 - **New users** (check memory for 3D-printing experience; none means new): offer help getting the model viewed, exported and printed, including installing OpenSCAD. Walk through [printing-workflow.md](printing-workflow.md) if they accept, then save a `user` memory that they've been introduced.
-- **Bambu Lab printer with Bambu Studio or OrcaSlicer, and Python available:** offer, or if asked, generate the settings-baked-in project 3MF via [bambu-3mf-export.md](bambu-3mf-export.md). Otherwise hand off the STL with the PRINT SETTINGS header for manual entry.
+- **Bambu Lab printer:** the project 3MF from step 7 is the file to open in Bambu Studio or OrcaSlicer. Without Python, or if the user slices in something else, hand off the STL with the PRINT SETTINGS header for manual entry.
 
 ## References
 

@@ -2,7 +2,7 @@
 
 `make-bambu-3mf.py` (in this skill's directory; Python 3.8+ standard library) writes a Bambu Studio **project** `.3mf`: the model plus a lean `project_settings.config` that names the user's own system presets (printer, process, filament) and flags the model's overrides. Opened in Bambu Studio or OrcaSlicer, it binds those presets, shows the overrides as a "(modified)" process, and needs no manual settings entry. It works without Bambu Studio installed, from a built-in table of Bambu's official printer profiles.
 
-**Offer it only when** the printer is a Bambu Lab machine, the user slices in Bambu Studio or OrcaSlicer, and `python --version` (or `python3`) works. Otherwise hand off the STL and the PRINT SETTINGS header: other slicers don't read this format.
+**Make it by default** whenever the printer is a Bambu Lab machine and `python --version` (or `python3`) works. Assume the user slices in Bambu Studio or OrcaSlicer unless they say otherwise. Skip it only without Python, or for another slicer, which can't read this format. Then hand off the STL and the PRINT SETTINGS header instead.
 
 **Run it; don't read it.** `--help` lists every flag. The command below covers almost every case.
 
