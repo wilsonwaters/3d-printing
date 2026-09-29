@@ -68,4 +68,4 @@ Every model README ends with a `## Design history` table recording which AI mode
 Pushing directly to `main` is fine for this repo: no pull request or feature branch is needed, even if a session starts out on one.
 
 - **On `main`:** confirm with the user before every push, follow-ups included. Commit locally, say what is going up, and wait for approval.
-- **On a feature or PR branch:** push as normal, without asking. Don't create or merge a pull request unless the user asks for that.
+- **On any other branch** (work that will end up as a pull request): push as normal, without asking. Don't create or merge the pull request unless the user asks for that.
