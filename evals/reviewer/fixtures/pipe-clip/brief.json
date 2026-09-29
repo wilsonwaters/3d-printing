@@ -1,0 +1,9 @@
+{
+  "printer": "Bambu Lab A1 (256 x 256 x 256 mm, 0.4 mm nozzle)",
+  "material": "PLA",
+  "criteria": [
+    "Holds a 20 mm OD pipe; the pipe snaps in and out by hand, repeatedly",
+    "Fixes to a timber post with one M4 screw, with the head clear of the pipe",
+    "Prints on an A1 in PLA without supports"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "defects": [
+    {"id": "bore_no_compensation", "severity": "vital",
+     "what": "The D-bore is modelled at exactly 6.0 mm / 4.5 mm with no hole compensation or clearance; FDM holes print undersize (the skill's measured compensation is about +0.3 mm), so the knob won't go onto the shaft.",
+     "credit": "Any finding that the bore has no clearance/compensation and will be too tight / won't fit the shaft."},
+    {"id": "grub_thread_in_pla", "severity": "vital",
+     "what": "The M3 grub screw threads directly into a 2.5 mm pilot in PLA with no nut trap or heat-set insert; repeated fitting strips it (the skill says metal screws go into an insert, a captive nut, or a self-tap hole).",
+     "credit": "Any finding that the grub screw needs a nut trap or insert rather than threading into PLA."},
+    {"id": "ribs_too_thin", "severity": "minor",
+     "what": "rib_w = 0.6 mm is less than two 0.45 mm extrusion widths; the slicer may drop or merge them.",
+     "credit": "Any finding that the grip ribs are too thin to print well."},
+    {"id": "grub_hole_no_teardrop", "severity": "minor",
+     "what": "The grub-screw hole runs horizontally but is round, not a teardrop.",
+     "credit": "Any finding that the horizontal grub hole should be a teardrop."}
+  ]
+}

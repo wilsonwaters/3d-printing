@@ -1,0 +1,16 @@
+{
+  "defects": [
+    {"id": "insert_hole_too_small", "severity": "vital",
+     "what": "insert_hole_d = 3.0 mm is the tap size for an M3 screw, not the hole for an M3 heat-set insert (about 4.0-4.2 mm for a 4.6 mm knurl); the insert will not go in straight and will crack the standoff.",
+     "credit": "Any finding that the insert hole is too small for the heat-set insert."},
+    {"id": "boss_wall_too_thin", "severity": "vital",
+     "what": "A 5.5 mm standoff leaves well under 1 mm of wall once the insert hole is the right size (and the insert's knurl is 4.6 mm); heat-set insert bosses need roughly 1.5-2 mm of wall or they split. boss_od should be about 8 mm or more.",
+     "credit": "Any finding that the standoff/boss is too thin or small around the insert."},
+    {"id": "insert_hole_too_shallow", "severity": "vital",
+     "what": "insert_depth = 3.0 mm is shorter than the 4 mm insert, so it can't seat flush (and there is no extra depth for displaced plastic or screw tip).",
+     "credit": "Any finding that the insert hole is too shallow for a 4 mm insert."},
+    {"id": "sharp_boss_root", "severity": "minor",
+     "what": "The standoffs meet the plate with a sharp internal corner, no fillet at the root.",
+     "credit": "Any finding about a missing fillet at the standoff roots."}
+  ]
+}

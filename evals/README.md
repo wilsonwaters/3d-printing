@@ -19,10 +19,12 @@ evals/
     judge.py          blind, order-swapped pairwise judge (optional, costs tokens)
     report.py         per-arm tables, paired ratios, bootstrap CIs, renders
     history.py        records every suite into history/<model>/ (A/B results over time)
+    review_models.py  design-review quality by reviewer model on fixed fixtures (reviewer/)
   cases/            benchmark cases: task.md (the prompt) + case.json (checks)
   flagship/         the rain gauge: task, human rubric, cross-model ledger
   native/           trigger suite for `claude plugin eval` (first-party runner)
   history/          committed: one folder per AI model, runs.jsonl + generated HISTORY.md
+  reviewer/         reviewer-model comparison: seeded-defect fixtures, runs.jsonl, RESULTS.md
   fixtures.json     snapshot for fixtures.py
   footprint-profiles.json   which files a run loads, per path through the skill
   baselines/footprint.json  the committed context budget (the ratchet)
@@ -132,6 +134,7 @@ command with the same `--out` and finished runs are skipped.
 | **A/B results over time** | [`evals/history/<model>/HISTORY.md`](history/README.md): every suite's comparison (cost and context ratio with 95% CI, pass rate, check score, judge) and each case's trend by skill version | **committed** |
 | Trigger suite | `claude plugin eval` prints a WITH / W/OUT / Δ table and writes `report.html` (published as a private claude.ai page if your account allows) | local / claude.ai |
 | Rain gauge flagship | [LEDGER.md](flagship/rain-gauge/LEDGER.md) | committed |
+| Reviewer model comparison | [reviewer/RESULTS.md](reviewer/RESULTS.md): design-review quality by reviewer model on fixed seeded-defect designs ([how](reviewer/README.md)) | committed |
 
 `run.py` records each suite into the history when it finishes. Pass `--label` to
 say what changed; that becomes the *Change* column. `--no-record` skips

@@ -1,0 +1,10 @@
+{
+  "printer": "Bambu Lab P1S (256 x 256 x 256 mm, 0.4 mm nozzle)",
+  "material": "PLA",
+  "criteria": [
+    "Push-fits a 6 mm D-shaft (4.5 mm across the flat) with no play, and comes off for servicing",
+    "An M3 grub screw bearing on the flat retains it; fitted and removed many times",
+    "30 mm knob with grip ribs",
+    "Prints on a P1S in PLA without supports"
+  ]
+}

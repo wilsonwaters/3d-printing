@@ -1,0 +1,13 @@
+{
+  "defects": [
+    {"id": "snap_strain", "severity": "vital",
+     "what": "The 14 mm opening on a 20 mm pipe with a 4 mm PLA ring means each arm must deflect about 3 mm; the bending strain is several percent (roughly 5-6%), far beyond PLA's ~1-1.5% limit, so the clip will crack on the first snap. The 'snaps on easily' claim has no assert or calculation behind it.",
+     "credit": "Any finding that the snap-fit strain is too high for PLA / the ring is too stiff or the opening too narrow / it will crack when the pipe is pushed in, or that PLA is the wrong material for a repeated snap."},
+    {"id": "screw_hole_no_teardrop", "severity": "minor",
+     "what": "The screw hole runs horizontally in print orientation (axis along Y) but is round, not a teardrop.",
+     "credit": "Any finding that the horizontal screw hole needs a teardrop / will sag or need support."},
+    {"id": "coincident_cut", "severity": "minor",
+     "what": "opening_cut() starts at z=0 and is exactly clip_h tall, flush with the bottom and top faces: coincident faces, no fudge overlap.",
+     "credit": "Any finding that the opening cut lacks fudge / is coincident with the top or bottom face."}
+  ]
+}
