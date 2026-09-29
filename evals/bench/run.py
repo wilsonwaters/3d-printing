@@ -145,11 +145,17 @@ class Activity:
         return self.last
 
 
+# Settings of the session that launches the bench, which would otherwise leak
+# into every child run: its id, its effort (set only by --effort, so arms
+# match), and cloud sessions' auto-backgrounding of sub-agents. That last one
+# turned a requested foreground design review into a background one; the
+# session then ended before the review reported, and no 3MF was built.
+LEAKY_ENV = ("CLAUDE_CODE_SESSION_ID", "CLAUDE_EFFORT", "CLAUDE_AUTO_BACKGROUND_TASKS",
+             "CLAUDE_CODE_BG_TASKS_REPORT_RUNNING")
+
+
 def child_env():
-    # A parent session's id, or its effort level, would otherwise leak into every
-    # child run; effort is set only by --effort so both arms get the same one.
-    return {k: v for k, v in os.environ.items()
-            if k not in ("CLAUDE_CODE_SESSION_ID", "CLAUDE_EFFORT")}
+    return {k: v for k, v in os.environ.items() if k not in LEAKY_ENV}
 
 
 def build_cmd(claude, case, arm, model, effort, scratch):
