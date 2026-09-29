@@ -17,6 +17,8 @@ backlash = 0.2;      // Play between meshing gears (print tolerance)
 ```
 
 ### Spur Gear Without Libraries
+
+A trapezoid approximation, fine for looks and light-duty hand-turned drives. It isn't an involute, so the contact ratio and backlash vary as it turns. For gears that must mesh under load or run continuously, use BOSL2 `spur_gear()`, or generate the involute and check undercut (about 17 teeth minimum at 20°, fewer with profile shift) and a contact ratio above 1.2.
 ```openscad
 module spur_gear(teeth, mod, thickness, pressure_angle=20, backlash=0) {
     pitch_r = teeth * mod / 2;
@@ -61,6 +63,8 @@ translate([center_distance, 0, 0])
 ## Threads
 
 ### Simple Thread Module
+
+For plastic-to-plastic threads only (coarse, ≥M10, trapezoidal is best). A metal screw goes into a heat-set insert, a captive nut, or a plain self-tap hole at about 50% thread depth (Ø7.5 for M8 in PETG): a printed M8 thread failed to form in a real print.
 ```openscad
 module thread(d, pitch, length, internal=false) {
     tol = internal ? tolerance : 0;

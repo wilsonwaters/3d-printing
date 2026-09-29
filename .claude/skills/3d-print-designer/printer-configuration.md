@@ -1,50 +1,47 @@
-# Printer Configuration Guide
+# Printer Configuration
 
-How to collect, validate, and apply printer-specific specs to OpenSCAD model design.
+How to identify the printer, check the material against it, and turn its specs into design parameters.
 
 ## Step 1: Identify the Printer
 
-**Ask: "What 3D printer are you using?"**
+**Ask: "What 3D printer are you using?"** If the user names a make and model, match it (fuzzily) against the table below. Show the matched specs and ask about non-stock changes, such as a different nozzle or an added enclosure. If the printer isn't listed, collect the specs in the order of the next section.
 
-### If the user provides a make and model:
+### Known printers
 
-1. Look up the printer in [printer-profiles.md](printer-profiles.md)
-2. Present the matched specs and ask: "I found specs for your [printer]. Does this look right? Are you using any non-stock modifications (different nozzle size, enclosure mod, etc.)?"
-3. Apply any user corrections (e.g., "I swapped to a 0.6mm nozzle", "I added an enclosure")
+All use 1.75mm filament and have auto bed leveling, except the Ender 3 / Pro / V2 and the Ankermake M5C. Layer range with a 0.4 nozzle: Bambu 0.08–0.28mm; Prusa, Voron and Ratrig 0.05–0.30mm; the rest 0.10–0.30mm.
 
-### If the printer is not in the database:
+| Printer | Build X×Y×Z mm | Stock nozzle (others) | Hotend / bed max °C | Enclosure | Extruder | Multi-material | Notes |
+|---|---|---|---|---|---|---|---|
+| Bambu X1 Carbon / X1C | 256×256×256 | 0.4 hardened (0.2, 0.6, 0.8) | 300 / 120 | Yes, passive ~50°C | DD | AMS, up to 16 | Hardened nozzle takes CF/abrasives; the best Bambu for engineering materials (ABS, ASA, PA, PC) |
+| Bambu P1S | 256×256×256 | 0.4 stainless (0.2, 0.6, 0.8) | 300 / 100 | Yes, passive ~45-50°C | DD | AMS, up to 16 | Enclosure enables ABS/ASA; the 100°C bed limits PC; PA with caution |
+| Bambu P1P | 256×256×256 | 0.4 stainless (0.2, 0.6, 0.8) | 300 / 100 | No | DD | AMS, up to 16 | PLA, PETG, TPU; no ABS/ASA |
+| Bambu A1 | 256×256×256 | 0.4 stainless (0.2, 0.6, 0.8) | 300 / 100 | No, bed-slinger | DD | AMS Lite, 4 | PLA, PETG, TPU; tall prints wobble |
+| Bambu A1 Mini | 180×180×180 | 0.4 stainless (0.2, 0.6, 0.8) | 300 / 100 | No | DD | AMS Lite, 4 | Small parts only |
+| Prusa MK4S / MK4 | 250×210×220 | 0.4 brass (0.25, 0.6, 0.8) | 290 / 120 | No (optional) | DD | MMU3, 5 | Asymmetric bed; the 120°C bed handles PC; ABS needs the enclosure |
+| Prusa MK3S+ / MK3S | 250×210×210 | 0.4 brass (0.25, 0.6, 0.8) | 280 / 100 | No (optional) | DD | MMU2S, 5 | Asymmetric bed; ABS needs an enclosure |
+| Prusa XL | 360×360×360 | 0.4 brass (0.25, 0.6, 0.8) | 290 / 120 | No (optional) | DD, up to 5 toolheads | 5 toolheads, no purge | Segmented bed |
+| Prusa Core One | 250×220×270 | 0.4 brass (0.25, 0.6, 0.8) | 290 / 120 | Yes, active airflow | DD | MMU3, 5 | Enclosed CoreXY; all common materials |
+| Creality K1C | 220×220×250 | 0.4 hardened (0.6, 0.8) | 300 / 100 | Yes | DD | No | Takes CF; ABS/ASA OK |
+| Creality K1 / K1 Max | 220×220×250 / 300×300×300 | 0.4 brass (0.6, 0.8) | 300 / 100 | Yes | DD | No | Brass nozzle: avoid CF |
+| Creality Ender 3 V3 / SE / KE | 220×220×250 | 0.4 brass (0.6, 0.8) | 260 / 100 | No | DD (SE: Bowden) | No | 260°C limits it to PLA, PETG, TPU (TPU not on the SE) |
+| Creality Ender 3 / Pro / V2 | 220×220×250 | 0.4 brass (0.6, 0.8) | 255 / 100 | No | Bowden | No | PLA, PETG; manual leveling |
+| Voron 2.4 | 250², 300² or 350² × 230/280/330 | 0.4, hotend varies (any) | 285-300 / 120 | Yes, ~50-60°C | DD | Optional (ERCF etc.) | A kit, so specs vary: ask for their build size |
+| Voron Trident | 250³, 300³ or 350³ | 0.4 (any) | 285-300 / 120 | Yes | DD | Optional | Ask for their build size |
+| Voron 0.2 | 120×120×120 | 0.4 (0.2) | 285-300 / 120 | Yes | DD | No | Small, fast parts; layers up to 0.25mm |
+| Ankermake M5 / M5C | 235×235×250 | 0.4 brass (0.6, 0.8) | 260 / 100 | No | DD | No | PLA, PETG, TPU |
+| Elegoo Neptune 4 Pro / 4 | 225×225×265 | 0.4 brass (0.6, 0.8) | 300 / 110 | No | DD (base 4: Bowden) | No | TPU on the Pro only; ABS limited without an enclosure |
+| Ratrig V-Core 4 | 200³ to 500³ | 0.4 (any) | 285-300 / 120 | Optional panels | DD | Optional | A semi-kit: ask for their build size |
 
-Collect specs manually in order of importance:
+### Printer not listed: collect specs manually
 
-**Must-have (affects model geometry directly):**
+In order of importance:
 
-1. **Build volume** (X x Y x Z mm) — determines max single-piece part size
-2. **Nozzle diameter** (mm) — affects all minimum dimensions (default: 0.4mm if unknown)
+1. **Build volume** (X × Y × Z mm): the maximum single-piece size.
+2. **Nozzle diameter** (default 0.4mm): drives every minimum dimension.
+3. **Max hotend temperature**, **enclosure**, **max bed temperature**, **extruder type** (direct drive or Bowden): these gate which materials are practical.
+4. Only if the design needs them: **auto bed leveling** (large flat parts) and **multi-material** (soluble supports, multi-colour).
 
-**Important (affects material and feature choices):**
-
-3. **Max hotend temperature** (C) — gates which materials are available
-4. **Enclosure** (yes/no) — gates whether ABS/ASA/Nylon/PC are practical
-5. **Max bed temperature** (C) — supports or limits material adhesion
-6. **Extruder type** (direct drive / bowden) — affects TPU capability and stringing
-
-**Ask only if relevant to the current design:**
-
-7. **Auto bed leveling** (yes/no) — affects first-layer strategy for large flat parts
-8. **Multi-material capability** (AMS, MMU, etc.) — affects multi-color/soluble support designs
-
-### Sensible defaults (when user doesn't know a spec):
-
-| Spec | Default | Rationale |
-|------|---------|-----------|
-| Nozzle diameter | 0.4mm | Stock on nearly all consumer printers |
-| Layer height | 0.2mm | Good balance of speed and quality |
-| Max hotend temp | 260C | Conservative; covers PLA/PETG safely |
-| Max bed temp | 100C | Common for mid-range printers |
-| Enclosure | No | Most consumer printers are open frame |
-| Extruder | Direct Drive | Standard on modern printers (2022+) |
-| ABL | Yes | Standard on modern printers |
-| Multi-material | No | Most setups are single material |
+Defaults when the user doesn't know: 0.4mm nozzle, 0.2mm layers, 260°C hotend, 100°C bed, no enclosure, direct drive, auto bed leveling, single material.
 
 ## Step 2: Validate Material Compatibility
 

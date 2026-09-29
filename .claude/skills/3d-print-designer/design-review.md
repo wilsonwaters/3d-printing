@@ -1,14 +1,16 @@
 # Design Review — fresh-eyes peer review of a generated model
 
-**Loading**: the reviewer sub-agent's complete brief. The author spawns the Design Review as a sub-agent (Agent tool, a different model when available) and points it here. This file stands alone — to do the job you need only this file, the `.scad` path, the numbered acceptance criteria, and the printer + material.
+**Loading**: the reviewer sub-agent's complete brief. The author spawns the Design Review as a sub-agent and points it here. This file stands alone: to do the job you need only this file, the `.scad` path, the numbered acceptance criteria, the printer and material, and the OpenSCAD path. Don't invoke the 3d-print-designer skill or read its other files.
 
-The Design Review covers what a deterministic gate cannot: **visual inspection** of the geometry (does it actually look right?), whether the mechanism/approach makes sense, the qualitative acceptance criteria, and compliance with the skill's FDM rules. It is peer critique, not the author marking its own homework, and it is **independent of [Verification](verification.md)** — do not consume, re-check, or assume verification's results. You render your own views and judge.
+**Budget:** one pass, about 6-8 renders and 25 tool calls, then return. Incomplete findings returned on time beat a complete list that never arrives, so stop and report if you're running long. The author has already run the build gate: every part compiles, is one manifold body, sits on the plate and fits the printer, and every `clash_*` part is empty. Don't repeat that.
+
+The Design Review covers what a deterministic gate cannot: **visual inspection** of the geometry (does it actually look right?), whether the mechanism/approach makes sense, the qualitative acceptance criteria, and compliance with the skill's FDM rules. It is peer critique, not the author marking its own homework: you render your own views and judge them. The gate's measurements (see [verification.md](verification.md)) are settled, and your job is everything they can't see.
 
 You are multimodal: render the images and actually look at them. Static review of the code is necessary but not sufficient.
 
 ## How to perform a Full Review
 
-1. **Read the `.scad` file in full** (Read tool) — review the actual code, not a memory of it.
+1. **Read the `.scad` file.** Review the actual code, not a memory of it. For a long file, read the header, parameters and modules that matter, not every line.
 2. **Render the views you need and look at them** (commands in [Rendering the views](#rendering-the-views) below). At minimum:
    - **ThrownTogether** — any pink/purple = winding/manifold tell.
    - **An ortho/iso set** — proportion, overall shape, feature presence and counts.
@@ -17,28 +19,18 @@ You are multimodal: render the images and actually look at them. Static review o
 4. **Walk every checklist item below**, recording PASS/FAIL with a one-line reason.
 5. **Return findings** — each: severity · what · where · suggested fix.
 
-You may be told "the build/manifold/dimension gate already passed, focus on judgment." Treat that as scoping only — not something you must verify.
-
 ## Rendering the views
 
-You render these yourself, then judge them. Keep camera and `--imgsize` fixed across iterations so image diffs are meaningful. Image pixels are not a measurement — dimensions come from the verification gate, not from these renders.
-
-**Find the OpenSCAD binary first** — it's often not on PATH (especially on Windows). Look in common install dirs and prefer the newest build; quote any path containing spaces. (POSIX sh below; in PowerShell use `2>$null` and `Select-String`.)
-
-```sh
-command -v openscad
-ls -d "/c/Program Files"/OpenSCAD* "/Applications/OpenSCAD.app/Contents/MacOS" 2>/dev/null
-OSCAD="<newest resolved path>"   # e.g. "/c/Program Files/OpenSCAD/openscad.exe"
-```
+You render these yourself, then judge them. Image pixels are not a measurement: dimensions come from the gate. Use the OpenSCAD path from your brief as `$OSCAD`, quoted, since it may contain spaces. Without one, try `command -v openscad`, then `C:\Program Files\OpenSCAD*` or `/Applications/OpenSCAD*.app`, and prefer the newest build. 768px images are enough to judge geometry and cost about half as many tokens as 1024px.
 
 The `--camera` gimbal form is `transx,transy,transz,rotx,roty,rotz,dist`; with `--viewall` the distance auto-fits, so only the rotation triple matters.
 
 ```sh
 # ThrownTogether: back/CCW faces render pink, reversed faces purple (winding/manifold tells)
-"$OSCAD" --preview=throwntogether --viewall --autocenter --imgsize=1024,1024 --camera=0,0,0,55,0,25,0 -o tt.png model.scad
+"$OSCAD" --preview=throwntogether --viewall --autocenter --imgsize=768,768 --camera=0,0,0,55,0,25,0 -o tt.png model.scad
 
 # Orthographic front / top / right + an isometric (ortho keeps proportion true)
-V="--render --projection=ortho --viewall --autocenter --imgsize=1024,1024"
+V="--render --projection=ortho --viewall --autocenter --imgsize=768,768"
 "$OSCAD" $V --camera=0,0,0,0,0,0,0   -o top.png   model.scad
 "$OSCAD" $V --camera=0,0,0,90,0,0,0  -o front.png model.scad
 "$OSCAD" $V --camera=0,0,0,90,0,90,0 -o right.png model.scad
@@ -53,7 +45,7 @@ if (section == 0) model();
 else difference() { model(); translate([0,-500,-1]) cube(1000); }
 ```
 ```sh
-"$OSCAD" --render --viewall --imgsize=1024,1024 -D section=1 --camera=0,0,0,90,0,0,0 -o section.png model.scad
+"$OSCAD" --render --viewall --imgsize=768,768 -D section=1 --camera=0,0,0,90,0,0,0 -o section.png model.scad
 ```
 
 For assemblies, also render an **assembled** view, an **exploded** view (`-D explode=20`), and give each part a distinct `color()` so fit/interference is visible. A `%cube(10);` reference cube adds a known scale bar. Write all png/log artifacts to a scratch/temp dir, not the model folder, and clean them up — keep only images you intend to ship.
@@ -74,9 +66,9 @@ For assemblies, also render an **assembled** view, an **exploded** view (`-D exp
 - [ ] Primary loads in XY plane (along layers, not across layer boundaries)
 - [ ] Parameters at top: every user-adjustable dimension is a named variable with a comment — no magic numbers
 - [ ] Nozzle-aware walls: all wall thicknesses are integer multiples of extrusion_width (nozzle × 1.125)
-- [ ] Fudge factor: every `difference()` and `intersection()` uses `fudge = 0.01` overlap — no coincident faces
+- [ ] Fudge factor, **checked cutter by cutter**: for each `difference()`, compare every cutter's start and end coordinates with the faces it passes through. A cutter that ends exactly on a face (starts at `0`, or has a length equal to the wall) is a coincident face, even if the file defines `fudge`. Unused `fudge` is a tell.
 - [ ] Bottom chamfers (45°), top fillets; no sharp internal corners (min 1mm fillet for stress)
-- [ ] Elephant foot compensation (`ef_chamfer`) on all bottom edges touching the build plate
+- [ ] Elephant foot compensation, **checked in the code**: find where `ef_chamfer` (or equivalent) is applied to the plate-contact outline. A parameter that is defined but never used is a FAIL.
 - [ ] Holes oversized 0.2–0.3mm above nominal
 - [ ] Ribs over thick walls where applicable
 
@@ -100,6 +92,14 @@ For assemblies, also render an **assembled** view, an **exploded** view (`-D exp
 - [ ] `assembly()` module shows parts in assembled positions
 - [ ] `part` parameter allows individual part rendering
 - [ ] Print orientation documented for EACH part separately
+
+**Mechanisms (if anything moves, flexes or latches):**
+- [ ] Every moving part is held in all six directions; nothing can tip, lift or slide out of its guide
+- [ ] Each part has a way into place: an assembly order, with nothing that has to pass through a solid
+- [ ] End stops exist, and the travel described in comments matches the geometry (clash parts or asserts at each end of travel)
+- [ ] Springs and flexures are free along their whole bending length (not fused to a neighbour), and their force beats friction and ramp angles. A ramp self-locks when steeper than about 90° − 2·atan(μ)
+- [ ] No moving part sweeps through another part's volume anywhere along its travel
+- [ ] Functional claims in comments are backed by an `assert()`, or are flagged as unverified
 
 **Visual / shape correctness (render and inspect — this is the review's core job):**
 - [ ] ThrownTogether shows no pink/purple faces (no winding/manifold tells)

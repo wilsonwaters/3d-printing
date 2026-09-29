@@ -201,17 +201,7 @@ Standard horizontal holes have a 0-degree overhang at the top. Replace with tear
 - Top half: straight sides converging at 45 degrees to a point
 - All surfaces are self-supporting
 
-```openscad
-module teardrop_hole(d, h) {
-    r = d / 2;
-    rotate([90, 0, 0])
-        linear_extrude(height=h, center=true)
-            union() {
-                circle(r=r, $fn=64);
-                polygon([[- r, 0], [r, 0], [0, r]]);
-            }
-}
-```
+Use the `teardrop_hole(d, h, axis)` module in [openscad-reference.md](openscad-reference.md): its point stays at +Z for holes along X or Y.
 
 Use when: hole axis parallel to build plate, support-free printing needed, functional holes for bolts/shafts (bolt sits in circular bottom half).
 
@@ -225,15 +215,7 @@ First layer spreads 0.2-0.5mm wider due to bed squish.
 | PETG | 0.4-0.5mm |
 | ABS | 0.2-0.3mm |
 
-```openscad
-module elephant_foot_chamfer(size, ef=0.4) {
-    hull() {
-        translate([ef, ef, ef])
-            cube([size[0] - 2*ef, size[1] - 2*ef, size[2] - ef]);
-        cube([size[0], size[1], 0.01]);
-    }
-}
-```
+Use the `ef_base(size, ef)` module in [openscad-reference.md](openscad-reference.md): the first layers are inset by `ef` at 45° and full size above.
 
 ### Mouse Ears (Built-In Brim Alternative)
 
