@@ -16,7 +16,7 @@ Results are in **[RESULTS.md](RESULTS.md)**, one section per suite. The raw rows
 
 Sonnet's one vital miss was a judgement call, not an oversight. In 1 of 3 trials it looked at the saucer's 0.8 mm floor and called it "fine for water". Fable flagged it every time.
 
-That supports the skill's policy: Sonnet for every review, and Fable only as a once-per-project final review of complex work. Two caveats:
+That supports the skill's policy: Sonnet for every review, and Fable for one final review per project. The Fable review is automatic for complex work; for a simple part it is offered to the user at hand-off, and it falls back to Sonnet when Fable isn't available. Two caveats:
 
 - **Ceiling effect.** Both models found nearly everything, so these textbook defects are easier than a real design's.
 - **Complex projects weren't tested.** Multi-part fit and mechanisms, where the Fable review is kept, need fixtures of their own.

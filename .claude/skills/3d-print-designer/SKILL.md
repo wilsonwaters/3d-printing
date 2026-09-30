@@ -98,7 +98,7 @@ Every generated .scad file follows this structure:
 // Coordinate system: X = [axis], Y = [axis], Z = height from build plate
 // NOTE: Model is in print orientation — OpenSCAD preview matches the print.
 //   [If use orientation differs: "In use, Z becomes the wall-facing axis"]
-// Final review: [YYYY-MM-DD, reviewer model ID; complex projects, once it has run]
+// Final review: [YYYY-MM-DD, reviewer model ID, once a final review has run]
 
 // === PRINT SETTINGS ===
 // Material: PLA (or PETG, etc.)
@@ -207,7 +207,11 @@ A **fresh-eyes peer review** by a sub-agent. It covers what the gate can't: whet
 **Which model reviews.** It's fixed, so reviews are consistent from run to run:
 
 - **Every full review runs on `model: "sonnet"`**, including the only review a simple part gets.
-- **Complex projects also get one final review on `model: "fable"`**, or `"opus"` if Fable isn't available. Complex means a multi-part assembly, a mechanism (anything that moves, flexes or latches), or a user who asks for one. Run it once, when the design is complete and about to be printed for the first time: every part built, the Sonnet findings fixed, gate green. A Fable review costs about as much as the whole design session, so never run a second one. Record it in the DESCRIPTION header with the model ID the reviewer reports (`// Final review: 2026-09-29, claude-fable-5-1`). Later sessions see it and use Sonnet, unless the user asks for another final review.
+- **At most one final review per project runs on `model: "fable"`**, once the design is complete and about to be printed for the first time: every part built, the Sonnet findings fixed, gate green.
+  - **Complex projects** get it without asking. Complex means a multi-part assembly, or a mechanism (anything that moves, flexes or latches).
+  - **Simple parts** only get it if the user wants it. After the Sonnet review's fixes, ask at hand-off: *"This passed a Sonnet design review. Would you like a deeper second review on Fable before you print? It costs roughly five to seven times as much as the Sonnet review, and catches a little more."* Run it only on a yes. Skip the offer when nobody can answer (an unattended run).
+  - **Recording it:** add a line to the DESCRIPTION header with the model ID the reviewer reports (`// Final review: 2026-09-29, claude-fable-5-1`). Later sessions see it: they use Sonnet and don't offer Fable again, unless the user asks.
+- **No Fable access:** not everyone can use Fable. If the Agent tool doesn't list `fable`, or the call fails because the model isn't available, run that review on `"sonnet"` instead and tell the user. Never offer a Fable review you can't run.
 
 **Spawn it** with the Agent tool on that model, in the foreground, since the next step needs its findings. Give it:
 
@@ -231,6 +235,7 @@ Don't read design-review.md yourself: it's the reviewer's brief, not yours.
 Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any renders. Never hand off only the `.scad`: slicers can't open it. Name the file to open first (the `.3mf` on a Bambu printer, otherwise the STL). Then give a short summary: what the gate verified (its PASS line), what the review changed, and the residuals only a print can confirm.
 
 - **New users** (check memory for 3D-printing experience; none means new): offer help getting the model viewed, exported and printed, including installing OpenSCAD. Walk through [printing-workflow.md](printing-workflow.md) if they accept, then save a `user` memory that they've been introduced.
+- **Simple part, Fable available, no final review recorded yet:** offer the Fable review ([Design Review](#design-review)).
 - **Bambu Lab printer:** the project 3MF from step 7 is the file to open in Bambu Studio or OrcaSlicer. Without Python, or if the user slices in something else, hand off the STL with the PRINT SETTINGS header for manual entry.
 
 ## References

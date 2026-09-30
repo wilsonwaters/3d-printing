@@ -2,12 +2,12 @@
   "estimator": "bytes/2.8",
   "budgets": {
     "always_on": 152,
-    "total_md_tokens": 47507,
-    "profile:invoke": 7556,
-    "profile:author_petg": 22117,
-    "profile:author_pla": 19705,
+    "total_md_tokens": 47740,
+    "profile:invoke": 7789,
+    "profile:author_petg": 22350,
+    "profile:author_pla": 19938,
     "profile:reviewer": 3267,
     "profile:bambu_export": 1444,
-    "profile:typical_run_petg_bambu": 26828
+    "profile:typical_run_petg_bambu": 27061
   }
 }
