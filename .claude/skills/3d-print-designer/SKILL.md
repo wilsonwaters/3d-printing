@@ -174,7 +174,7 @@ The load-bearing FDM invariants, referenced throughout.
 5. **Fudge factor:** every `difference()` and `intersection()` cutter overshoots the faces it cuts by `fudge = 0.01`. Coincident faces produce broken geometry.
 6. **Bottom chamfers, top fillets:** 45° chamfers on bottom surfaces are self-supporting; fillets on top are cosmetic. No sharp internal corners (minimum 1mm fillet for stress).
 7. **Elephant-foot compensation:** apply `ef_chamfer` (0.3-0.5mm at 45°) to every bottom edge.
-8. **Holes oversize:** a bore is `nominal + hole compensation + fit allowance`, two separate numbers. Measured for PETG on a Bambu X1C with a 0.4mm nozzle: compensation **+0.30mm**; allowance **-0.08** press (it must be interference: 0.00 is a slide, not a press), **+0.15** bearing (shaft rotates in it), **+0.30** free-running. For a 3mm rod: press 3.22, bearing 3.45, running 3.60.
+8. **Holes oversize:** a bore is `nominal + hole compensation + fit allowance`, two separate numbers. Use the user's measured compensation if memory or the model header has one. Otherwise use this default, measured on one Bambu X1C (0.4mm nozzle, PETG): compensation **+0.30mm**; allowance **-0.08** press (interference: 0.00 slides), **+0.15** bearing, **+0.30** free-running. Where a fit matters, offer the ladder coupon in printing-guidelines.md.
 9. **No magic numbers:** every numeric value is a parameter or derived from parameters.
 10. **Prefer ribs over thick walls:** a 1.6mm rib is stronger per gram than a 5mm solid wall.
 11. **Support-free by default:** choose orientations, chamfers, teardrops and splits that eliminate supports. Accept supports only when the geometry truly needs them, then minimise contact and document why in PRINT SETTINGS.

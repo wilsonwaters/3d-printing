@@ -31,7 +31,7 @@ cylinder(d = peg_diameter + tolerance);  // Hole
 cylinder(d = peg_diameter - tolerance);  // Peg
 ```
 
-**Holes print 0.1-0.2mm undersized.** Design clearance holes 0.2-0.3mm oversize to compensate.
+**Holes print undersized**, typically by 0.1-0.3mm: the hole compensation in SKILL.md Rule 8. To measure it, print a ladder coupon: a bar with one hole per candidate `c` from 0.18 to 0.42 in 0.04 steps, each `rod + c - 0.08` across and labelled with `c`, in the job's material. Push the real rod or pin into each. The smallest hole it enters with a firm push and can't turn in gives `c`. Put it in the model header and in memory.
 
 ## Overhangs
 
@@ -94,7 +94,7 @@ Clearance must be at least 2x the layer height. At 0.3mm layers, 0.3mm is absolu
 
 ### Critical Compensation Rules
 
-- **Holes**: Design 0.2-0.3mm oversize (holes shrink inward)
+- **Holes**: nominal + hole compensation + fit allowance (SKILL.md Rule 8)
 - **External features**: Print 0.05-0.1mm oversized
 - **Z dimensions**: Use multiples of layer height for exact sizes
 - **First layer**: 10-30% compressed, 0.2-0.5mm wider (elephant foot)
