@@ -1,6 +1,6 @@
 # OpenSCAD Language Reference — Gotchas and Non-Obvious Behaviors
 
-Curated reference focusing on behaviors that produce incorrect code if forgotten. Based on the [OpenSCAD User Manual](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language).
+Behaviours that produce incorrect code if forgotten, plus print-aware module patterns. The language itself is in the [OpenSCAD User Manual](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language).
 
 ## 1. Mandatory Rules (broken geometry if violated)
 
@@ -9,30 +9,18 @@ Curated reference focusing on behaviors that produce incorrect code if forgotten
 Coincident faces in `union()` produce undefined behavior. Cutting objects in `difference()` must extend past the surface being cut. This is **not optional**.
 
 ```openscad
-eps = 0.01; // ALWAYS define this
+fudge = 0.01; // ALWAYS define this (the file template does)
 
-// BAD — coincident top face
+// union: overlap by fudge (BAD: translate([0, 0, 10]) puts a face exactly at z=10)
 union() {
     cube([10, 10, 10]);
-    translate([0, 0, 10]) cube([5, 5, 5]); // face exactly at z=10
+    translate([0, 0, 10 - fudge]) cube([5, 5, 5 + fudge]);
 }
 
-// GOOD — epsilon overlap
-union() {
-    cube([10, 10, 10]);
-    translate([0, 0, 10 - eps]) cube([5, 5, 5 + eps]);
-}
-
-// BAD — flush cut
+// difference: extend the cutter beyond BOTH faces (BAD: translate([2, 2, 0]) cube([6, 6, 10]) is flush)
 difference() {
     cube([10, 10, 10]);
-    translate([2, 2, 0]) cube([6, 6, 10]); // flush top and bottom
-}
-
-// GOOD — extend beyond both faces
-difference() {
-    cube([10, 10, 10]);
-    translate([2, 2, -eps]) cube([6, 6, 10 + 2*eps]);
+    translate([2, 2, -fudge]) cube([6, 6, 10 + 2*fudge]);
 }
 ```
 
@@ -42,16 +30,16 @@ Subtracting a 2D shape from a 3D object produces undefined results. Always extru
 
 ### Neighbouring Solids Must Overlap, Never Touch on a Bare Edge
 
-Two solids that meet only along a shared edge or corner (not a face) — e.g. diagonally adjacent cells in a grid — form a **non-manifold edge**: that edge borders the outside on both sides. OpenSCAD's Manifold backend silently self-heals this and the build gate passes, but **slicers (Bambu Studio) reject it** ("N non-manifold edges, may need repair"). Give adjacent solids a real shared volume by overlapping them laterally (extend each by `eps`), then clip the union back to the intended outline with an `intersection()`:
+Two solids that meet only along a shared edge or corner (not a face) — e.g. diagonally adjacent cells in a grid — form a **non-manifold edge**: that edge borders the outside on both sides. OpenSCAD's Manifold backend silently self-heals this and the build gate passes, but **slicers (Bambu Studio) reject it** ("N non-manifold edges, may need repair"). Give adjacent solids a real shared volume by overlapping them laterally (extend each by `fudge`), then clip the union back to the intended outline with an `intersection()`:
 
 ```openscad
 // BAD — diagonal neighbours touch only at a corner (non-manifold edge)
 translate([0, 0, 0]) cube([10, 10, h]);
 translate([10, 10, 0]) cube([10, 10, h]);
 
-// GOOD — overlap by eps so neighbours share volume, then clip to outline
+// GOOD — overlap by fudge so neighbours share volume, then clip to outline
 intersection() {
-    union() { for (c = cells) translate(c) cube([10 + eps, 10 + eps, h]); }
+    union() { for (c = cells) translate(c) cube([10 + fudge, 10 + fudge, h]); }
     cube([tile_w, tile_d, big_h]);   // exact outer boundary
 }
 ```
@@ -62,111 +50,22 @@ The gate ([verification.md](verification.md)) counts non-manifold edges on every
 
 Wrong winding = non-manifold geometry. Use F12 "Thrown Together" mode to check — pink faces have wrong winding. Validate by unioning with any cube and rendering (F6) — if it disappears, winding is wrong.
 
-## 2. Variable System (most common source of confusion)
+## 2. Language Notes
 
-### Variables Are Constants
+- **Variables are constants.** A second assignment in the same scope silently replaces the first everywhere, earlier lines included (last wins), so there is no `a = a + 1`: accumulate with recursion or list comprehensions.
+- **Circles are inscribed polygons**: they never reach the nominal radius between vertices, so a coarse `$fn` makes holes undersize. Use `$fn` divisible by 4 for axis-aligned extents.
+- `text()` inherits `$fn` too: at 64, every glyph curve gets 64 segments (one dial face's STL reached 14 MB). Pass `$fn = 12` to `text()`.
+- `assert()` returns its children, so validations chain inside functions: `function f(a) = assert(a > 0, "a must be positive") a * 2;`
 
-OpenSCAD variables cannot be changed after assignment. A second assignment **retroactively replaces** the first — both echos below print `2`:
-
-```openscad
-a = 1;   // never actually executed
-echo(a); // 2
-a = 2;   // replaces the first assignment
-echo(a); // 2
-```
-
-There is no `a = a + 1`. Use recursion or list comprehensions for accumulation.
-
-**Exception (by design)**: A second assignment in the main file overrides one in an `include` file without warning. This is the intended mechanism for overriding library defaults. Same for `-D` command-line options and Customizer values.
-
-### Scope Rules
-
-- Braces `{}` after operators (if/for/module) create new scopes — variables inside are invisible outside.
-- **Bare braces `{}` are NOT scopes** — variables leak out.
-- `$`-prefixed variables are **dynamically scoped** (pass through module calls). Regular variables use lexical scope and do NOT pass through:
+### Preview vs Render Conditional
 
 ```openscad
-regular  = "global";
-$special = "global";
-module show() echo(regular, $special);
-// show() always sees "global" for regular
-// show() sees the calling scope's $special
+$fn = $preview ? 32 : 64;
+// $preview is true in F5, false in F6 and CLI STL export
+// render() does NOT affect $preview
 ```
 
-## 3. Parameter Cheat Sheet (easy to get wrong)
-
-### Primitives
-
-- `cube(size, center)` — size can be scalar or `[x,y,z]`. **Not centered by default** — corner at origin, first octant.
-- `sphere(r|d)` — `sphere(20)` sets r=20, NOT d=20. Use `sphere(d=20)` for diameter.
-- `cylinder(h, r1, r2, center)` — positional order is h, r1, r2. **If any parameter is named, all following must be named.**
-  - `cylinder(10, 5, 3)` — OK (h=10, r1=5, r2=3)
-  - `cylinder(h=10, 5, 3)` — ERROR
-  - `cylinder(10, r1=5, r2=3)` — OK
-
-### Circles
-
-- Circles are **inscribed polygons** (fit inside the specified radius, never reach it at segment midpoints)
-- For axis-aligned integer bounding boxes, use `$fn` divisible by 4
-- `$fn` > 128 not recommended for performance
-- `text()` inherits `$fn` too: at 64, every glyph curve gets 64 segments (one dial face's STL reached 14 MB). Pass `$fn = 12` to `text()`
-
-### Resolution Pattern
-
-```openscad
-$fn = $preview ? 32 : 64; // Low for preview (F5), high for render (F6)
-```
-
-### Transformation Order
-
-Transforms apply **right-to-left** (innermost first):
-
-```openscad
-translate([10, 0, 0]) rotate([0, 0, 45]) cube(5);
-// First rotates, THEN translates
-
-rotate([0, 0, 45]) translate([10, 0, 0]) cube(5);
-// First translates, THEN rotates (arc motion!) — DIFFERENT result
-```
-
-### rotate() Axis Order
-
-`rotate([ax, ay, az])` applies as **X then Y then Z**:
-
-```openscad
-rotate([ax, ay, az]) obj;
-// equivalent to:
-rotate([0, 0, az]) rotate([0, ay, 0]) rotate([ax, 0, 0]) obj;
-```
-
-A single scalar rotates around Z only: `rotate(45) square(10);`
-
-## 4. Common Patterns
-
-### Rounded 2D Shapes Using offset()
-
-```openscad
-// Fillet (round inside/concave corners):
-offset(r=-R) offset(delta=+R) shape();
-// WARNING: holes smaller than 2*R diameter will vanish
-
-// Round (round outside/convex corners):
-offset(r=+R) offset(delta=-R) shape();
-// WARNING: walls thinner than 2*R will vanish
-```
-
-### Rounded Box
-
-```openscad
-module rounded_box(size, r) {
-    minkowski() {
-        cube([size.x - 2*r, size.y - 2*r, size.z/2]);
-        cylinder(r=r, h=size.z/2);
-    }
-}
-```
-
-### FDM module patterns
+## 3. FDM Module Patterns
 
 Reusable, print-aware modules. They assume the derived constants from the file template (`fudge`, `tolerance`, `layer_height`). Screw holes, self-tap pilots, insert bosses and nut pockets are in [pattern-fasteners.md](pattern-fasteners.md).
 
@@ -214,41 +113,15 @@ module ef_base(size, ef=0.4) {
 }
 ```
 
-### Preview vs Render Conditional
+## 4. Performance Rules
 
-```openscad
-$fn = $preview ? 32 : 64;
-// $preview is true in F5, false in F6 and CLI STL export
-// render() does NOT affect $preview
-```
+- `minkowski()` costs O(N*M) in the segment counts of both children: reduce `$fn` on both. Compound (multi-object) children may be treated as separate inputs, so always wrap them in `union()`: `minkowski() { cube(10); union() { sphere(2); cylinder(1, 2, 2); } }`, never bare braces.
+- `resize()` runs full CGAL even in preview: use `scale()` while iterating.
+- `render()` forces full CSG in preview: use it only when preview artifacts are unacceptable.
+- `hull()` in 3D is slow: prefer `hull()` in 2D + `linear_extrude`.
+- Keep `$fn` <= 64 for most uses, 128 max: higher can freeze the system.
 
-## 5. Performance Rules
-
-| Operation | Cost | Mitigation |
-|-----------|------|------------|
-| `minkowski()` | O(N*M) on segment counts of both children | Reduce $fn on both. Wrap compound children in `union()`. |
-| `resize()` | Full CGAL even in preview | Avoid in iterative design. Use scale() instead when possible. |
-| `render()` | Forces full CSG in preview | Only use when preview artifacts are unacceptable. |
-| `hull()` on 3D | Slow | Prefer hull() on 2D + linear_extrude. |
-| `$fn > 128` | Can freeze the system | Keep $fn <= 64 for most uses, 128 max. |
-
-**minkowski() trap**: Compound (multi-object) children may be treated as separate inputs. Always wrap in `union()`:
-
-```openscad
-// BAD — may produce incorrect result
-minkowski() {
-    cube(10);
-    { sphere(2); cylinder(1, 2, 2); }
-}
-
-// GOOD
-minkowski() {
-    cube(10);
-    union() { sphere(2); cylinder(1, 2, 2); }
-}
-```
-
-## 6. Extrusion Gotchas
+## 5. Extrusion Gotchas
 
 ### linear_extrude and rotate_extrude
 
@@ -260,69 +133,3 @@ Both operate on the **XY-plane projection** of the 2D object. Transforms before 
 - X translation: increases diameter of result
 - Y translation: shifts result in Z
 - The 2D profile must be entirely on ONE side of the Y-axis
-
-## 7. Debugging Modifiers
-
-| Modifier | Effect | CSG Participation | Common Trap |
-|----------|--------|-------------------|-------------|
-| `%` (Background) | Transparent gray | **EXCLUDED** from CSG | Using as first child of `difference()` removes the base — nothing to subtract from |
-| `#` (Debug) | Transparent pink | Normal | Safe for debugging boolean operations |
-| `!` (Root) | Only shows this subtree | Parent transforms don't apply | Position changes when toggled |
-| `*` (Disable) | Completely hidden | Ignored | Like commenting out a subtree |
-
-## 8. Newer Features (likely training data gaps)
-
-### Function Literals (2021.01+)
-
-```openscad
-func = function (x) x * x;
-echo(func(5)); // 25
-
-// Higher-order
-selector = function (which)
-    which == "add" ? function (x) x + x : function (x) x * x;
-```
-
-No arrow operator — syntax is `function (params) expression`.
-
-### Tail Recursion (functions only)
-
-Non-tail: limited to ~thousands of calls. Tail-recursive: up to 1,000,000. The recursive call must be the final operation:
-
-```openscad
-// NOT tail-recursive (+ happens after recursive call)
-function sum(n) = n == 0 ? 0 : n + sum(n - 1);
-
-// Tail-recursive (recursive call IS the return value)
-function sum(n, acc=0) = n == 0 ? acc : sum(n - 1, acc + n);
-```
-
-Modules do NOT benefit from tail-recursion elimination.
-
-### assert() Chaining (2019.05+)
-
-`assert()` returns its children, enabling chained validation:
-
-```openscad
-function f(a, b) =
-    assert(a < 0, "a must be negative")
-    assert(b > 0, "b must be positive")
-    let(c = a + b)
-    assert(c != 0, "sum must not be zero")
-    a * b;
-```
-
-### Objects / Dicts (Development Snapshot)
-
-```openscad
-data = import("config.json");
-echo(data.width);   // dot-access
-echo(data["width"]); // bracket-access
-```
-
-### Numeric Edge Cases
-
-- Ranges `[0:10]` use **colons**, not commas — they are NOT vectors
-- Float step danger: `[0:0.2:1]` may give wrong element count. Use power-of-2 fractions.
-- `0/false` is `undef`. `0/0` is `nan`. `undef == undef` is true.
-- `1/0` is `inf`. `atan(1/0)` is 90. Many functions handle infinities per IEEE 754.

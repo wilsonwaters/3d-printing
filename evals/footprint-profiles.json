@@ -4,6 +4,7 @@
     "invoke": ["SKILL.md"],
     "author_petg": ["SKILL.md", "printer-configuration.md", "material-petg.md", "openscad-reference.md", "verification.md"],
     "author_pla": ["SKILL.md", "printer-configuration.md", "material-pla.md", "openscad-reference.md", "verification.md"],
+    "author_abs": ["SKILL.md", "printer-configuration.md", "material-abs.md", "openscad-reference.md", "verification.md"],
     "author_petg_fasteners": ["SKILL.md", "printer-configuration.md", "material-petg.md", "openscad-reference.md", "verification.md", "pattern-fasteners.md"],
     "reviewer": ["design-review.md"],
     "reviewer_fasteners": ["design-review.md", "pattern-fasteners.md"],

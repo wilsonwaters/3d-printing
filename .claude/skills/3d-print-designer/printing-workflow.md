@@ -120,14 +120,54 @@ The PRINT SETTINGS header in every generated .scad file maps directly to slicer 
 | **Triangular** | Maximum strength |
 | **Lightning** | Maximum speed, decorative parts |
 
-### Temperature (from material reference)
+### Slicer tuning by material
 
-| Material | Nozzle (C) | Bed (C) |
-|----------|-----------|---------|
-| PLA | 190-220 | 50-60 |
-| PETG | 230-250 | 70-85 |
+Starting points for the slicer; your filament brand's profile wins where it differs. The material files hold only what changes the geometry. **Always calibrate with a temperature tower for your specific filament brand/color.**
 
-**Always calibrate with a temperature tower for your specific filament brand/color.**
+**Temperature**
+
+| | PLA | PETG | ABS |
+|---|---|---|---|
+| Nozzle | 200-210C general; 215-225 max Z-strength (more stringing); 190-200 best overhangs | 240-245 structural (best layer bond); 230-235 detail, overhangs and bridges | 235-245 (start at 240, adjust ±5); 245-250 max Z-strength |
+| First layer | +5C | +5C | +5C |
+| Bed | 50-60C | 70-85C | 100-110C (mandatory) |
+| Enclosure | not needed | not needed | 40-60C ambient; the bed's heat is usually enough |
+
+Layer bond against nozzle temperature: PETG 80-85% at 230C, 90-95% at 240C, 95-98% at 250C (with extreme stringing). ABS 40-60% at 230C without an enclosure, 55-70% at 240C without, 70-80% at 235C with one, 80-90% at 240-250C with an enclosure and no fan.
+
+**Cooling**: PLA uses 100% fan, PETG 30-40%, ABS 0%.
+
+| Feature | PLA | PETG | ABS |
+|---|---|---|---|
+| First layer(s) | 0% | 0%, then 0-20% for layers 2-4 | 0% for the first 3-4 layers |
+| Standard layers | 100% (50-70% only to favour Z-strength over surface) | **30-40%**: more cooling weakens layer adhesion | **0%**: any fan causes warping and delamination |
+| Overhangs >45° | 100% | 50-70% | 0-20%: accept droop over cracking |
+| Bridges | 100% | 80-100%, 5-10C cooler, 20-30 mm/s | 30-50% burst during the bridge only |
+| Small parts | 100% | 50-60% under 20mm | 10-20% under 15mm, temporarily |
+
+**Speed (mm/s)**
+
+| Feature | PLA | PETG | ABS |
+|---|---|---|---|
+| Walls | 40-70 general | 30-50 (outer 25-40) | outer 30-40, inner 40-50 |
+| Infill | | 50-80 | 50-60 |
+| First layer | 15-20 | 15-20 | 15-25, never over 30 |
+| Bridges / overhangs | | 20-30 / 20-35 | 15-25 |
+| Travel | | 150-200 (fast, to cut oozing) | |
+
+- PLA: volumetric flow limit 10-12 mm³/s on a standard hotend; above 100 mm/s, Z-strength drops 10-20%. Layer height 0.16-0.20mm balances strength and time, 0.10mm gives the best XY strength and surface (slow), and above 0.28mm Z-strength suffers.
+- PETG: strength against speed is 100% at 30 mm/s, 95% at 50, 88% at 70, 80% at 90.
+- ABS: if layers delaminate, slow down in 5 mm/s steps; cracking sounds mid-print mean raise the enclosure and nozzle temperatures at once. For elephant's foot, set the slicer's compensation to -0.1 to -0.2mm and first-layer flow to 90-95%.
+
+**Retraction (ABS)**: direct drive 1-2mm at 30-40 mm/s, Bowden 3-4mm at 40-50 mm/s; minimum travel 1.0-2.0mm; optional Z-hop 0.1-0.4mm. Use combing to cut retractions. ABS strings less than PETG at the right temperature.
+
+**Drying**
+
+| | Temperature | Time | Notes |
+|---|---|---|---|
+| PLA | 45C, never over 60 | 4-6h | |
+| PETG | 60-65C | 4-6h | Hygroscopic. Strength loss with moisture: 0-5% at 0.05-0.15%, 10-20% at 0.2-0.4% (bubbling, strings), 25-35% at 0.5-0.8%, 40-50% (unusable) over 1% |
+| ABS | 80C | 4-6h | Store under 15% RH. Wet ABS bubbles and pops, and warps ~30% more |
 
 ### Orientation in Slicer
 
@@ -169,17 +209,19 @@ After slicing (PrusaSlicer: F5, then Preview tab; Cura: Preview button), check:
 - [ ] Nozzle clean (no burnt filament buildup)
 
 ### Material
-- [ ] Filament dried if needed (PETG: 65C for 4-6h; PLA: 45C for 4-6h, never >60C)
+- [ ] Filament dried if needed ([Drying](#slicer-tuning-by-material))
 - [ ] Spool rotates freely, no tangles
 - [ ] Enough filament for print + 20% buffer (check slicer estimate)
 
 ### Bed Adhesion
 
-| Surface | PLA | PETG |
-|---------|-----|------|
-| **PEI (smooth/textured)** | Excellent, no adhesive needed | Use glue stick as RELEASE agent (PETG bonds too strongly) |
-| **Glass** | Use glue stick or hairspray | Use glue stick |
-| **Painter's tape** | Good | Not recommended |
+| Surface | PLA | PETG | ABS |
+|---------|-----|------|-----|
+| **PEI (smooth/textured)** | Excellent, no adhesive needed | Use glue stick as RELEASE agent (PETG bonds too strongly) | Excellent: sticks hot, releases cool |
+| **Glass** | Use glue stick or hairspray | Use glue stick | ABS slurry (ABS dissolved in acetone), glue stick or unscented hairspray |
+| **Painter's tape** | Good | Not recommended | Kapton tape instead |
+
+ABS also wants an 8-15mm brim (8-10 lines on large parts), and a draft shield (a tall skirt that blocks air currents) without a full enclosure.
 
 ### Slicer Verification
 - [ ] Correct printer and filament profiles selected
