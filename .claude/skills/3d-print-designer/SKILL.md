@@ -2,25 +2,30 @@
 name: 3d-print-designer
 description: 'Designs and generates parametric, FDM-print-optimized OpenSCAD (.scad) models — selects material (PLA/PETG/ABS) and optimizes for print orientation, layer adhesion, and structural strength. Triggers: "create a 3D model", "design a part", "make an OpenSCAD/.scad file", "design a bracket/enclosure/gear/mount", "something for 3D printing", or mentions CAD, STL, 3MF, FDM, filament, or printable assemblies.'
 metadata:
-  tuned-for: claude-opus-4-8
-  last-tuned: "2026-06-21"
+  tuned-for: claude-opus-5-5
+  last-tuned: "2026-09-29"
 ---
 
 # 3D Print Designer
 
 Design and generate parametric, FDM-print-optimized OpenSCAD (.scad) models.
 
-## Step 0: Printer Configuration (always do this first)
+## How to work
 
-Ask the user what 3D printer they're using. Printer specs constrain build volume, material options, minimum feature sizes, and tolerances.
+The expensive failure is reasoning too long before acting. One run thought until it hit the output cap and never wrote a file. So:
 
-See [printer-configuration.md](printer-configuration.md) — MANDATORY READ before any design work. It has the full workflow for identifying printer specs (auto from make/model via [printer-profiles.md](printer-profiles.md), or manual fallback) and how they affect design parameters.
+- **Compute with tools, not in your head.** Fits, trig, clearances, interference and tolerance stack-ups go into the model as named derived values with `echo()` and `assert()`, or into a one-line `python -c`. Don't hand-derive coordinates in thinking.
+- **Write the .scad early.** Once the acceptance list exists (Workflow step 3), write a rough version that compiles, run the gate, then refine with edits. Several short think-act cycles beat one long plan.
+- **Pick, don't survey.** Take the simplest approach that meets the acceptance list, and mention alternatives in one line. A genuine ambiguity is a question for the user, not for extended thought.
+- **Read only what the step needs.** Each reference below says when to load it. Run the bundled `.py` tools; don't read their source (`--help` lists the options). For a long .scad, grep it or read line ranges rather than re-reading the whole file.
+
+## Step 0: Printer (always first)
+
+If the user hasn't named a printer (or given its build volume and nozzle), **your first reply is only that question**: no files, no design yet. Once you know it, read [printer-configuration.md](printer-configuration.md). It has the known-printer specs table, the manual fallback, and how the specs drive the design. When modifying an existing model, its headers already name the printer and material: see [Modifying an existing model](#modifying-an-existing-model).
 
 ## Step 1: Material Selection
 
-Determine the target material, **filtered by the printer's capabilities** (from Step 0). Warn the user if their printer can't handle the requested material and suggest alternatives.
-
-If the user hasn't specified a material, ask or recommend one:
+Pick the material **within the printer's capabilities**. Warn if the printer can't handle the requested one and suggest an alternative. If the user hasn't specified one, recommend:
 
 | Use Case | Recommended | Why |
 |----------|-------------|-----|
@@ -33,36 +38,33 @@ If the user hasn't specified a material, ask or recommend one:
 | Smooth surface finish (vapor smoothing) | **ABS** | Acetone vapor smoothing eliminates layer lines |
 | Multi-part solvent-welded assemblies | **ABS** | Acetone welding creates near-bulk-strength bonds |
 
-Load the material reference after selection — only the chosen one:
-- **PLA**: [material-pla.md](material-pla.md) — MANDATORY READ for PLA designs
-- **PETG**: [material-petg.md](material-petg.md) — MANDATORY READ for PETG designs
-- **ABS**: [material-abs.md](material-abs.md) — MANDATORY READ for ABS designs
+Then read **only** the chosen material's file: [material-pla.md](material-pla.md), [material-petg.md](material-petg.md) or [material-abs.md](material-abs.md).
 
 ## Step 2: Support Strategy
 
-**Default: design for support-free printing.** Supports waste material, leave surface marks, risk failures, and add post-processing. Most models can avoid them through orientation, geometry adjustments, and self-supporting features.
+**Default: support-free.** Supports waste material, mark surfaces, risk failures and add post-processing, and most models avoid them through orientation, geometry changes and self-supporting features. The techniques: overhangs ≤45° from vertical; 45° chamfers under ledges; teardrop horizontal holes; features tapered from below; pointed (gothic) arches; short bridges instead of overhangs; splitting at overhang boundaries; built-in ribs and pillars. Details are in [fdm-design-principles.md](fdm-design-principles.md), which you need only for the harder cases.
 
-1. **Assess whether the model can reasonably be support-free** — consider orientation, splitting, and geometry alternatives (see [fdm-design-principles.md](fdm-design-principles.md) > Support-Free Design Techniques).
-2. **If feasible both ways**, ask the user:
-   > "This model can be designed to print without supports. Would you prefer a support-free design (may involve some geometry compromises like chamfered undersides or part splitting), or are you OK printing with supports for a cleaner shape?"
-3. **If supports are unavoidable** (complex internal cavities, deep recesses, geometry that can't be reoriented) — note why, design to minimize them, and check whether the user has multi-material capability for soluble supports.
-4. **If no preference is expressed and you haven't asked**, default to support-free.
+If the model is feasible both ways, ask: *"This can print without supports (with some compromises like chamfered undersides or a split), or with supports for a cleaner shape. Which do you prefer?"* If supports are unavoidable (internal cavities, deep recesses), say why, minimise them, and check for soluble-support capability. With no answer, go support-free.
 
-Key support-free techniques (detail in [fdm-design-principles.md](fdm-design-principles.md)): overhangs ≤45° from vertical; 45° chamfers on undersides instead of flat ledges; teardrop profiles for horizontal holes; taper features from below; pointed (gothic) arches for spanning; bridge short spans instead of overhanging; split parts along overhang boundaries; built-in structural supports (pillars, ribs).
+## Workflow
 
-## Pacing and Complexity
+The same steps for a single part or an assembly.
 
-Match effort to the design, and keep producing visible output:
+1. **Printer, material, supports** (Steps 0-2), loading their references.
+2. **Orientation.** Choose the print orientation that removes supports first, then puts the primary loads along the layers (XY). Model in it, with Z=0 as the build plate.
+3. **Acceptance list and design summary.** Restate the requirements as a **numbered, measurable list** with units and tolerances ("fits 18mm tube → OD ≤ 17mm", "≤ 21mm deep"), plus orientation, support strategy, structure and key dimensions. For a complex job (a mechanism, several parts, or unclear requirements), settle the open questions first: in plan mode if a user is present, otherwise state your assumptions in one line and go on.
+4. **Write the .scad** using the [file structure](#file-structure) below. Read [openscad-reference.md](openscad-reference.md) first. Encode each measurable criterion as an `assert()`.
+5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
+6. **Verify:** run the gate ([Verification](#verification)) and fix until it's green.
+7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](bambu-3mf-export.md)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Build it from the `.scad`, or with `--mesh` from the STL. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
+8. **Design review:** spawn it ([Design Review](#design-review)), triage the findings, fix and re-verify.
+9. **Hand off** ([After generation](#after-generation)).
 
-- **Simple part** (single piece, basic shape, few features): go straight to the [Single Part Workflow](#single-part-workflow).
-- **Complex part** (multi-part assembly, mechanism, tight tolerances, or unclear requirements): use `EnterPlanMode` to settle requirements and a design approach before generating code.
-- **In all cases, iterate in the file rather than in your head.** Write parameters and rough geometry early, then refine with edits — the OpenSCAD preview and the verification gate are faster feedback than exhaustive mental pre-computation. Spend up-front reasoning on genuine ambiguity (resolve it in plan mode); don't silently pre-solve coordinate transforms, fillet clearances, or interference before any code exists.
+**Assemblies:** make each part its own module, with a material-appropriate `tolerance` (PLA 0.2, PETG 0.3, ABS 0.4mm for sliding fits) and an `assembly()` view. Document each part's print orientation separately in PRINT SETTINGS. Add a `clash_*` part for every mating or moving pair (below) so the gate proves they don't collide.
 
-## Workflow Decision Tree
+## Modifying an existing model
 
-- **Single part** (bracket, mount, enclosure) → [Single Part Workflow](#single-part-workflow)
-- **Multi-part assembly** (lid+base, interlocking pieces) → [Assembly Workflow](#assembly-workflow)
-- **Mechanical component** (gears, threads, hinges) → [Mechanical Parts](#mechanical-parts)
+Read the file's `DESCRIPTION` and `PRINT SETTINGS` headers first (grep or a line range). They give the printer, material, terminology map and common modifications, so don't re-ask Steps 0-2 or reload their references unless the change affects them (a material change does). Make the change through the parameters the header names, keep the asserts, and update the headers (dimensions, what changed). Then run the gate on every part and save the deliverables. Use the review tier that fits the change ([Review tiers](#review-tiers)).
 
 ## File Structure
 
@@ -96,6 +98,7 @@ Every generated .scad file follows this structure:
 // Coordinate system: X = [axis], Y = [axis], Z = height from build plate
 // NOTE: Model is in print orientation — OpenSCAD preview matches the print.
 //   [If use orientation differs: "In use, Z becomes the wall-facing axis"]
+// Final review: [YYYY-MM-DD, reviewer model ID, once a final review has run]
 
 // === PRINT SETTINGS ===
 // Material: PLA (or PETG, etc.)
@@ -126,190 +129,126 @@ $fn = $preview ? 32 : 64;              // Low for preview, high for render
 // One module per logical part/feature
 
 // === ASSEMBLY / RENDER ===
-// Final call at bottom
+// A single-part file may skip the selector; otherwise list every value (see Part names)
+part = "all"; // "all", "base", "lid", "clash_lid"
+if (part == "all")       assembly();
+if (part == "base")      base();
+if (part == "lid")       lid_print();   // flipped into print orientation, on Z=0
+if (part == "clash_lid") intersection() { base(); lid_assembled(); }  // must render empty
 ```
 
 ### Description header (the highest-value block for follow-up sessions)
 
-The `DESCRIPTION` block gives a future Claude session enough context to modify the model without the original conversation. Aim for 15-30 practical comment lines covering:
+The `DESCRIPTION` block lets a later session modify the model without the original conversation. Aim for 15-30 practical lines covering:
 
-1. **What it is** — plain-English name, purpose, problem solved. Assume the reader has never seen it.
-2. **Physical context** — where it lives, what it mounts to/interfaces with (product names/SKUs if known), environment, and the forces/loads it experiences.
-3. **Design decisions** — why this shape/structure and print orientation over alternatives, and non-obvious trade-offs.
-4. **Terminology map** — `"user term" → param_name, module_name()` for every user-facing feature. This is what lets a later session translate "make the shelf thicker" into the right parameter edit.
-5. **Common modifications** — likely change requests and which parameters to adjust, with constraints (structural minimums, build-volume maximums, tolerance rules, perimeter counts).
-6. **Overall dimensions** — bounding box (W×D×H), the printer/build volume it targets, the coordinate system, and any use-vs-print orientation mapping.
+1. **What it is:** plain-English name, purpose, the problem it solves. Assume the reader has never seen it.
+2. **Physical context:** where it lives, what it mounts to or interfaces with (product names and SKUs if known), the environment, and the loads it takes.
+3. **Design decisions:** why this shape, structure and print orientation over the alternatives, and any non-obvious trade-offs.
+4. **Terminology map:** `"user term" → param_name, module_name()` for every user-facing feature, so a later session can turn "make the shelf thicker" into the right edit.
+5. **Common modifications:** likely change requests and the parameters to adjust, with their constraints (structural minimums, build-volume maximums, tolerance rules, perimeter counts).
+6. **Overall dimensions:** bounding box (W×D×H), the printer and build volume it targets, the coordinate system, and any use-vs-print orientation mapping.
+
+Every claim in the header must be true of the geometry: the gate checks the dimensions and the bed fit, and asserts check the rest.
 
 ### Print-settings header
 
-The `PRINT SETTINGS` block specifies, in order: **material** (and why), **layer height** (0.2 standard, 0.12 fine, 0.28 draft), **walls/perimeters** (count + thickness), **infill** (% + pattern, gyroid default), **supports** (goal "None required"; if needed, where and why they couldn't be avoided), **orientation** (exact placement + why), and **notes** (drying, temperature, cooling).
+The `PRINT SETTINGS` block specifies, in order: **material** (and why), **layer height** (0.2 standard, 0.12 fine, 0.28 draft), **walls/perimeters** (count and thickness), **infill** (% and pattern, gyroid by default), **supports** (goal "None required"; if needed, where and why), **orientation** (exact placement and why), and **notes** (drying, temperature, cooling).
+
+### Part names (the gate and the tools read them)
+
+List every value in the comment on the `part =` line. A plain name is a **printed part**, modelled in its print orientation on Z=0 as one connected body. The other values are named by what they are:
+
+- `all`, `assembly*`, `explode*`, `section*`, `view*`: views, which must compile but are never printed.
+- `plate_*`, `*_parts`: print layouts with several bodies.
+- `clash_*`: interference checks. Each is an `intersection()` of a mating or moving pair in its assembled pose (for a mechanism, at rest, mid-travel and end of travel), and must render empty. Pose parts that rest on each other `fudge` apart: faces that touch still render a sheet.
+- `check_*`: your own diagnostics.
 
 ## Critical Rules
 
-These are the load-bearing FDM invariants — the single source of truth referenced throughout the workflows.
+The load-bearing FDM invariants, referenced throughout.
 
-1. **Material-aware design** — wall thickness, tolerances, and features change per material; read the material reference.
-2. **Model in print orientation** — Z=0 is always the build plate, so the OpenSCAD preview looks exactly as printed and directions ("left side", "bottom") stay consistent between preview and conversation. Decide orientation before designing features; put primary loads in the XY plane (along layers). If the part is used in a different orientation than printed, document the use-vs-print mapping in the description header.
-3. **Parameters at top** — every dimension the user might adjust is a named variable with a comment.
-4. **Nozzle-aware walls** — wall thickness is an integer multiple of extrusion width (nozzle × 1.125). No fractional perimeters.
-5. **Fudge factor** — always use `fudge = 0.01` overlap in `difference()` and `intersection()`. Coincident faces produce broken geometry.
-6. **Bottom chamfers, top fillets** — 45° chamfers on bottom surfaces are self-supporting; fillets on top for aesthetics. No sharp internal corners (min 1mm fillet for stress).
-7. **Elephant foot compensation** — add `ef_chamfer` (0.3-0.5mm at 45°) on all bottom edges.
-8. **Holes oversize** — a bore is `nominal + hole compensation + fit allowance`; these are two
-   separate numbers. Measured, PETG on a Bambu X1C / 0.4mm nozzle: compensation **+0.30mm**;
-   allowance **-0.08 press** (must be interference — 0.00 is a slide, not a press), **+0.15**
-   bearing (shaft rotates in it), **+0.30** free-running. So for a 3mm rod: press bore 3.22,
-   bearing 3.45, running 3.60.
-9. **No magic numbers** — every numeric value is a parameter or derived from parameters.
-10. **Prefer ribs over thick walls** — a 1.6mm rib is stronger per gram than a 5mm solid wall.
-11. **Support-free by default** — choose orientations, chamfers, teardrops, and splits that eliminate supports. Accept supports only when geometry truly demands them, then minimize contact area and document why in the PRINT SETTINGS header.
-12. **Verify by building, then peer-review by looking** — never hand off (or claim correctness of) a model you haven't compiled. Two distinct steps: a deterministic [Verification](#verification) gate (compile, manifold, bounding box, `assert()` contracts) the author runs, then a fresh-eyes [Design Review](#design-review) (a different model when available) that inspects the renders and judges the design. Static code review is necessary but not sufficient.
-
-OpenSCAD language gotchas and reusable module patterns (boolean overlap, screw holes, teardrops, chamfered shelves, EF base) live in [openscad-reference.md](openscad-reference.md) — load it before writing code.
-
-## Single Part Workflow
-
-1. **Configure printer** (Step 0) and **select material** (Step 1) — load the relevant references.
-2. **Choose support strategy** (Step 2) — default support-free; ask if both ways are feasible.
-3. **Decide print orientation and model in it** — choose the orientation that eliminates supports first, then optimizes the load path. Model with Z=0 as the build plate; note any use-vs-print mapping in the description header.
-4. **Capture acceptance criteria and output a design summary** — state orientation (and why), support strategy, structure, key dimensions, and mounting approach. Restate the user's requirements as a **numbered, measurable acceptance list** (units + tolerances — "fits 18mm tube → OD ≤ 17mm", "≤ 21mm deep", "M8×1.25"). You verify against this list at the end. Then proceed.
-5. **Write the .scad file** — parameters, derived constants, rough geometry. Use the Write tool now rather than continuing to build the model mentally. Encode each measurable criterion as an `assert()` so a violation fails the build.
-6. **Add features incrementally** — structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set insert bosses, slots), then support-free geometry (underside chamfers, teardrop holes, elephant-foot compensation; replace flat overhanging ledges with chamfered/angled geometry). Apply the Critical Rules throughout rather than re-deriving them.
-7. **Verify the build** — run [Verification](#verification) (the deterministic gate) and fix until green. Do this before the review — don't review a part that doesn't build or misses the measurable spec.
-8. **Design Review** — once green, spawn the [Design Review](#design-review) as a self-contained sub-agent. Triage findings, fix real issues (re-verify after structural fixes), push back on the rest, and surface genuine trade-offs to the user.
-
-## Assembly Workflow
-
-1. Design each part as a separate module in the same file.
-2. Add a material-appropriate `tolerance` parameter (PLA: 0.2mm, PETG: 0.3mm for sliding fits).
-3. Create an `assembly()` module showing parts in assembled positions.
-4. Add a `part` parameter for individual part rendering:
-
-```openscad
-part = "all"; // "all", "base", "lid", "clip"
-
-if (part == "all") assembly();
-if (part == "base" || part == "all") translate([0,0,0]) base();
-if (part == "lid"  || part == "all") translate([60,0,0]) lid();
-```
-
-5. Document print orientation for **each** part separately in the print-settings header.
-6. Consider whether parts need different orientations (split for optimal strength).
-7. **Verify the build** — run [Verification](#verification) on **each** `part=` value (compile, gate, bounding boxes, asserts); fix until green. Fit/clearance between parts is judged in the review, not here.
-8. **Design Review** — once green, spawn the [Design Review](#design-review); it inspects fit, clearance, and interference between mating parts plus the FDM checklist. Triage, fix and re-verify, push back where warranted.
+1. **Material-aware design:** wall thickness, tolerances and features change per material, so read the material reference.
+2. **Model in print orientation:** Z=0 is always the build plate, so the preview looks exactly as printed. Decide orientation before designing features, and put primary loads in the XY plane. If the part is used in another orientation, document the mapping in the header.
+3. **Parameters at top:** every dimension the user might adjust is a named variable with a comment.
+4. **Nozzle-aware walls:** wall thickness is an integer multiple of the extrusion width (nozzle × 1.125). No fractional perimeters.
+5. **Fudge factor:** every `difference()` and `intersection()` cutter overshoots the faces it cuts by `fudge = 0.01`. Coincident faces produce broken geometry.
+6. **Bottom chamfers, top fillets:** 45° chamfers on bottom surfaces are self-supporting; fillets on top are cosmetic. No sharp internal corners (minimum 1mm fillet for stress).
+7. **Elephant-foot compensation:** apply `ef_chamfer` (0.3-0.5mm at 45°) to every bottom edge.
+8. **Holes oversize:** a bore is `nominal + hole compensation + fit allowance`, two separate numbers. Measured for PETG on a Bambu X1C with a 0.4mm nozzle: compensation **+0.30mm**; allowance **-0.08** press (it must be interference: 0.00 is a slide, not a press), **+0.15** bearing (shaft rotates in it), **+0.30** free-running. For a 3mm rod: press 3.22, bearing 3.45, running 3.60.
+9. **No magic numbers:** every numeric value is a parameter or derived from parameters.
+10. **Prefer ribs over thick walls:** a 1.6mm rib is stronger per gram than a 5mm solid wall.
+11. **Support-free by default:** choose orientations, chamfers, teardrops and splits that eliminate supports. Accept supports only when the geometry truly needs them, then minimise contact and document why in PRINT SETTINGS.
+12. **Assert what you claim:** every measurable acceptance criterion, and every functional claim in a comment or README ("snaps in after 0.8mm", "clears the cam"), has an `assert()` behind it, or is labelled unverified.
+13. **Verify by building, then peer-review by looking:** never hand off, or claim correctness of, a model you haven't compiled. The deterministic [gate](#verification) comes first, then a fresh-eyes [Design Review](#design-review). Static code review is necessary but not sufficient.
 
 ## Mechanical Parts
 
-For gears, threads, snap-fits, living hinges, and complex mechanical features, see [mechanical.md](mechanical.md).
+For gears, threads, snap-fits, living hinges and joints, see [mechanical.md](mechanical.md). Material-critical notes:
 
-Material-critical notes:
-- **Snap-fits**: PETG excels (5-8% strain), ABS good (3-5%), PLA fragile (1-1.5% max).
-- **Living hinges**: PETG only (0.4mm thick, 50,000+ cycles). PLA breaks in 50-100 cycles; ABS marginal.
-- **Threads**: M4+ only for printed threads. Heat-set inserts strongly preferred (ABS works especially well due to high Tg).
+- **Snap-fits:** PETG excels (5-8% strain), ABS is good (3-5%), PLA is fragile (1-1.5% max).
+- **Living hinges:** PETG only (0.4mm thick, 50,000+ cycles). PLA breaks within 50-100 cycles; ABS is marginal.
+- **Metal fasteners into plastic:** use a heat-set insert, a captive nut, or a plain **self-tap hole at about 50% thread depth**. Don't print a metric thread that a metal screw must mate with. A real print failed that way: a printed M8 thread in PETG didn't form. A self-tapped Ø7.5 hole for M8 held, while Ø7.0 seized. Printed threads suit coarse plastic-to-plastic joints (≥M10, trapezoidal or buttress profile).
+- **Flexing features** (fins, barbs, cantilevers, springs) bend **within the layer plane**. Bending across layers delaminates them.
 
 ## Verification
 
-Verification is a **hard, deterministic gate**: it confirms the model compiles into a valid manifold solid, its measured dimensions are within the intended envelope, and its `assert()` contracts hold — reproducible, binary pass/fail. It is not judgment; "does it look right?" is the [Design Review](#design-review)'s job. Order of operations: **generate → verify → design review → hand off.** Don't review or hand off a part that fails this gate.
+A **hard, deterministic gate** that every part must pass before the review and before hand-off:
 
-> Verification answers "does it build into a valid solid that meets the *measurable* spec?" — Design Review answers "is it actually the right shape, and a *good* FDM design?"
+```sh
+python "<skill-dir>/verify-model.py" model.scad --build-volume 256x256x256 --export .
+```
 
-**MANDATORY for** initial generation and any major/structural change. For minor tweaks, run the lightweight slice (re-compile the changed `part=` and re-check affected dimensions/asserts). If OpenSCAD is not installed you cannot run this gate — say so explicitly, do an extra-careful static review, and offer to help install it (prefer the nightly for verification quality).
-
-The gate, in three checks — exact commands, capability detection, and per-version fallbacks in **[verification.md](verification.md) — MANDATORY READ before verifying**:
-
-1. **Build gate** — compile every `part=` with the OpenSCAD CLI (CLI STL export does a full render, catching errors the GUI preview hides). A part passes only if exit code is 0, the STL is non-empty, and stderr — after dropping `ECHO:` lines — is clean of fatal phrases (`ERROR:`, `WARNING:`, `Assertion`, `not be a valid 2-manifold`, `Simple: no`, `Current top level object is empty`, `(PolySet)`). A non-manifold solid can exit 0, so **gate on stderr, not the exit code alone.**
-2. **Dimension + contract checks** — measured bounding box within the intended envelope (`--summary` JSON on modern builds, or a stdlib STL parser on 2021.01), and all `assert()` contracts pass.
-3. **Requirements traceability** — trace every *mechanically checkable* acceptance criterion to one of the above. Carry eyeball criteria to the Design Review; report print-only criteria (e.g. "a real M8 mates") as a residual — never silently pass.
-
-After verifying, state what you mechanically confirmed, e.g.:
-> "Verified on OpenSCAD 2026.06.19 (Manifold): both parts compile clean, measured bounding boxes 17.5×17.5×20.2mm and 16×16×9.6mm (within the 21mm depth limit), all asserts pass. Residual: an actual M8 mating needs a test print."
+It compiles every `part` value and checks each for clean stderr, one body, manifold, on the plate, and fits the build volume. `clash_*` parts must render empty. It prints `GATE: PASS` or the failing parts. If OpenSCAD isn't installed where you're running, install it in your sandbox if you can (verification.md says how). Without it there's no gate and no STL, and a `.scad` alone is not something a slicer can open. **Read [verification.md](verification.md) before your first gate run.** It covers what each failure means, contracts, reporting, and the fallback without Python. Run the gate on initial generation and after any structural change. After a minor tweak, re-run it on just the changed parts (`--parts`).
 
 ## Design Review
 
-The Design Review is a **fresh-eyes peer review** — not the author marking its own homework. It covers what the gate cannot: visual inspection of the geometry (does it actually look right?), whether the mechanism/approach makes sense, the qualitative acceptance criteria, and FDM-rule compliance.
+A **fresh-eyes peer review** by a sub-agent. It covers what the gate can't: whether the geometry looks right in renders, whether the mechanism makes sense, the qualitative criteria, and FDM-rule compliance.
 
-**Run it as a self-contained sub-agent (Agent tool) with a different model when one is available** — a different model with clean context catches blind spots the author shares with itself. Give it everything it needs to stand alone: the `.scad` path, the numbered acceptance criteria, the printer + material, and a pointer to **[design-review.md](design-review.md)** (the complete reviewer brief — procedure, render commands, and Full Review Checklist). You *may* tell it "the gate already passed, focus on judgment" to scope its effort. If no other model is available, still run it as a separate fresh pass (clean-context sub-agent) and note it was same-model.
+**Which model reviews.** It's fixed, so reviews are consistent from run to run:
 
-The review **returns findings** (severity · what · where · suggested fix). The author then **triages**: fix the real issues, **re-run Verification and re-review** after any structural fix (fixes can introduce new problems), and **push back** on findings that are wrong or out of scope — the review is advisory peer critique, not an authority. Surface genuine disagreements or trade-offs to the user rather than silently accepting or overriding them.
+- **Every full review runs on `model: "sonnet"`**, including the only review a simple part gets.
+- **At most one final review per project runs on `model: "fable"`**, once the design is complete and about to be printed for the first time: every part built, the Sonnet findings fixed, gate green.
+  - **Complex projects** get it without asking. Complex means a multi-part assembly, or a mechanism (anything that moves, flexes or latches).
+  - **Simple parts** only get it if the user wants it. After the Sonnet review's fixes, ask at hand-off: *"This passed a Sonnet design review. Would you like a deeper second review on Fable before you print? It costs roughly five to seven times as much as the Sonnet review, and catches a little more."* Run it only on a yes. Skip the offer when nobody can answer (an unattended run).
+  - **Recording it:** add a line to the DESCRIPTION header with the model ID the reviewer reports (`// Final review: 2026-09-29, claude-fable-5-1`). Later sessions see it: they use Sonnet and don't offer Fable again, unless the user asks.
+- **No Fable access:** not everyone can use Fable. If the Agent tool doesn't list `fable`, or the call fails because the model isn't available, run that review on `"sonnet"` instead and tell the user. Never offer a Fable review you can't run.
 
-### Review Tiers
+**Spawn it** with the Agent tool on that model, in the foreground, since the next step needs its findings. Give it:
 
-**Full Review** (spawn the sub-agent; uses [design-review.md](design-review.md)) — MANDATORY for:
-- Initial model generation
-- Major structural changes (new load-bearing features, added/removed parts, part splitting)
-- Print orientation changes
-- Material changes (tolerances, wall rules, and feature constraints all shift)
+- the `.scad` path and the OpenSCAD path;
+- the numbered acceptance criteria;
+- the printer and material;
+- the line "Read `<skill-dir>/design-review.md`, your complete brief; the gate has passed."
 
-**Lightweight Check** — for minor modifications (parameter tweaks, cosmetic changes, small non-structural features): verify the changed area and its immediate neighbours only — "Did this change create a new unsupported overhang? Break a nozzle-width multiple? Introduce a coincident face?"
+Don't read design-review.md yourself: it's the reviewer's brief, not yours.
 
-**Suggested Full Review** — after 3-5 cumulative minor changes, offer:
-> "We've made several incremental changes — want me to run a full design review to make sure nothing's drifted?"
+**Triage** the findings (severity, what, where, suggested fix). Fix the real issues, re-run the gate and re-export after any structural fix, and push back on findings that are wrong or out of scope. Surface genuine trade-offs to the user. If the review fails or returns nothing, say so and hand off the verified files with that caveat. Don't loop.
 
-The user may accept or decline; don't force it.
+### Review tiers
 
-### Review output
-
-After a full review passes:
-> "Design review complete — all checks pass."
-
-If it required fixes:
-> "Design review caught [brief description]. Fixed and re-verified — all checks now pass."
-
-After a lightweight check, no special output unless something was caught and fixed.
+- **Full review** (the sub-agent, on the model above). Required for initial generation, major structural changes (new load-bearing features, added or removed parts, splitting), orientation changes and material changes.
+- **Lightweight check** (yourself, no sub-agent). For parameter tweaks, cosmetic changes and small non-structural features. Re-run the gate on the changed parts and ask: did this create an unsupported overhang, break a nozzle-width multiple, or introduce a coincident face?
+- After 3-5 cumulative minor changes, offer a full review. Don't force it.
 
 ## After Generation
 
-> This is about getting the model onto the **user's** machine and printer — separate from [Verification](#verification) and the [Design Review](#design-review), which you already ran on your own machine. Share any renders you have (deliverable previews, or the review's images); they help the user see the result.
+Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any renders. Never hand off only the `.scad`: slicers can't open it. Name the file to open first (the `.3mf` on a Bambu printer, otherwise the STL). Then give a short summary: what the gate verified (its PASS line), what the review changed, and the residuals only a print can confirm.
 
-**Check Claude memory for user experience.** Look for `user`-type memories indicating 3D printing experience (owns a printer, has used OpenSCAD, has printed before, has used this skill before). No relevant memory = treat as new user.
-
-**New / first-time users** — ask:
-> "Would you like help getting this model viewed, exported, and ready to print? I can walk you through the whole process — including installing OpenSCAD if you don't have it yet."
-
-If yes, walk through the full workflow:
-
-1. **Install OpenSCAD** if needed — download from https://openscad.org/downloads, install, open the generated .scad file.
-2. Preview with F5; check Thrown Together view (F12) for face-orientation errors.
-3. Render (F6), then export STL (F7).
-4. **Highlight the print settings** — orientation, material, key slicer parameters.
-5. Note dimensions worth verifying with a test print.
-6. Material reminders: PETG → dry filament; ABS → enclosure, ventilation, drying (80C, 4-6h).
-7. **Import the STL into their slicer** (Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, etc.) — apply the PRINT SETTINGS from the file header, check the slicer preview, send to printer. **On a Bambu Lab printer, offer the settings-baked-in 3MF instead** (next step) — it skips the manual settings entry.
-8. See [printing-workflow.md](printing-workflow.md) for detailed export-to-print steps.
-
-After walking them through it, save a `user` memory noting they've been introduced to the workflow.
-
-**Bambu Lab printers (any experience level) — offer a settings-baked-in 3MF.** Offer this only when **all** hold: the printer from Step 0 is a Bambu Lab machine, the user slices in Bambu Studio (or OrcaSlicer), **and Python is available on the machine** (the generator is a Python script — check with `python --version` / `python3 --version`). When they do, generate a Bambu *project* `.3mf` that opens with layer height, walls, infill, and supports **already applied** — eliminating the manual settings entry (filament is left for the user to select unless they ask to bake it in). The helper `make-bambu-3mf.py` (Python stdlib only — no pip installs) builds it from the OpenSCAD mesh plus the model's PRINT SETTINGS header, sourcing settings from Bambu's official profiles. See [bambu-3mf-export.md](bambu-3mf-export.md).
-
-**If Python isn't available, don't attempt the 3MF** — say so plainly, hand off the STL, and tell the user to import it into Bambu Studio and apply the PRINT SETTINGS header manually (offer to help install Python for next time). For non-Bambu printers/slicers, the settings-in-3MF format doesn't apply, so the STL path above is the only option.
-
-**Experienced users** — skip the walkthrough offer. Still offer the Bambu 3MF if they're on a Bambu Lab printer; it saves them dialing settings in by hand.
+- **New users** (check memory for 3D-printing experience; none means new): offer help getting the model viewed, exported and printed, including installing OpenSCAD. Walk through [printing-workflow.md](printing-workflow.md) if they accept, then save a `user` memory that they've been introduced.
+- **Simple part, Fable available, no final review recorded yet:** offer the Fable review ([Design Review](#design-review)).
+- **Bambu Lab printer:** the project 3MF from step 7 is the file to open in Bambu Studio or OrcaSlicer. Without Python, or if the user slices in something else, hand off the STL with the PRINT SETTINGS header for manual entry.
 
 ## References
 
-**Load during Step 0 (printer config):**
-- **[printer-configuration.md](printer-configuration.md)** — MANDATORY READ before any design work
-- **[printer-profiles.md](printer-profiles.md)** — database of known printer specs for auto-populating from make/model
-
-**Load during Step 1 (material selection) — only the selected material:**
-- **[material-pla.md](material-pla.md)** / **[material-petg.md](material-petg.md)** / **[material-abs.md](material-abs.md)** — MANDATORY READ for the chosen material
-
-**Load before writing code:**
-- **[openscad-reference.md](openscad-reference.md)** — MANDATORY READ: OpenSCAD language gotchas plus reusable module patterns (boolean overlap, rounded box, screw hole, teardrop, chamfered shelf, EF base)
-
-**Load before verifying (before the Design Review):**
-- **[verification.md](verification.md)** — MANDATORY READ: how to compile, measure, and trace requirements with the OpenSCAD CLI (version-specific fallbacks)
-
-**Load when running the Design Review:**
-- **[design-review.md](design-review.md)** — the complete reviewer brief (procedure + Full Review Checklist); the review sub-agent is pointed here
-
-**Load only when specifically needed (do NOT pre-load):**
-- **[fdm-design-principles.md](fdm-design-principles.md)** — support-free technique details (gothic arches, graduated overhangs, part splitting) and structural optimization (ribs vs walls, stress management)
-- **[printing-guidelines.md](printing-guidelines.md)** — general tolerance/overhang data beyond what the material file provides
-- **[mechanical.md](mechanical.md)** — gears, threads, snap-fits, living hinges, joints
-- **[printing-workflow.md](printing-workflow.md)** — export-to-print walkthrough for the "After Generation" step
-- **[bambu-3mf-export.md](bambu-3mf-export.md)** — Bambu-only: generate a project `.3mf` with print settings baked in (via the bundled `make-bambu-3mf.py`); load in the "After Generation" step when the user has a Bambu Lab printer
-
-## Keywords
-
-OpenSCAD, 3D printing, CAD, parametric design, STL, 3MF, FDM, PLA, PETG, ABS, mechanical parts, enclosure, bracket, gear, assembly, scad file, 3D model, filament, print orientation, layer adhesion, slicer, export, G-code, PrusaSlicer, Cura, OrcaSlicer, Bambu Studio, Bambu project 3mf, print settings baked in, print workflow, acetone smoothing, heat resistant
+| File | Load when |
+|---|---|
+| [printer-configuration.md](printer-configuration.md) | Step 0, always |
+| [material-pla.md](material-pla.md) / [material-petg.md](material-petg.md) / [material-abs.md](material-abs.md) | Step 1, the chosen material only |
+| [openscad-reference.md](openscad-reference.md) | Before writing code: language gotchas, FDM module patterns (teardrop, chamfered shelf, EF base) |
+| [verification.md](verification.md) | Before running the gate |
+| [design-review.md](design-review.md) | Never yourself: it's the review sub-agent's brief |
+| [bambu-3mf-export.md](bambu-3mf-export.md) | When making a Bambu 3MF |
+| [fdm-design-principles.md](fdm-design-principles.md) | Only for hard support-free or structural cases |
+| [printing-guidelines.md](printing-guidelines.md) | Only for tolerance or overhang data the material file lacks |
+| [mechanical.md](mechanical.md) | Only for gears, threads, snap-fits, hinges, joints |
+| [printing-workflow.md](printing-workflow.md) | Only for a new user's export-to-print walkthrough |

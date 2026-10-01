@@ -1,0 +1,10 @@
+{
+  "printer": "Prusa MK4 (250 x 210 x 220 mm, 0.4 mm nozzle)",
+  "material": "PLA",
+  "criteria": [
+    "Holds a 60 x 40 mm board, holes on a 54 x 34 mm rectangle, 5 mm above the plate",
+    "Board fixed with M3 screws into M3 x 4 brass heat-set inserts (4.6 mm knurl OD), removable many times",
+    "Plate screws to the enclosure floor through four M3 corner holes",
+    "Prints on an MK4 in PLA without supports"
+  ]
+}

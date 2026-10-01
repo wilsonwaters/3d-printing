@@ -1,0 +1,10 @@
+{
+  "printer": "Bambu Lab P1S (256 x 256 x 256 mm, 0.4 mm nozzle)",
+  "material": "PETG",
+  "criteria": [
+    "Screws to a wall stud with two 4 mm countersunk wood screws, heads flush",
+    "The arm carries one end of a 200 mm deep bookshelf, about 8 kg per bracket, indefinitely without cracking",
+    "Arm at least 75 mm long",
+    "Prints on a P1S without supports"
+  ]
+}

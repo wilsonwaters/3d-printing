@@ -19,10 +19,12 @@ evals/
     judge.py          blind, order-swapped pairwise judge (optional, costs tokens)
     report.py         per-arm tables, paired ratios, bootstrap CIs, renders
     history.py        records every suite into history/<model>/ (A/B results over time)
+    review_models.py  design-review quality by reviewer model on fixed fixtures (reviewer/)
   cases/            benchmark cases: task.md (the prompt) + case.json (checks)
   flagship/         the rain gauge: task, human rubric, cross-model ledger
   native/           trigger suite for `claude plugin eval` (first-party runner)
   history/          committed: one folder per AI model, runs.jsonl + generated HISTORY.md
+  reviewer/         reviewer-model comparison: seeded-defect fixtures, runs.jsonl, RESULTS.md
   fixtures.json     snapshot for fixtures.py
   footprint-profiles.json   which files a run loads, per path through the skill
   baselines/footprint.json  the committed context budget (the ratchet)
@@ -35,7 +37,7 @@ evals/
 
 | Metric | Source | Why it matters |
 |---|---|---|
-| **Cost $** | `total_cost_usd` on the last result event | The bottom line. A list-price estimate, including sub-agents. |
+| **Cost $** | `total_cost_usd` on the last result event | The bottom line: US dollars at Anthropic's [list API prices](https://platform.claude.com/docs/en/about-claude/pricing), which Claude Code computes from each model's tokens, sub-agents included. |
 | **Context tokens** | input + cache read + cache write, all models | What skill trimming reduces. Every turn re-reads the whole context (mostly from cache), so this is roughly *context size × number of calls*. |
 | **Output tokens** | `modelUsage` | Code, prose and thinking; priced at 5× input. |
 | **API calls** | de-duplicated assistant messages | Fewer turns shrinks the multiplier on everything already in context. Often the biggest lever. |
@@ -50,6 +52,23 @@ Two transcript facts the tools handle for you. First, a result event's
 sub-agents are `modelUsage` and `total_cost_usd`. Second, per-message
 `output_tokens` in the stream is a placeholder, so output totals come from
 `modelUsage`.
+
+**What the dollars are.** They are list prices, not a bill: on a Claude
+subscription the same runs draw on your usage limits, and a full standard A/B
+can exhaust a session window. The rates behind the 2026-09-29 suites, per
+million tokens (input / output / cache read) were:
+
+- Opus 5.5: $4 / $20 / $0.20
+- Sonnet 5.5: $2 / $10 / $0.20
+- Fable 5.1: $10 / $50 / $0.25
+- Haiku 4.5: $1 / $5 / $0.10
+
+Cache writes cost 2× input for the main session, which caches for an hour,
+and 1.25× for sub-agents, which cache for 5 minutes. Recomputing a run's
+`modelUsage` from those rates reproduces its `costUSD` exactly. Check the
+[pricing page](https://platform.claude.com/docs/en/about-claude/pricing)
+before comparing against older suites: a price change moves cost without any
+change to the skill.
 
 ### Quality
 
@@ -115,6 +134,7 @@ command with the same `--out` and finished runs are skipped.
 | **A/B results over time** | [`evals/history/<model>/HISTORY.md`](history/README.md): every suite's comparison (cost and context ratio with 95% CI, pass rate, check score, judge) and each case's trend by skill version | **committed** |
 | Trigger suite | `claude plugin eval` prints a WITH / W/OUT / Δ table and writes `report.html` (published as a private claude.ai page if your account allows) | local / claude.ai |
 | Rain gauge flagship | [LEDGER.md](flagship/rain-gauge/LEDGER.md) | committed |
+| Reviewer model comparison | [reviewer/RESULTS.md](reviewer/RESULTS.md): design-review quality by reviewer model on fixed seeded-defect designs ([how](reviewer/README.md)) | committed |
 
 `run.py` records each suite into the history when it finishes. Pass `--label` to
 say what changed; that becomes the *Change* column. `--no-record` skips

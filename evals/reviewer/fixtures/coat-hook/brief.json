@@ -1,0 +1,9 @@
+{
+  "printer": "Bambu Lab P1S (256 x 256 x 256 mm, 0.4 mm nozzle)",
+  "material": "PETG",
+  "criteria": [
+    "Holds a heavy coat or bag, about 3 kg at the hook, without cracking or sagging over time",
+    "Fixes to a wall stud with two 4 mm pan-head wood screws",
+    "Prints on a P1S without supports"
+  ]
+}

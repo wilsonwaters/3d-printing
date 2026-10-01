@@ -1,186 +1,64 @@
-# Model Verification (deterministic build gate)
+# Verification: the deterministic build gate
 
-How an AI agent **empirically and deterministically verifies** a generated `.scad` model: it compiles, it produces a valid manifold solid, its measured dimensions match the spec, and its `assert()` contracts hold. These are reproducible, binary pass/fail checks — any run gives the same answer.
+The gate answers "does every part build into a valid, printable solid that meets the *measurable* spec?". It's binary and reproducible. Whether it's the right shape and a good FDM design is the [Design Review](design-review.md)'s job.
 
-This is distinct from the [Design Review](SKILL.md#design-review), which is the judgment-based, fresh-eyes pass (including LLM visual inspection of renders). **Verification is the hard gate; the review is peer critique.** Run verification first; only review/hand off a model that passes it.
-
-> Verification answers "does it build into a valid solid that meets the *measurable* spec?" — Design Review answers "is it actually the right shape, and a *good* FDM design?"
-
-Rendering and inspecting views belongs to the Design Review, not this gate — those commands live in [design-review.md](design-review.md). Verification never renders images or judges appearance.
-
----
-
-## Step 0 — Locate OpenSCAD, pick the best binary, detect capabilities
-
-The binary is often NOT on PATH (especially on Windows). Find every install, and if both a stable and a newer/nightly build are present, **prefer the newest** — it has far better verification (Manifold backend, `--summary` JSON). Fall back to whatever exists.
+## Run the gate
 
 ```sh
-# Look on PATH and in common install locations (newest first):
-command -v openscad
-ls -d "/c/Program Files"/OpenSCAD* "/Applications/OpenSCAD.app/Contents/MacOS" 2>/dev/null
-# e.g. stable: "/c/Program Files/OpenSCAD/openscad.exe"
-#      nightly: "/c/Program Files/OpenSCAD-2026.06.19-x86-64/openscad.exe"  (prefer this)
-OSCAD="<newest resolved path>"
-"$OSCAD" --version 2>&1                                   # e.g. 2021.01  or  2026.06.19
-"$OSCAD" --help 2>&1 | grep -E "backend|summary|hardwarnings|preview|export-format"
+python "<skill-dir>/verify-model.py" model.scad --build-volume 256x256x256 --export .
 ```
 
-Detect the tier from `--help`: if `--summary` and `--backend` are present you're on the **modern tier** (2024+/nightly); if absent you're on the **stable 2021.01 tier**. The two tiers verify differently — see 1b. If OpenSCAD is not installed at all, you cannot run this gate: say so explicitly, do an extra-careful static review, and offer to help the user install it (prefer the nightly for verification quality).
+It finds OpenSCAD (`$OPENSCAD`, PATH, then the usual install folders, newest first; `--openscad PATH` overrides). It full-renders every value of the `part` selector, prints any `echo()` output once, then prints one PASS/FAIL line per part and a final `GATE: PASS` or `GATE: FAIL`. Exit status 0 means every part passed. **Run it; don't read it.** Its `--help` covers the flags: `--parts a,b`, `-D 'name=value'`, `-j N`.
 
-### Capability matrix
+What it checks, by part name (the naming convention in SKILL.md):
 
-| Feature | Flag / behaviour | Stable 2021.01 | Modern 2024+/nightly |
-|---|---|---|---|
-| Full render + STL export | `-o out.stl` (CLI export always full-renders) | ✓ | ✓ |
-| Default mesh engine | — | CGAL | **Manifold** (robust, self-heals minor issues) |
-| Choose backend | `--backend=manifold\|CGAL` | ✗ | ✓ |
-| Measured bbox / topology as JSON | `--summary all --summary-file x.json` | ✗ | ✓ |
-| Stop on language warnings | `--hardwarnings` | ✓ (misses CGAL manifold warnings) | ✓ |
-| Default STL encoding | — | **ASCII** (force `--export-format binstl` to byte-parse) | binary-capable |
-| ThrownTogether PNG, camera, ortho | `--preview=throwntogether`, `--camera`, `--projection` | ✓ | ✓ |
+| Part | Passes when |
+|---|---|
+| printable (plain name) | Compiles clean, is **one connected body**, **manifold** (every edge shared by exactly two faces), **rests on Z=0**, fits the build volume |
+| `plate_*`, `*_parts`, `*_coupons` | As printable, but several bodies are allowed |
+| `clash_*`, `*interference*`, `fit` | Renders **empty**. Any overlap is a collision, and faces that only touch fail too: pose resting parts `fudge` apart in the clash part, so empty proves there's no overlap |
+| `check_*`, `verify_*`, `debug_*` | Compiles; may be empty |
+| `all`, `assembly*`, `explode*`, `section*`, `view*` | Compiles |
 
----
+"Compiles clean" means exit 0 and no `ERROR:`, `WARNING:`, failed `assert()`, CGAL or manifold message on stderr. `ECHO:` lines are ignored. For printable parts it also reports sloped overhang past 45° and flat ceiling area. These don't fail the gate, since short ceilings bridge and some designs accept supports, but a non-zero overhang on a "support-free" part needs a reason. `--export DIR` writes each passing printable or layout part as a binary STL deliverable, named `<model>-<part>.stl`.
 
-## Part 1 — The deterministic build gate
+Fix failures in the model, not in a slicer:
 
-### 1a. Cross-version base gate (always do this)
+- **Several bodies:** a feature floats free, e.g. teeth not overlapping their hub, or text not sunk into the face. Overlap it by `fudge`.
+- **Non-manifold edges:** solids meet only along an edge or corner. Overlap them, then clip to the outline (openscad-reference.md, "Neighbouring Solids Must Overlap").
+- **Not on the plate:** the part isn't modelled in print orientation at Z=0.
+- **Collision:** mating parts overlap in that pose.
 
-Compile every `part=` value. CLI STL export performs a **full render** (not preview), so it catches geometry errors the GUI preview hides.
+## Contracts: assert what you claim
 
-```sh
-"$OSCAD" --hardwarnings -o out.stl -D 'part="collet"' model.scad 2> render.log; ec=$?
-```
-
-A part PASSES the base gate only if ALL hold:
-- `ec` is 0 (a hard error such as an empty top-level object or a failed `assert()` gives exit 1), AND
-- `out.stl` exists and is non-empty (`[ -s out.stl ]`), AND
-- `render.log`, **after dropping `ECHO:` lines**, is clean of fatal phrases:
-
-```sh
-PAT='^ERROR:|^WARNING:|^EXPORT-WARNING:|Assertion|CGAL error|not be a valid 2-manifold|may need repair|Simple:[[:space:]]*no|Current top level object is empty|\(PolySet\)'
-grep -v '^ECHO:' render.log | grep -iE "$PAT"     # ANY output => FAIL
-```
-
-Notes baked in from testing both versions:
-- **Gate on stderr, not the exit code alone.** A non-manifold solid can exit 0. On 2021.01 it prints `WARNING: ... not be a valid 2-manifold` / `Simple: no`; `--hardwarnings` does *not* catch these, so the grep is essential.
-- **Exclude `ECHO:` lines** or an intentional echo containing a word like "empty" causes a false fail.
-- `(PolySet)` in the top-level-object line means a raw `polyhedron()` was passed through without manifold validation (a yellow flag that the solid was never checked). A clean CSG result reports `(manifold)` (modern) or a plain facet summary (2021.01).
-
-### 1b. Tier-specific checks
-
-**Modern tier (preferred — recommend power users install the nightly):** the Manifold backend is the default and is robust, so the build rarely "fails" on minor issues; lean on JSON measurement and contracts instead.
-
-```sh
-# Exact measured bounding box + topology, no STL parsing:
-"$OSCAD" -o out.stl -D 'part="collet"' --summary all --summary-file sum.json model.scad 2> render.log
-python -c "import json;b=json.load(open('sum.json'))['geometry']['bounding_box'];print('size',b['size'])"
-# Optional belt-and-braces: render with both engines and require both to succeed/agree:
-"$OSCAD" --backend=manifold -o m.stl model.scad 2> m.log
-"$OSCAD" --backend=CGAL     -o c.stl model.scad 2> c.log
-```
-
-`sum.json` schema (verified): `geometry.bounding_box.{min,max,size}` (mm), plus `geometry.{facets,convex,dimensions}`. Compare `size` to the intended envelope with ~0.1 mm slack.
-
-**Stable 2021.01 tier (fallback):** no `--summary`/`--backend`; rely on the stderr grep (1a) for CGAL manifold warnings and a stdlib bounding box on a **binary** STL.
-
-```sh
-"$OSCAD" --hardwarnings --export-format binstl -o out.stl -D 'part="collet"' model.scad 2> render.log
-python bbox.py out.stl          # bbox.py below; default STL is ASCII so binstl is required
-```
-
-### 1c. Design-by-contract: `assert()` + `echo()`
-
-Bake measurable acceptance criteria into the model so a violated constraint **fails the build** (caught by 1a on every version):
+Encode every measurable acceptance criterion, and every functional claim a comment or README makes ("snaps in after 0.8mm", "clears the cam by 1mm"), as an `assert()` on derived values. A violated contract then fails the gate. Compare floats with a tolerance (`abs(a - b) < 1e-6`, not `a == b`). Values are constants evaluated in file order, so a top-level variable used above its assignment is `undef`.
 
 ```openscad
 assert(insert_len <= tube_depth_max, "too deep for tube");
-assert(relaxed_crest_d < tube_id_max, "won't fit the loosest tube");
-echo(env_d = relaxed_crest_d, env_h = insert_len);     // ECHO: <values> to stderr
+echo(env_d = relaxed_crest_d, env_h = insert_len);   // shown in the gate's ECHO block
 ```
 
-Read echoed values back with `grep '^ECHO:' render.log`.
+For a mechanism, sample the motion in functions: positions and clearances at rest, mid-travel and end of travel. Assert the timing and the minimum clearances, and add `clash_*` parts that intersect each moving pair in those poses.
 
-### 1d. Bounding-box check (the envelope test)
+## Traceability and reporting
 
-Use `--summary` JSON on the modern tier (1b). On 2021.01, this stdlib binary-STL parser needs no dependencies:
+Trace each acceptance criterion to a gate result: a bbox, an assert or a clash part. Carry the eyeball criteria to the Design Review. Report the print-only ones ("a real M8 mates") as residuals, never silently passed. Then state what you confirmed, e.g.:
+
+> "Verified on OpenSCAD 2026.09.27: both parts compile clean, one body each, manifold, on the plate; 17.5×17.5×20.2mm and 16×16×9.6mm (within the 21mm depth limit); all asserts pass; clash_lid empty. Residual: an actual M8 mating needs a test print."
+
+**Lightweight re-check** after a minor tweak: `--parts` with just the changed parts.
+
+## Without Python (manual fallback)
+
+Compile each `part` value and gate on stderr, not the exit code alone: a non-manifold result can exit 0.
 
 ```sh
-cat > bbox.py <<'PY'
-import struct,sys
-f=open(sys.argv[1],'rb'); f.read(80); (n,)=struct.unpack('<I',f.read(4))
-mn=[1e9]*3; mx=[-1e9]*3
-for _ in range(n):
-    d=f.read(50)
-    if len(d)<50: break
-    for k in range(3):
-        x,y,z=struct.unpack('<3f',d[12+k*12:24+k*12])
-        for i,v in enumerate((x,y,z)): mn[i]=min(mn[i],v); mx[i]=max(mx[i],v)
-print(f"X={mx[0]-mn[0]:.2f} Y={mx[1]-mn[1]:.2f} Z={mx[2]-mn[2]:.2f}")
-PY
-python bbox.py out.stl
+openscad --hardwarnings --export-format asciistl -o out.stl -D 'part="lid"' model.scad 2> render.log; echo "exit $?"
+grep -v '^ECHO:' render.log | grep -iE '^ERROR:|^WARNING:|^EXPORT-WARNING:|Assertion|CGAL error|not be a valid 2-manifold|may need repair|Simple:[[:space:]]*no|Current top level object is empty'
 ```
 
-Faceting note: OpenSCAD circles are *inscribed* polygons, so a Ø17.6 feature may measure ~17.5 — small under-reads are expected, not a defect.
+Any grep output fails the part, except "top level object is empty" on a `clash_*` part, where empty is the pass. `(PolySet)` is not a failure: current builds print it for any bare primitive. On 2024+ builds, `--summary all --summary-file s.json` gives the measured `geometry.bounding_box.size`. Neither the exit code nor stderr catches edge-only contact or a part in several bodies: the Manifold backend self-heals the first, and Bambu Studio flags it later. Without the script, check both by eye in the review's renders. Binary STL rounds coordinates to float32 and fakes non-manifold edges, so count edges only on ASCII STL.
 
-### 1e. Optional external mesh validation (only if installed)
+**If OpenSCAD isn't installed where you're running:** in a sandbox or container you control, install it before designing. On Linux, `apt-get install openscad` (the 2021.01 stable, which the gate supports) or the nightly AppImage from `files.openscad.org/snapshots/`. If FUSE is missing, run the AppImage with `--appimage-extract` and use `squashfs-root/AppRun`. The nightly needs `libegl1`, `libgl1` and `libglu1-mesa`. On the user's own machine, ask before installing anything. If it truly can't be installed, say so plainly and do an extra-careful static review. Hand off the `.scad` with the export steps: open it in OpenSCAD, F6 to render, F7 to save an STL, then open the STL in the slicer. Don't present the `.scad` as the printable file.
 
-Independent watertight/winding opinion; bonus, not required (often absent):
-
-```sh
-admesh out.stl | grep -E 'disconnected|Backwards edges|Number of parts|Volume'
-python -c "import trimesh;m=trimesh.load('out.stl');print(m.is_watertight,m.is_winding_consistent,m.volume)"
-```
-
-### 1f. Regression (multi-version work)
-
-Hash the evaluated CSG tree (stable across tessellation) to detect unintended changes between iterations: `"$OSCAD" -o tree.csg model.scad && sha256sum tree.csg`.
-
-### 1g. Slicer-manifold check (edge-only contact)
-
-The Manifold backend **self-heals edge-only contact** (solids meeting on a bare edge/corner rather than a face — e.g. diagonally adjacent grid cells), so 1a passes, but **Bambu Studio still flags it** ("N non-manifold edges, may need repair"). Run this stdlib check (no install) on every exported STL whenever the model tiles/arrays solids: in a watertight 2-manifold mesh **every undirected edge is shared by exactly two triangles**, so any count ≠ 2 is a defect.
-
-```sh
-python - "$@" <<'PY'
-import sys
-def check(path):
-    tris, edges = 0, {}
-    verts = []
-    for line in open(path):
-        s = line.split()
-        if s[:1] == ['vertex']:
-            verts.append(tuple(s[1:4]))          # exact text = exact match
-            if len(verts) == 3:
-                tris += 1
-                for i in range(3):
-                    a, b = verts[i], verts[(i+1) % 3]
-                    k = (a, b) if a <= b else (b, a)
-                    edges[k] = edges.get(k, 0) + 1
-                verts = []
-    bad = sum(1 for c in edges.values() if c != 2)
-    print(("OK  " if bad == 0 else "BAD ") + f"{path}  tris={tris} non-manifold-edges={bad}")
-for p in sys.argv[1:]: check(p)
-PY
-```
-
-(ASCII STL parser; on the modern tier export ASCII or drop `--export-format binstl`.) A non-zero count means the fix belongs in the model — overlap the touching solids and clip to outline per [openscad-reference.md](openscad-reference.md) "Neighbouring Solids Must Overlap" — not in a slicer repair.
-
-### Gate result
-
-A part is **verified** when: it compiles (exit 0, non-empty STL), stderr is clean per 1a, its measured bounding box is within the intended envelope, and all `assert()` contracts pass. Trace each *measurable* acceptance criterion to one of these results. Report anything that can't be checked mechanically (e.g. "a real M8 mates") as a residual to confirm by print — never silently pass.
-
----
-
-## Cross-platform notes
-
-- Commands above are POSIX sh (Git-Bash on Windows, macOS, Linux). In PowerShell use `2>render.log`, `$LASTEXITCODE`, and `Select-String` instead of `grep`.
-- Quote any binary path containing spaces (`"C:\Program Files\OpenSCAD-2026.06.19-x86-64\openscad.exe"`).
-- Write all render/log/png/json artifacts to a scratch/temp dir, not the model folder, and clean them up — keep only the deliverable STLs and any preview images you intend to ship.
-
-## Pitfalls (verified on 2021.01 and 2026.06.19)
-
-- **Exit code is not a sufficient gate** — a non-manifold or PolySet result can exit 0. Gate on stderr (and on `--summary` topology where available) too.
-- **`--hardwarnings` misses CGAL manifold warnings** (2021.01). Still use it for language warnings, but don't rely on it alone.
-- **Manifold backend self-heals** (2026): the old "two cubes sharing one edge" no longer warns (it reports `Genus: -1` though) — so on modern builds, prefer measured/topology checks over expecting a build failure. This is exactly why edge-only contact escapes the gate but **Bambu Studio later flags it non-manifold** — run the edge-count check (1g) on arrayed/tiled models.
-- **Default STL is ASCII on 2021.01** — force `--export-format binstl` before byte-parsing.
-- **Preview ≠ render**: only trust full-render export, never `$preview` geometry.
-- **Exclude `ECHO:` lines** from the stderr gate, or intentional messages cause false fails.
+Write scratch renders and logs to a temp directory, not the model folder. In PowerShell use `2> render.log`, `$LASTEXITCODE` and `Select-String`. Quote paths that contain spaces.

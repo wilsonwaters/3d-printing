@@ -89,7 +89,7 @@ Design tips:
 | M4 | 5.6mm | 6mm | 10mm |
 | M5 | 6.4mm | 7mm | 12mm |
 
-Heat-set inserts provide 200-600 N pull-out force vs 50-150 N for printed threads. **Always prefer inserts for repeated fastening.**
+Heat-set inserts provide 200-600 N pull-out force vs 50-150 N for printed threads. **Any metal screw goes into an insert, a captive nut or a self-tap hole, never a printed thread.**
 
 ## Print-in-Place Clearances
 

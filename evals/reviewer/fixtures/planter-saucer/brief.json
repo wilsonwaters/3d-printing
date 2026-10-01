@@ -1,0 +1,10 @@
+{
+  "printer": "Bambu Lab X1 Carbon (256 x 256 x 256 mm, 0.4 mm nozzle)",
+  "material": "PETG",
+  "criteria": [
+    "Sits under a 150 mm pot and holds its drain water (up to ~150 ml) without leaking",
+    "Has a lip to lift it with wet fingers",
+    "No taller than 25 mm",
+    "Prints on an X1C without supports"
+  ]
+}

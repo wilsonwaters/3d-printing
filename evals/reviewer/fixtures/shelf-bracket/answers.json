@@ -1,0 +1,16 @@
+{
+  "defects": [
+    {"id": "layer_orientation", "severity": "vital",
+     "what": "Printed with the wall plate flat and the arm vertical, so the arm's layers stack along its length: the shelf load bends the arm across its layer lines and it will split at the root. It should print on its side so the load runs along the layers.",
+     "credit": "Any finding that the print orientation loads the arm across/perpendicular to the layers (weak Z) and it may delaminate or snap at the arm root."},
+    {"id": "screw_hole_too_small", "severity": "vital",
+     "what": "screw_d = 3.2 mm is labelled a clearance hole for 4 mm wood screws; a 4 mm screw won't pass (clearance needs about 4.3-4.6 mm plus hole compensation).",
+     "credit": "Any finding that the screw holes are too small for 4 mm screws."},
+    {"id": "sharp_internal_corner", "severity": "minor",
+     "what": "The arm meets the plate at a sharp 90 degree internal corner outside the narrow gusset; no fillet (skill rule: min 1 mm fillet).",
+     "credit": "Any finding about a missing fillet / sharp internal corner at the arm-to-plate joint."},
+    {"id": "ef_chamfer_unused", "severity": "minor",
+     "what": "ef_chamfer is defined but never applied; no elephant-foot chamfer on the plate's bottom edges.",
+     "credit": "Any finding that elephant-foot compensation is missing or ef_chamfer is unused."}
+  ]
+}

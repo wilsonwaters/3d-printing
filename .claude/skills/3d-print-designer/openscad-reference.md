@@ -56,7 +56,7 @@ intersection() {
 }
 ```
 
-See [verification.md](verification.md) for the edge-count check that catches this deterministically (the build gate alone does not).
+The gate ([verification.md](verification.md)) counts non-manifold edges on every printed part, so it catches this; OpenSCAD's own render doesn't.
 
 ### Polyhedron Faces Must Be Clockwise from Outside
 
@@ -109,6 +109,7 @@ module show() echo(regular, $special);
 - Circles are **inscribed polygons** (fit inside the specified radius, never reach it at segment midpoints)
 - For axis-aligned integer bounding boxes, use `$fn` divisible by 4
 - `$fn` > 128 not recommended for performance
+- `text()` inherits `$fn` too: at 64, every glyph curve gets 64 segments (one dial face's STL reached 14 MB). Pass `$fn = 12` to `text()`
 
 ### Resolution Pattern
 
@@ -190,15 +191,15 @@ module screw_hole(h, d, head_d, head_h) {
     }
 }
 
-// Teardrop hole — self-supporting horizontal hole (no support material)
-module teardrop_hole(d, h) {
+// Teardrop hole — a horizontal hole whose top rises to a 45° point (apex r*sqrt(2) above
+// the axis), so it prints without support. axis = "x" or "y" is the hole's direction; the
+// point always faces +Z. Position it with translate() and rotations about Z only: rotating
+// it about X or Y turns the point sideways.
+module teardrop_hole(d, h, axis = "y") {
     r = d / 2;
-    rotate([90, 0, 0])
-        linear_extrude(height=h, center=true)
-            union() {
-                circle(r=r);
-                polygon([[-r, 0], [r, 0], [0, r]]);
-            }
+    rotate([0, 0, axis == "x" ? 90 : 0]) rotate([90, 0, 0])
+        linear_extrude(height = h, center = true)
+            union() { circle(r = r); rotate(45) square(r); }
 }
 
 // Chamfered shelf — replaces a flat shelf/ledge with a 45° chamfered (support-free) underside
@@ -212,12 +213,12 @@ module chamfered_shelf(width, depth, thick, chamfer) {
     }
 }
 
-// Elephant-foot compensation base — taper the first layers inward
+// Elephant-foot compensation base — the first layers inset by ef at 45°, full size above
+// (squish then spreads the first layer back out to the nominal outline)
 module ef_base(size, ef=0.4) {
     hull() {
-        translate([ef, ef, ef])
-            cube([size[0] - 2*ef, size[1] - 2*ef, size[2] - ef]);
-        cube([size[0], size[1], 0.01]);
+        translate([ef, ef, 0]) cube([size[0] - 2*ef, size[1] - 2*ef, fudge]);
+        translate([0, 0, ef]) cube([size[0], size[1], size[2] - ef]);
     }
 }
 ```

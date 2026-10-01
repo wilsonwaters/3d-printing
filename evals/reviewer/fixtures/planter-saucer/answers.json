@@ -1,0 +1,16 @@
+{
+  "defects": [
+    {"id": "flat_lip_overhang", "severity": "vital",
+     "what": "The 12 mm lip is a flat horizontal ring 18 mm above the bed with nothing under it: a 90 degree overhang all the way round that will droop or fail without supports. It needs a 45 degree chamfer or gusset underneath.",
+     "credit": "Any finding that the lip is an unsupported/flat overhang that needs support or a chamfer underneath."},
+    {"id": "not_watertight", "severity": "vital",
+     "what": "A 0.8 mm (4-layer) floor and 1.5 mm walls are too thin to hold water reliably in FDM PETG; the skill's PETG guidance is at least 2 mm (5 perimeters) for waterproof containers, and more solid floor layers.",
+     "credit": "Any finding that the floor and/or walls are too thin to be watertight / will leak."},
+    {"id": "wall_not_multiple", "severity": "minor",
+     "what": "wall_t = 1.5 mm is not a whole number of 0.45 mm extrusion widths (3.33 perimeters).",
+     "credit": "Any finding that the wall thickness is not an integer multiple of the extrusion width."},
+    {"id": "ef_chamfer_unused", "severity": "minor",
+     "what": "ef_chamfer is defined but never applied to the bottom edge.",
+     "credit": "Any finding that elephant-foot compensation is missing or ef_chamfer is unused."}
+  ]
+}

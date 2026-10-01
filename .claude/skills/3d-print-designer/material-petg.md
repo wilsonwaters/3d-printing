@@ -122,17 +122,8 @@ PETG's elongation and fatigue resistance make it one of the best filaments for l
 
 ### Thread Design
 
-- Larger clearances than PLA due to flexibility: 0.25-0.35mm
-- PETG threads wear faster — use brass inserts for repeated use
-- Pre-heat inserts to 200-220C (PETG flows around insert well)
-- Buttress threads better for FDM than standard metric (45 degree load face, 5 degree relief)
-
-| Thread | External Reduction | Internal Increase |
-|--------|-------------------|-------------------|
-| M3 | -0.15mm | +0.20mm |
-| M4 | -0.20mm | +0.20mm |
-| M6 | -0.20mm | +0.25mm |
-| M8 | -0.25mm | +0.25mm |
+- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts): a printed M8 thread in PETG didn't form in a real print. Use a heat-set insert (iron at 200-220C; PETG flows around it well), a captive nut, or a self-tap hole at about 50% thread depth.
+- Printed threads suit coarse plastic-to-plastic joints only (≥M10). Clearance 0.25-0.35mm, more than PLA because PETG flexes. Buttress profiles suit FDM better than metric (45 degree load face, 5 degree relief).
 
 ### Clearances and Fits
 

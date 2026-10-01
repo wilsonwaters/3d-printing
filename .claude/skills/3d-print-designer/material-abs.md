@@ -158,13 +158,9 @@ ABS snap-fits can handle repeated engagement. Print snap features parallel to la
 
 ### Thread Design
 
-- Printable at **M4 and above** (same as PLA)
-- Use coarse pitch threads
-- Add 0.25-0.35mm clearance (slightly more than PLA)
-- **Heat-set brass inserts strongly preferred** — ABS works well with them due to high Tg
-  - Boss outer diameter: at least 2x insert diameter
-  - Hole diameter: insert outer diameter minus 0.1-0.2mm
-  - Insert temperature: 230-250C (higher than PETG due to ABS Tg)
+- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts). Use a heat-set insert, a captive nut, or a self-tap hole at about 50% thread depth.
+- Printed threads suit coarse plastic-to-plastic joints only: ≥M10, 0.25-0.35mm clearance (slightly more than PLA).
+- **Heat-set brass inserts work especially well in ABS** (high Tg). Take the hole and boss sizes from the insert's datasheet or the table in printing-guidelines.md; the hole is well under the insert's knurl diameter. Insert temperature 230-250C (higher than PETG).
 
 ### Anti-Warping Design Strategies
 
@@ -352,11 +348,9 @@ module abs_base(width, depth, height, corner_r=2) {
 abs_m3_clearance = 3.5;  // PLA uses 3.3-3.4
 ```
 
-3. **Heat-set insert bosses**:
+3. **Heat-set insert bosses** (sizes from the insert's datasheet, or printing-guidelines.md: M3 is a 4.0 hole in an 8 boss):
 ```openscad
-module heat_set_boss(insert_od, insert_len, wall_t=2) {
-    boss_od = insert_od + 2 * wall_t;
-    hole_d = insert_od - 0.15;  // Slightly undersized for press-in
+module heat_set_boss(hole_d, insert_len, boss_od) {
     difference() {
         cylinder(d=boss_od, h=insert_len + 1);
         translate([0, 0, -fudge])

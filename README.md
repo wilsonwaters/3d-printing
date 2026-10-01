@@ -144,8 +144,8 @@ you're on before it writes any geometry. It ships with profiles for:
 | **Ankermake** | M5 / M5C |
 | **Ratrig** | V-Core 4 |
 
-Each profile carries build volume, nozzle sizes, layer-height range, max hotend
-and bed temps, enclosure, extruder type and printable materials. Anything not
+Each entry carries build volume, nozzle sizes, max hotend and bed temps,
+enclosure, extruder type, multi-material and material caveats. Anything not
 listed falls back to a short spec questionnaire.
 
 ### Bambu 3MF export — open and press Print
@@ -159,7 +159,9 @@ as the model was designed for.
 It's built by the bundled `make-bambu-3mf.py` (Python 3.8+, standard library
 only — no pip installs) and binds your own installed Bambu system presets by
 name, so you don't get the "customized preset" G-code warning. Filament stays
-your choice unless you ask for it to be baked in too.
+your choice unless you ask for it to be baked in too. It works without Bambu
+Studio installed (it carries the identity of every official Bambu printer
+preset), and it checks each file it writes by re-importing it through lib3mf.
 
 This is Bambu Studio / OrcaSlicer specific — PrusaSlicer, Cura and others don't
 read the settings-in-3MF format, so for those the skill hands off an STL plus a
