@@ -6,7 +6,7 @@ so it catches what the GUI preview hides), measures each mesh, and prints one li
 Exit status 0 means every part passed. Python 3.8+ standard library only.
 
   python verify-model.py model.scad --build-volume 256x256x256 [--export DIR]
-         [--parts a,b] [-D 'name=value'] [--openscad PATH] [-j 4]
+         [--parts a,b] [-D 'name=value'] [--openscad PATH] [-j 4] [--first-layer-z 0.1]
 
 How each `part` value is judged, by its name:
   printable (anything else)  compiles clean, one connected body, manifold (every edge shared by
@@ -22,7 +22,11 @@ How each `part` value is judged, by its name:
 (ECHO lines are ignored). OpenSCAD's "(PolySet)" note is not a failure: current builds print
 it for any bare primitive. Sloped overhang past 45 degrees and flat ceiling area are reported
 for printable parts but don't fail the gate: short ceilings bridge, and some designs accept
-supports. --export writes each printable/layout part as a binary STL deliverable.
+supports. So is the first layer: the separate regions of each printable part's cross-section at
+--first-layer-z (half the first layer), with their areas, ignoring slivers under 0.2 mm2 that no
+slicer prints. A WARN line flags an island under 1 cm2 or a largest region under 20% of the
+layer, but never fails the gate: four separate feet are fine. --export writes each
+printable/layout part as a binary STL deliverable.
 """
 
 import argparse
@@ -45,6 +49,8 @@ KINDS = [("view", r"^(all$|assembl|explod|section|cutaway|preview|view)"),
          ("diag", r"^(check|verify|debug|probe)|_check$"),
          ("layout", r"^(plate|layout|print|bed|build)|parts$|coupons$")]
 NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
+ISLAND_MIN_CM2, ISLAND_SHARE = 1.0, 0.20  # first-layer WARN: an island this small, or largest below this share
+SLIVER_MM2 = 0.2  # a first-layer region smaller than one extrusion width squared: no slicer prints it
 
 
 def find_openscad(explicit=None):
@@ -164,6 +170,94 @@ def measure(tris_text):
             "bad_edges": sum(1 for k in edges.values() if k != 2), "overhang": over, "ceiling": flat}
 
 
+def first_layer(tris_text, z):
+    """Areas (mm2, largest first) of the separate regions in the cross-section at height z.
+    Each triangle crossing z gives a segment between points on two of its edges. A point is
+    keyed by its edge's exact text vertices, so neighbouring triangles share it and the
+    segments join into closed loops. Oriented by the face normal, a loop's shoelace area is
+    positive round material and negative round a hole; a region is an outline plus the holes
+    directly inside it."""
+    parent, segs = {}, []
+
+    def root(k):
+        while parent[k] != k:
+            parent[k] = parent[parent[k]]
+            k = parent[k]
+        return k
+
+    for t in tris_text:
+        v = [tuple(float(x) for x in t[k:k + 3]) for k in (0, 3, 6)]
+        up = [p[2] > z for p in v]
+        if all(up) or not any(up):
+            continue
+        keys, pts = [], []
+        for i, j in ((0, 1), (1, 2), (2, 0)):
+            if up[i] != up[j]:
+                ka, kb, pa, pb = tuple(t[3 * i:3 * i + 3]), tuple(t[3 * j:3 * j + 3]), v[i], v[j]
+                if kb < ka:
+                    ka, kb, pa, pb = kb, ka, pb, pa
+                f = (z - pa[2]) / (pb[2] - pa[2])
+                keys.append((ka, kb))
+                pts.append((pa[0] + f * (pb[0] - pa[0]), pa[1] + f * (pb[1] - pa[1])))
+        nx = (v[1][1] - v[0][1]) * (v[2][2] - v[0][2]) - (v[1][2] - v[0][2]) * (v[2][1] - v[0][1])
+        ny = (v[1][2] - v[0][2]) * (v[2][0] - v[0][0]) - (v[1][0] - v[0][0]) * (v[2][2] - v[0][2])
+        (p, q), (kp, kq) = pts, keys
+        if (q[0] - p[0]) * -ny + (q[1] - p[1]) * nx < 0:  # material on the left, outline CCW
+            p, q = q, p
+        segs.append((kp, p, q))
+        for k in (kp, kq):
+            parent.setdefault(k, k)
+        parent[root(kp)] = root(kq)
+    loops = {}
+    for k, p, q in segs:
+        lp = loops.setdefault(root(k), {"area": 0.0, "segs": [], "box": [p[0], p[1], p[0], p[1]]})
+        lp["area"] += (p[0] * q[1] - q[0] * p[1]) / 2
+        lp["segs"].append((p, q))
+        b = lp["box"]
+        b[:] = [min(b[0], p[0], q[0]), min(b[1], p[1], q[1]), max(b[2], p[0], q[0]), max(b[3], p[1], q[1])]
+    loops = [lp for lp in loops.values() if abs(lp["area"]) > 1e-6]
+    if sum(lp["area"] for lp in loops) < 0:  # the mesh winds the other way
+        for lp in loops:
+            lp["area"] = -lp["area"]
+    outer = sorted((lp for lp in loops if lp["area"] > 0), key=lambda lp: lp["area"])
+    areas = {id(lp): lp["area"] for lp in outer}
+    for hole in (lp for lp in loops if lp["area"] < 0):
+        hb, (x, y) = hole["box"], hole["segs"][0][0]
+        for lp in outer:  # smallest outline containing the hole is its parent
+            b = lp["box"]
+            if b[0] <= hb[0] and b[1] <= hb[1] and b[2] >= hb[2] and b[3] >= hb[3] and sum(
+                    1 for p, q in lp["segs"] if (p[1] > y) != (q[1] > y)
+                    and p[0] + (y - p[1]) * (q[0] - p[0]) / (q[1] - p[1]) > x) % 2:
+                areas[id(lp)] += hole["area"]
+                break
+    return sorted(areas.values(), reverse=True)
+
+
+def report_first_layer(areas, z, info):
+    """Append the first-layer regions to a part's info; return (info, WARN text or None)."""
+    areas = [a for a in areas if a >= SLIVER_MM2]
+    if not areas:
+        return info + ", first layer: no material at Z=%g" % z, None
+    cm2 = [a / 100 for a in areas]
+    total = sum(cm2)
+    if len(cm2) == 1:
+        return info + ", first layer 1 region %.1f cm2" % total, None
+    groups = {}
+    for a in cm2:
+        groups[round(a, 1)] = groups.get(round(a, 1), 0) + 1
+    listed = ["%.1f%s" % (a, " x%d" % n if n > 1 else "") for a, n in sorted(groups.items(), reverse=True)]
+    info += ", first layer %d regions %.1f cm2, largest %.0f%%: %s cm2" % (
+        len(cm2), total, 100 * cm2[0] / total, ", ".join(listed[:12] + (["..."] if listed[12:] else [])))
+    small = sum(1 for a in cm2 if a < ISLAND_MIN_CM2)
+    if not small and cm2[0] >= ISLAND_SHARE * total:
+        return info, None
+    return info, ("first layer in %d separate regions%s, largest %.0f%% of %.1f cm2. Small islands "
+                  "with free ends lift, worst in PETG and ABS: stand cuts on a sill of 3+ layers "
+                  "instead of Z=0, or flare the foot. Fine if they are deliberate feet." % (
+                      len(cm2), ", %d under %g cm2" % (small, ISLAND_MIN_CM2) if small else "",
+                      100 * cm2[0] / total, total))
+
+
 def write_binary_stl(tris_text, path):
     with open(path, "wb") as f:
         f.write(b"verify-model.py".ljust(80, b" ") + struct.pack("<I", len(tris_text)))
@@ -171,7 +265,7 @@ def write_binary_stl(tris_text, path):
             f.write(struct.pack("<12f2x", 0, 0, 0, *[float(x) for x in t]))
 
 
-def check_part(osc, scad, part, kind, bv, defines, tmp, export, timeout):
+def check_part(osc, scad, part, kind, bv, defines, tmp, export, timeout, layer_z):
     tag = re.sub(r"[^A-Za-z0-9_.-]+", "_", part or "model")
     stl = os.path.join(tmp, tag + ".stl")
     cmd = [osc, "--export-format", "asciistl", "-o", stl] + sum((["-D", d] for d in defines), [])
@@ -182,27 +276,27 @@ def check_part(osc, scad, part, kind, bv, defines, tmp, export, timeout):
                            cwd=os.path.dirname(scad) or ".")
         code, err = p.returncode, p.stderr + p.stdout
     except subprocess.TimeoutExpired:
-        return part, kind, False, "render timed out after %ss" % timeout, []
+        return part, kind, False, "render timed out after %ss" % timeout, [], None
     echo = [ln[5:].strip() for ln in err.splitlines() if ln.startswith("ECHO:")]
     lines = [ln.strip() for ln in err.splitlines() if not ln.startswith("ECHO:")]
     empty = any(EMPTY_RE.search(ln) for ln in lines) or not (os.path.exists(stl) and os.path.getsize(stl) > 84)
     fatal = [ln for ln in lines if FATAL_RE.search(ln) and not EMPTY_RE.search(ln)]
     if fatal or (code != 0 and not empty):
-        return part, kind, False, "; ".join(fatal[:3]) or err.strip()[-300:] or "exit %s" % code, echo
+        return part, kind, False, "; ".join(fatal[:3]) or err.strip()[-300:] or "exit %s" % code, echo, None
     if kind == "clash":
         if empty:
-            return part, kind, True, "empty (no collision)", echo
+            return part, kind, True, "empty (no collision)", echo, None
         m = measure(read_stl(stl))
         if m["volume"] < 0.01 or min(m["size"]) < 0.001:
             return part, kind, False, ("faces touch (a zero-thickness intersection): pose parts that "
                                        "rest on each other fudge apart in the clash part, so empty "
-                                       "proves there is no overlap"), echo
+                                       "proves there is no overlap"), echo, None
         return part, kind, False, "COLLISION: %.2f mm3 of overlap, %.1f x %.1f x %.1f mm" % (
-            m["volume"], *m["size"]), echo
+            m["volume"], *m["size"]), echo, None
     if empty:
-        return part, kind, kind == "diag", "renders empty", echo
+        return part, kind, kind == "diag", "renders empty", echo, None
     if kind == "view":
-        return part, kind, True, "compiles", echo
+        return part, kind, True, "compiles", echo, None
     tris = read_stl(stl)
     m = measure(tris)
     sx, sy, sz = m["size"]
@@ -221,13 +315,16 @@ def check_part(osc, scad, part, kind, bv, defines, tmp, export, timeout):
                                                          "y" if m["bodies"] == 1 else "ies", m["volume"])
     if kind != "diag":
         info += ", overhang>45deg %.0f mm2, flat ceilings %.0f mm2" % (m["overhang"], m["ceiling"])
+    warn = None
+    if kind == "printable" and abs(m["zmin"]) <= 0.05:
+        info, warn = report_first_layer(first_layer(tris, m["zmin"] + layer_z), layer_z, info)
     if export and kind in ("printable", "layout") and not probs:
         os.makedirs(export, exist_ok=True)
         stem = os.path.splitext(os.path.basename(scad))[0]
         out = os.path.join(export, stem + ("-" + tag if part is not None else "") + ".stl")
         write_binary_stl(tris, out)
         info += " -> " + os.path.relpath(out)
-    return part, kind, not probs, "; ".join(probs + [info]), echo
+    return part, kind, not probs, "; ".join(probs + [info]), echo, warn
 
 
 def main():
@@ -240,6 +337,8 @@ def main():
     ap.add_argument("--openscad", help="OpenSCAD executable (default: $OPENSCAD, PATH, install dirs)")
     ap.add_argument("-j", type=int, default=min(4, os.cpu_count() or 2), help="parallel renders")
     ap.add_argument("--timeout", type=int, default=900, help="seconds per part")
+    ap.add_argument("--first-layer-z", type=float, default=0.1, metavar="MM",
+                    help="slice height for the first-layer island report: half the first layer (default 0.1)")
     a = ap.parse_args()
     osc = find_openscad(a.openscad)
     if not osc:
@@ -255,7 +354,7 @@ def main():
     try:
         with concurrent.futures.ThreadPoolExecutor(max(1, a.j)) as ex:
             res = list(ex.map(lambda p: check_part(osc, scad, p, kind_of(p), bv, a.defines, tmp,
-                                                   a.export, a.timeout), parts))
+                                                   a.export, a.timeout, a.first_layer_z), parts))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     echoes = list(dict.fromkeys(e for r in res for e in r[4]))
@@ -264,8 +363,11 @@ def main():
         for e in echoes[:40]:
             print("  " + e[:200])
     w = max(len(str(r[0])) for r in res)
-    for part, kind, ok, msg, _ in res:
+    for part, kind, ok, msg, _, _ in res:
         print("%s  %-*s  %-9s  %s" % ("PASS" if ok else "FAIL", w, part or "(no selector)", kind, msg))
+    for part, kind, _, _, _, warn in res:
+        if warn:
+            print("WARN  %-*s  %-9s  %s" % (w, part or "(no selector)", kind, warn))
     bad = [r for r in res if not r[2]]
     print("GATE: %s (%d of %d parts pass)" % ("PASS" if not bad else "FAIL", len(res) - len(bad), len(res)))
     sys.exit(1 if bad else 0)

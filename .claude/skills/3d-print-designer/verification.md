@@ -20,7 +20,7 @@ What it checks, by part name (the naming convention in SKILL.md):
 | `check_*`, `verify_*`, `debug_*` | Compiles; may be empty |
 | `all`, `assembly*`, `explode*`, `section*`, `view*` | Compiles |
 
-"Compiles clean" means exit 0 and no `ERROR:`, `WARNING:`, failed `assert()`, CGAL or manifold message on stderr. `ECHO:` lines are ignored. For printable parts it also reports sloped overhang past 45° and flat ceiling area. These don't fail the gate, since short ceilings bridge and some designs accept supports, but a non-zero overhang on a "support-free" part needs a reason. `--export DIR` writes each passing printable or layout part as a binary STL deliverable, named `<model>-<part>.stl`.
+"Compiles clean" means exit 0 and no `ERROR:`, `WARNING:`, failed `assert()`, CGAL or manifold message on stderr. `ECHO:` lines are ignored. For printable parts it also reports sloped overhang past 45° and flat ceiling area. These don't fail the gate, since short ceilings bridge and some designs accept supports, but a non-zero overhang on a "support-free" part needs a reason. It also reports the first layer's separate regions at Z=0.1 and their areas, with a `WARN` line (never a FAIL) when small islands could lift. `--export DIR` writes each passing printable or layout part as a binary STL deliverable, named `<model>-<part>.stl`.
 
 Fix failures in the model, not in a slicer:
 
