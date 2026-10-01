@@ -8,6 +8,7 @@ Costs ($) are US dollars at Anthropic's list API prices (https://platform.claude
 
 | Date | Suite | Change | Effort | Base → Cand | Cases × trials | Pass rate | Check score Δ | Cost ratio [95% CI] | Context ratio [95% CI] | Judge cand/base/tie |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-01 | material-trim | material + openscad-reference trim, first-layer check | xhigh | `main` 9fd3fcb · 3a63900f0f → `0e6cb13` 0e6cb13 · e5a041067b | 3 × 3 | 1.00 → 1.00 | +0.00 [-0.03, +0.03] ~same | x1.08 [1.01-1.16] higher | x1.04 [0.97-1.12] ~same | - |
 | 2026-10-01 | smoke-fastener-pattern | fastener pattern + pattern proposals | xhigh | `main` c055328 · 225f99d40d → `WORKTREE` b0b23ad · 3a63900f0f | 3 × 3 | 1.00 → 1.00 | +0.03 [-0.04, +0.10] ~same | x0.94 [0.75-1.17] ~same | x1.09 [0.91-1.31] ~same | 0/1/2 |
 | 2026-09-29 | skill-review-v2-2026-09-29 | skill review: gate + 3MF tools, 3MF by default, Sonnet/Fable reviews, leaner refs | xhigh | `origin/main` 2d8f6e1 · 1d09abd8d4 → `c76ad10` c76ad10 · 344f91ff10 | 7 × 3 | 0.67 → 0.81 | +0.20 [+0.14, +0.28] better | x0.68 [0.61-0.77] lower | x0.46 [0.36-0.59] lower | - |
 
@@ -19,6 +20,8 @@ Newest first. Median $, context and calls are per run; pass is passes/trials.
 
 | Date | Suite | Arm | Skill | Effort | Pass | Score | Median $ | Median context | Calls | Wall s | Sub-agent share | Static tokens | Failing checks |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 2026-10-01 | material-trim | cand | `0e6cb13` 0e6cb13 · e5a041067b | xhigh | 3/3 | 1.00 | $0.13 | 72,497 | 2 | 7 | 0% | 22,591 |  |
+| 2026-10-01 | material-trim | base | `main` 9fd3fcb · 3a63900f0f | xhigh | 3/3 | 1.00 | $0.13 | 72,453 | 2 | 8 | 0% | 26,943 |  |
 | 2026-10-01 | smoke-fastener-pattern | cand | `WORKTREE` b0b23ad · 3a63900f0f | xhigh | 3/3 | 1.00 | $0.12 | 72,459 | 2 | 8 | 0% | 26,943 |  |
 | 2026-10-01 | smoke-fastener-pattern | base | `main` c055328 · 225f99d40d | xhigh | 3/3 | 1.00 | $0.12 | 72,325 | 2 | 8 | 0% | 27,056 |  |
 | 2026-09-29 | skill-review-v2-2026-09-29 | cand | `c76ad10` c76ad10 · 344f91ff10 | xhigh | 3/3 | 1.00 | $0.12 | 71,124 | 2 | 15 | 0% | 26,714 |  |
@@ -38,6 +41,8 @@ Newest first. Median $, context and calls are per run; pass is passes/trials.
 
 | Date | Suite | Arm | Skill | Effort | Pass | Score | Median $ | Median context | Calls | Wall s | Sub-agent share | Static tokens | Failing checks |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 2026-10-01 | material-trim | cand | `0e6cb13` 0e6cb13 · e5a041067b | xhigh | 3/3 | 1.00 | $6.42 | 4,823,309 | 37 | 2,153 | 21% | 22,591 |  |
+| 2026-10-01 | material-trim | base | `main` 9fd3fcb · 3a63900f0f | xhigh | 3/3 | 1.00 | $5.20 (3 est.) | 4,284,997 | 35 | 2,700 | 25% | 26,943 | timeout x3 |
 | 2026-10-01 | smoke-fastener-pattern | cand | `WORKTREE` b0b23ad · 3a63900f0f | xhigh | 3/3 | 1.00 | $5.67 | 4,293,415 | 32 | 1,960 | 17% | 26,943 |  |
 | 2026-10-01 | smoke-fastener-pattern | base | `main` c055328 · 225f99d40d | xhigh | 3/3 | 1.00 | $5.41 | 3,584,922 | 33 | 1,883 | 18% | 27,056 |  |
 | 2026-09-29 | skill-review-v2-2026-09-29 | cand | `c76ad10` c76ad10 · 344f91ff10 | xhigh | 3/3 | 1.00 | $7.63 | 3,797,701 | 36 | 1,606 | 11% | 26,714 |  |
@@ -73,6 +78,8 @@ Newest first. Median $, context and calls are per run; pass is passes/trials.
 
 | Date | Suite | Arm | Skill | Effort | Pass | Score | Median $ | Median context | Calls | Wall s | Sub-agent share | Static tokens | Failing checks |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 2026-10-01 | material-trim | cand | `0e6cb13` 0e6cb13 · e5a041067b | xhigh | 3/3 | 0.71 | $1.54 | 1,115,191 | 18 | 507 | 23% | 22,591 | coincident x3, elephant_foot x2, fillet x1, teardrop x1 |
+| 2026-10-01 | material-trim | base | `main` 9fd3fcb · 3a63900f0f | xhigh | 3/3 | 0.71 | $1.63 | 1,190,474 | 19 | 570 | 38% | 26,943 | coincident x3, elephant_foot x3, teardrop x1 |
 | 2026-10-01 | smoke-fastener-pattern | cand | `WORKTREE` b0b23ad · 3a63900f0f | xhigh | 3/3 | 0.83 | $1.54 | 1,106,846 | 20 | 537 | 32% | 26,943 | coincident x2, elephant_foot x1, fillet x1 |
 | 2026-10-01 | smoke-fastener-pattern | base | `main` c055328 · 225f99d40d | xhigh | 3/3 | 0.75 | $1.68 | 1,267,465 | 20 | 557 | 30% | 27,056 | coincident x3, elephant_foot x1, fillet x1, teardrop x1 |
 | 2026-09-29 | skill-review-v2-2026-09-29 | cand | `c76ad10` c76ad10 · 344f91ff10 | xhigh | 3/3 | 0.83 | $3.70 | 1,029,928 | 17 | 669 | 35% | 26,714 | coincident x3, fillet x1 |
