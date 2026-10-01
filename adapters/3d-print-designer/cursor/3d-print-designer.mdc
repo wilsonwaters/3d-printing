@@ -32,6 +32,7 @@ Pick the material **within the printer's capabilities**. Warn if the printer can
 | Functional/mechanical parts, snap-fits | **PETG** | Ductile, impact-resistant, good layer adhesion |
 | Outdoor use, heat exposure | **PETG** | Higher Tg (75-85C vs 55-65C), moderate UV resistance |
 | Living hinges, flexible features | **PETG** | 200-300% elongation vs PLA's 2.5-6% |
+| Watertight containers, cold food contact | **PETG** | Low water absorption, food-safe resin (coated) |
 | High heat resistance (up to 80C) | **ABS** | Tg 100-110C, best heat resistance of common filaments |
 | Impact-resistant parts | **ABS** | 3-5x impact strength of PLA |
 | Smooth surface finish (vapor smoothing) | **ABS** | Acetone vapor smoothing eliminates layer lines |
@@ -397,167 +398,48 @@ build_z = 256;
 
 # PLA Material Reference for OpenSCAD Design
 
-## Material Properties
+**Print settings (for the header):** nozzle 200-210C (215-225 for maximum Z-strength), bed 50-60C, fan 100% (off for the first layer), no enclosure. Layers 0.16-0.20mm; above 0.28mm Z-strength drops, so not for structural parts.
 
-| Property | Value | Design Impact |
-|----------|-------|---------------|
-| Tensile strength | 47-70 MPa (bulk), 25-50 MPa (printed Z-axis) | Use XY orientation for tensile loads |
-| Flexural strength | 80-110 MPa | Good for bending in XY plane |
+## Properties
+
+| Property | Value | Design impact |
+|---|---|---|
+| Tensile strength | 47-70 MPa bulk, 25-50 MPa printed Z | Put tensile loads in XY |
+| Flexural strength | 80-110 MPa | Good for bending in the XY plane |
 | Young's modulus | 2.7-4.1 GPa | Stiff but brittle |
-| Elongation at break | 2.5-6% | Very low — snaps without warning |
-| Impact (Izod, notched) | 2.0-4.6 kJ/m^2 | One of the most brittle filaments |
-| Glass transition (Tg) | 55-65C | Deforms in hot cars, direct sunlight |
-| Heat deflection (HDT) | 50-55C at 0.45 MPa | Max continuous use: 40-45C |
-| Shrinkage | 0.3-0.5% | Low — best dimensional accuracy of common filaments |
+| Elongation at break | 2.5-6% | Very low: snaps without warning |
+| Impact (Izod, notched) | 2.0-4.6 kJ/m² | One of the most brittle filaments |
+| Tg / HDT (0.45 MPa) | 55-65C / 50-55C | Deforms in hot cars and direct sun; max continuous use 40-45C |
+| Shrinkage | 0.3-0.5% | Best dimensional accuracy of common filaments |
 
-## Anisotropy (Z/XY Strength Ratios)
+**Anisotropy (Z/XY):** tensile 0.50-0.75 (25-50% weaker across layers), modulus 0.70-0.90, impact 0.30-0.50 (extremely weak in Z), fatigue life 0.20-0.40: **never cycle-load across layers**.
 
-| Property | Z/XY Ratio | Implication |
-|----------|------------|-------------|
-| Tensile strength | 0.50-0.75 | 25-50% weaker across layers |
-| Modulus | 0.70-0.90 | Stiffness less affected |
-| Impact | 0.30-0.50 | Extremely weak Z-axis impact |
-| Fatigue life | 0.20-0.40 | Never cycle-load across layers |
+## Design Rules
 
-## PLA-Specific Design Rules
+**Walls** (minimum / recommended): decorative 0.8 / 1.2mm; light handling 1.2 / 1.6mm; structural 1.6 / 2.0mm+; impact-resistant 2.4 / 3.0mm+.
 
-### Wall Thickness
+**Minimum features, 0.4mm nozzle** (minimum / practical): pin diameter 1.5 / 2.0mm; hole diameter 1.0 / 1.5mm; text stroke 0.5 / 0.8mm; slot width 0.5 / 0.8mm; emboss or engrave depth 0.3 / 0.5mm.
 
-| Use Case | Minimum | Recommended |
-|----------|---------|-------------|
-| Visual/decorative | 0.8mm | 1.2mm |
-| Light handling | 1.2mm | 1.6mm |
-| Structural | 1.6mm | 2.0mm+ |
-| Impact-resistant | 2.4mm | 3.0mm+ |
+**Overhangs and bridges: the best of any common filament**, thanks to fast solidification under the fan. Safe overhang 45° from vertical (universal), 60-70° achievable with good cooling. Bridges clean to 25mm, functional to 60mm, 80-120mm at most with tuned settings.
 
-Design walls as integer multiples of nozzle diameter (0.4mm nozzle: 0.8, 1.2, 1.6, 2.0mm).
+**Infill:** gyroid at 20-40% with 3-4 perimeters. One more perimeter is worth roughly double the infill percentage, so add walls before infill.
 
-### Minimum Feature Sizes (0.4mm nozzle)
+**Snap-fits: PLA is BRITTLE, the worst common filament for them** (ABS in brackets): max design strain 1.0-1.5% (3-5%); cantilever L:T 10:1 minimum (5:1); max undercut 0.3-0.5mm (0.8-1.5mm); root fillet 1mm minimum (0.5mm). Prefer annular snap-fits over cantilevers (they spread the stress), or compliant mechanisms. Use generous root fillets (prefer 2mm), design for single-use or very gentle engagement, and print snap features parallel to the layer lines. Suggest PETG if the snap must engage repeatedly.
 
-| Feature | Minimum | Practical |
-|---------|---------|-----------|
-| Pin diameter | 1.5mm | 2.0mm |
-| Hole diameter | 1.0mm | 1.5mm |
-| Text stroke width | 0.5mm | 0.8mm |
-| Slot width | 0.5mm | 0.8mm |
-| Emboss/engrave depth | 0.3mm | 0.5mm |
+**Creep:** measurable above 10-15 MPa at room temperature. Keep sustained stress in printed parts **under 12-15 MPa** (<25-30% of ultimate). PLA is unsuitable for long-term structural loads (springs, clamps, constant-tension applications).
 
-### Overhang and Bridging
+## Failure Modes
 
-- **Safe overhang angle**: 45 degrees from vertical (universal)
-- **PLA-optimized**: 60-70 degrees achievable with good cooling
-- **Clean bridges**: up to 25mm
-- **Functional bridges**: up to 60mm
-- **Maximum bridges**: 80-120mm (100% fan, slow speed, optimized settings)
+- **Brittle fracture (primary):** sudden, with no visible deformation first, and highly notch-sensitive: sharp corners cut impact strength 60-80%, and holes concentrate stress 2.5-3.0x. **Fillet ALL internal corners** (minimum R=0.5mm, prefer 1-2mm).
+- **Layer delamination:** the usual structural failure under Z-axis tension, shear, impact or thermal cycling. Orient loads along the layers and add perimeters.
+- **Warping:** 0.1-0.5mm of corner lift on 150mm+ parts. Round corners, chamfer bottom edges, add mouse ears; elephant's foot is 0.1-0.3mm, compensated by the bottom chamfer.
+- **Environment:** UV degrades it noticeably in 2-6 months outdoors (10-30% strength loss in 6-12 months), and it deforms above 55C. Not for outdoor use, hot environments or dishwashers.
 
-PLA has the **best overhang and bridging performance** of any common filament due to rapid solidification with fan cooling.
+## Print Orientation
 
-### Infill
+**Critical rule: orient so the primary failure load does NOT pull layers apart.** Tension along the layers (XY), never across (Z). Compression is the most forgiving: Z is acceptable. Impact surfaces parallel to the layer planes. Gears print flat (tooth loads in XY). Mating surfaces on vertical walls, for the best dimensional consistency.
 
-- **Best general pattern**: Gyroid (3D isotropy, impact resistance)
-- **Sweet spot**: 20-40% infill with 3-4 perimeters
-- **Key insight**: Adding 1 perimeter is roughly equivalent to doubling infill percentage for strength. Prioritize wall count over infill.
-
-### Snap-Fit Design (PLA is BRITTLE — special rules apply)
-
-PLA's low elongation (2.5-6%) makes it the worst common filament for snap fits.
-
-| Parameter | PLA | ABS (for comparison) |
-|-----------|-----|----------------------|
-| Max design strain | 1.0-1.5% | 3-5% |
-| Cantilever L:T ratio | 10:1 minimum | 5:1 |
-| Max undercut depth | 0.3-0.5mm | 0.8-1.5mm |
-| Root fillet | 1mm minimum | 0.5mm |
-
-**Design strategies for PLA snap-fits:**
-- Prefer annular snap-fits over cantilever (distribute stress)
-- Use compliant mechanisms where possible
-- Add generous root fillets (minimum 1mm, prefer 2mm)
-- Design for single-use or very gentle engagement
-- Print snap features parallel to layer lines
-- Consider PETG instead if repeated snap engagement needed
-
-### Creep and Sustained Loads
-
-- Measurable creep above 10-15 MPa at room temperature
-- Design sustained loads at **<25-30% of ultimate tensile strength**
-- For printed parts: keep sustained stress **under 12-15 MPa**
-- PLA is unsuitable for long-term structural loads (springs, clamps, constant-tension applications)
-
-## Slicer Parameters Affecting Design
-
-### Temperature
-
-| Purpose | Range | Notes |
-|---------|-------|-------|
-| General use | 200-210C | Standard balance |
-| Maximum Z-strength | 215-225C | More stringing |
-| Best overhangs | 190-200C | Better solidification |
-
-### Layer Height
-
-- **Optimal balance**: 0.16-0.20mm
-- **Best XY strength/surface**: 0.10mm (slow)
-- **Above 0.28mm**: reduced Z-strength, avoid for structural
-
-### Cooling
-
-- **100% fan for everything** except first layer (0%)
-- PLA demands aggressive cooling more than any other filament
-- Reduce to 50-70% only when prioritizing Z-strength over surface quality
-
-### Speed
-
-- General: 40-70 mm/s
-- Volumetric flow limit: 10-12 mm^3/s (standard hotend)
-- Above 100 mm/s: Z-strength drops 10-20%
-
-## PLA Failure Modes
-
-### Brittle Fracture (Primary Failure Mode)
-- **Sudden failure without warning** — no visible deformation before break
-- Highly notch-sensitive: sharp corners reduce impact strength 60-80%
-- **Mitigation**: Fillet ALL internal corners (minimum R=0.5mm, prefer 1-2mm)
-- Holes create stress concentration factors of 2.5-3.0x
-
-### Layer Delamination
-- Most common structural failure in Z-axis loading
-- Caused by: Z-axis tension/shear, impacts, thermal cycling
-- **Mitigation**: Orient correctly, increase perimeters, use wider extrusion width, print hotter/slower for critical parts
-
-### Warping
-- PLA warps less than most materials but still shows 0.1-0.5mm corner lift on 150mm+ parts
-- **Mitigation**: Mouse ears, rounded corners, chamfered bottom edges
-- Elephant's foot: 0.1-0.3mm, compensate with bottom chamfer
-
-### Environmental Degradation
-- **UV**: Noticeable in 2-6 months outdoors, 10-30% strength loss in 6-12 months
-- **Heat**: Parts deform above 55C (hot car, direct sunlight in summer)
-- **Not suitable for**: Outdoor use, hot environments, dishwashers
-
-## Print Orientation for PLA
-
-**Critical rule**: Orient so primary failure load does NOT pull layers apart.
-
-| Load Type | Orientation Rule |
-|-----------|-----------------|
-| Tension | Load along layers (XY), never across (Z) |
-| Compression | Most forgiving — Z-axis compression is acceptable |
-| Impact | Impact surfaces parallel to layer planes |
-| Gears | Print flat (tooth loads in XY plane) |
-| Mating surfaces | On vertical walls (best dimensional consistency) |
-
-**Surface finish**:
-- Bed-facing: smoothest (glass/PEI mirror finish)
-- Top: good, improved with ironing
-- Vertical walls: regular layer lines, often acceptable
-- Avoid supports on cosmetic or functional mating surfaces
-
-## When to Recommend PLA
-
-**Good for**: Prototypes, visual models, low-load functional parts, desk/indoor items, parts needing dimensional accuracy, parts with fine detail, parts needing good overhangs/bridges
-
-**Bad for**: Outdoor use, hot environments (>45C), impact-loaded parts, living hinges, snap-fits under repeated use, sustained structural loads, food contact with hot liquids
+The bed-facing surface is smoothest, the top is good (better with ironing), and vertical walls show regular layer lines. Keep supports off cosmetic and mating surfaces.
 
 ---
 
@@ -567,199 +449,45 @@ PLA's low elongation (2.5-6%) makes it the worst common filament for snap fits.
 
 # PETG Material Reference for OpenSCAD Design
 
-## Material Properties
+**Print settings (for the header):** nozzle 240C for the best layer bond (230-235 for detail and overhangs, +5 on the first layer), bed 70-85C, fan 30-40% (0% on the first layer, 80-100% on bridges), no enclosure needed. Hygroscopic: dry at 60-65C for 4-6h before critical prints.
 
-| Property | Value | vs PLA |
-|----------|-------|--------|
-| Tensile strength | 50-60 MPa | Similar |
-| Flexural strength | 70-80 MPa | Slightly lower |
+## Properties
+
+| Property | PETG | vs PLA |
+|---|---|---|
+| Tensile / flexural strength | 50-60 / 70-80 MPa | Similar / slightly lower |
 | Young's modulus | 2.0-2.2 GPa | Less stiff (more flexible) |
-| Elongation at break | 150-300% | 20-30x more than PLA |
-| Impact (Izod, notched) | 2-8 kJ/m^2 | 3-5x better than PLA |
-| Glass transition (Tg) | 75-85C | +20C vs PLA |
-| Heat deflection (HDT) | 65-70C at 0.45 MPa | +15C vs PLA |
-| Shrinkage | 0.3-0.8% | Slightly more than PLA |
-| Moisture absorption (24h) | 0.15-0.25% by weight | Hygroscopic — dry before printing |
+| Elongation at break | 150-300% | 20-30x more |
+| Impact (Izod, notched) | 2-8 kJ/m² | 3-5x better |
+| Tg / HDT (0.45 MPa) | 75-85C / 65-70C | +20C / +15C |
+| Shrinkage | 0.3-0.8% | Slightly more |
+| Z/XY tensile ratio | 0.65-0.75 | Better (0.50-0.75) |
+| Layer adhesion | 90-95% of bulk at 240C | Much better (75-85%): PETG's biggest structural advantage |
 
-## Anisotropy (Z/XY Strength Ratios)
+## Design Rules
 
-| Property | Z/XY Ratio | vs PLA |
-|----------|------------|--------|
-| Tensile strength | 0.65-0.75 | Better than PLA (0.50-0.75) |
-| Layer adhesion | 90-95% of bulk | Significantly better than PLA (75-85%) |
+**Walls** (minimum / recommended): decorative 0.8mm (2 perimeters) / 1.2mm; light-duty functional 1.2mm (3) / 1.6mm; structural 1.6mm (4) / 2.0-2.4mm; heavy-duty 2.0mm (5) / 2.4mm+. 4 walls + 20% infill is 30% stronger than 2 walls + 50% infill, for the same material.
 
-PETG has **superior layer adhesion** — its biggest structural advantage over PLA.
+**Overhangs and bridges are WORSE than PLA** (hotter, less cooling). **Keep overhangs to 45° maximum** (vs 60+ for PLA): 30-45° droops slightly, 45-50° sags, past 50° needs support. Bridges under 10mm are reliable, 10-20mm good with tuned settings, 20-30mm marginal, over 30mm need support.
 
-### Layer Adhesion vs Temperature
+**Stringing is 3-5x worse than PLA**, so cut travel and points for strings to catch on: connect separate features where possible; thicken protrusions to ≥2mm diameter; avoid small details on large flat surfaces; 0.5-1mm fillets on sharp external corners; give the Z-seam a corner or edge to hide in; space multiple parts >10mm apart and align holes in rows.
 
-| Nozzle Temp | Bond Strength | Notes |
-|-------------|---------------|-------|
-| 230C | 80-85% | Minimum acceptable |
-| 240C | 90-95% | Optimal for strength |
-| 250C | 95-98% | Maximum, but extreme stringing |
+**Snap-fits: PETG excels** (PLA in brackets): max design strain 5-8% repeated (1.0-1.5%), 10-15% single-use (2-3%); cantilever L:T 10:1 to 15:1 (10:1 minimum); undercut 0.5-1.0mm deep (0.3-0.5mm) at 30-45°. Print snap features parallel to the layer lines, use 0.5mm+ fillets at all corners, and add deflection stops against over-bending. Note 100% infill in the snap areas (and 0.1-0.15mm layers for more flexibility) in PRINT SETTINGS.
 
-## PETG-Specific Design Rules
+**Living hinges: PETG is ideal.** Cycles to failure: 0.3mm 50-100k, 0.4mm 20-50k, 0.5mm 10-30k, 0.6mm 5-15k. Make them 0.4-0.5mm thick for a 0.4mm nozzle and ≥5mm wide, tapered from 2-3mm thick over 2-3mm. **Print the hinge perpendicular to the layers** so it bends along the layer lines, with 0% infill in the hinge (single-wall is strongest). Work it in with 5-10 slow first bends.
 
-### Wall Thickness
+**Clearances:** sliding 0.3-0.4mm, snap 0.2mm, press -0.05 to -0.10mm (interference; 0.00 slides).
 
-| Use Case | Minimum | Recommended |
-|----------|---------|-------------|
-| Decorative | 0.8mm (2 perimeters) | 1.2mm |
-| Light-duty functional | 1.2mm (3 perimeters) | 1.6mm |
-| Structural | 1.6mm (4 perimeters) | 2.0-2.4mm |
-| Heavy-duty | 2.0mm (5 perimeters) | 2.4mm+ |
+## Failure Modes
 
-**Key insight**: 4 walls + 20% infill is stronger than 2 walls + 50% infill (30% stronger, same material).
-
-### Overhang and Bridging (WORSE than PLA)
-
-PETG overhangs and bridges poorly due to higher print temperature and restricted cooling.
-
-| Angle/Distance | Performance | Notes |
-|----------------|-------------|-------|
-| 0-30 degrees overhang | Excellent | No issues |
-| 30-45 degrees | Good | Minor drooping |
-| 45-50 degrees | Fair | Noticeable sag |
-| 50+ degrees | Poor | Needs support |
-| Bridges <10mm | Excellent | Reliable |
-| Bridges 10-20mm | Good | With optimized settings |
-| Bridges 20-30mm | Marginal | Requires optimization |
-| Bridges 30mm+ | Poor | Needs support |
-
-**Design limit**: Keep overhangs to **45 degrees maximum** (vs 60+ for PLA).
-
-For bridges: reduce temp 5-10C, 100% fan for bridge only, 20-30 mm/s speed.
-
-### Stringing Mitigation (CRITICAL — PETG strings 3-5x worse than PLA)
-
-PETG's biggest print quality problem. Design geometry to minimize it:
-
-**Geometry rules to reduce stringing:**
-1. Combine separate features into connected geometry where possible
-2. Minimize travel moves between separate printed areas
-3. Avoid thin protruding features (<2mm diameter)
-4. Add 0.5-1mm fillets on sharp external corners (strings attach to points)
-5. Design a corner or edge where Z-seam can hide
-6. Space parts >10mm apart when printing multiples
-7. Align holes in rows (reduces unique travel paths)
-
-**Features that attract strings (avoid or thicken):**
-- Sharp external corners and points
-- Isolated features requiring travel
-- Thin vertical protrusions (<2mm)
-- Small details on large flat surfaces
-
-### Snap-Fit Design (PETG EXCELS here)
-
-PETG's high elongation makes it **ideal for snap-fits** — the opposite of PLA.
-
-| Parameter | PETG | PLA (comparison) |
-|-----------|------|------------------|
-| Max design strain | 5-8% (repeated) | 1.0-1.5% |
-| Single-use strain | 10-15% | 2-3% |
-| Cantilever L:T ratio | 10:1 to 15:1 | 10:1 minimum |
-| Undercut depth | 0.5-1.0mm | 0.3-0.5mm |
-| Undercut angle | 30-45 degrees | N/A (too brittle) |
-
-**PETG snap-fit rules:**
-- Print snap features parallel to layer lines for maximum flexibility
-- Use 100% infill in snap-fit areas
-- Lower layer heights (0.1-0.15mm) improve flexibility
-- Use 0.5mm+ fillets at all corners
-- Add deflection stops to prevent over-bending
-
-### Living Hinges (PETG is ideal)
-
-PETG's elongation and fatigue resistance make it one of the best filaments for living hinges.
-
-| Hinge Thickness | Cycles to Failure |
-|-----------------|-------------------|
-| 0.3mm | 50,000-100,000 |
-| 0.4mm | 20,000-50,000 |
-| 0.5mm | 10,000-30,000 |
-| 0.6mm | 5,000-15,000 |
-
-**Design rules:**
-- Thickness: 0.3-0.6mm (optimal: 0.4-0.5mm for 0.4mm nozzle)
-- Width: 5mm minimum
-- **Print hinge perpendicular to layers** (bend along layer lines)
-- Use 0% infill in hinge region (single-wall is strongest)
-- Taper from thick (2-3mm) to thin (0.4mm) over 2-3mm
-- First 5-10 bends should be slow ("work in" the hinge)
-
-### Clearances and Fits
-
-| Fit Type | Clearance |
-|----------|-----------|
-| Sliding fit | 0.3-0.4mm |
-| Press fit | -0.05 to -0.10mm (interference; 0.00 slides) |
-| Snap fit | 0.2mm |
-
-## Slicer Parameters Affecting Design
-
-### Temperature
-
-| Purpose | Range |
-|---------|-------|
-| Structural (max layer bond) | 240-245C |
-| Detailed parts (less ooze) | 230-235C |
-| Overhangs/bridges | 230-235C |
-| First layer | +5C above normal |
-
-### Cooling (CRITICAL DIFFERENCE FROM PLA)
-
-| Feature | Fan Speed | Reason |
-|---------|-----------|--------|
-| First layer | 0% | Bed adhesion |
-| Layers 2-4 | 0-20% | Build foundation |
-| Standard layers | **30-40%** | Balance adhesion/quality |
-| Overhangs >45 degrees | 50-70% | Prevent sag |
-| Bridges | 80-100% | Solidify quickly |
-| Small parts <20mm | 50-60% | Prevent heat buildup |
-
-**PLA uses 100% fan. PETG uses 30-40%.** Too much cooling = poor layer adhesion.
-
-### Speed
-
-| Feature | Speed |
-|---------|-------|
-| Perimeters | 30-50 mm/s |
-| External perimeters | 25-40 mm/s |
-| Infill | 50-80 mm/s |
-| Bridges | 20-30 mm/s |
-| Overhangs | 20-35 mm/s |
-| Travel | 150-200 mm/s (fast to reduce oozing) |
-
-Speed impact on strength: 30 mm/s = 100%, 50 mm/s = 95%, 70 mm/s = 88%, 90 mm/s = 80%.
-
-## PETG Failure Modes
-
-### Ductile Failure (opposite of PLA)
-- **Bends and deforms before breaking** — shows warning signs (whitening, stretching)
-- Does not shatter like PLA
-- Design implications:
-  - Allow deformation space around parts
-  - Add stop features to prevent excessive bending
-  - Design for buckling resistance (ribs every 30-40mm for compression)
-
-### Warping
-- Less than ABS, more than PLA
-- Corner lift: 0.5-2mm on prints >100mm
-- **Mitigation**: Mouse ears at corners, chamfered edges, 5-10mm brim, rounded corners (5-10mm radius)
-- Shrinkage: 0.3-0.8%, scale by 1.003-1.005x for precise fits
+- **Ductile (opposite of PLA):** bends and whitens before breaking; doesn't shatter. Leave room to deform, add stops against over-bending, and ribs every 30-40mm against buckling under compression.
+- **Warping:** less than ABS, more than PLA: 0.5-2mm corner lift on prints over 100mm. Round footprint corners (5-10mm radius), chamfer bottom edges, add mouse ears at sharp corners, leave room for a 5-10mm brim. Scale precise fits by 1.003-1.005 for the 0.3-0.8% shrinkage.
 
 ### First-Layer Fragmentation (open/skeletal footprints)
 
-Those mitigations all assume the first layer is **one** region. On a part whose footprint is
-open — lattices, grids, frames, ribbed or perforated plates, anything printed as walls
-rather than slabs — any feature cut down to z=0 (drain channels, notches, slots, relief
-cuts) **severs the first layer into disconnected islands with free ends**, and PETG curls
-from free ends. A brim is not a reliable rescue: on a cellular part the only sane brim
-setting is outer-contour-only (brim inside every cell is worse than the problem), so the
-interior islands get nothing, and a ~1cm² island with free ends curls anyway. This is a
-geometry bug, not a slicer setting — it will not tune out.
+On an open footprint (lattices, grids, frames, ribbed or perforated plates), any feature cut down to z=0 (drain channels, notches, slots) **severs the first layer into islands with free ends**, and PETG curls from free ends. A slicer brim can't reach the interior islands: it's geometry, not a setting.
 
-Measured on a 196mm PETG lattice, textured PEI plate:
+Measured on a 196mm PETG lattice (the outdoor pot stand), textured PEI plate:
 
 | | channels cut to z=0 | channels on a sill + flared foot |
 |---|---|---|
@@ -767,110 +495,17 @@ Measured on a 196mm PETG lattice, textured PEI plate:
 | Plate contact area | 32.6cm² | 72.8cm² |
 | Outcome | peeled repeatedly, brim on *and* off | prints |
 
-Two parametric rules:
+1. **Never cut a through-feature to z=0 on an open footprint.** Stand it on a sill of at least 3 layers (0.6-0.8mm), so the bottom stays one connected region. Water steps over 0.8mm.
+2. **Flare the foot rather than chamfering it** wherever nothing mates at the plate: widen every wall ~0.5-0.8mm per side at the plate, tapering back at 45°. It's self-supporting, a brim built into the part. Set the slicer's elephant-foot compensation to 0 and drop `ef_chamfer` on that face.
 
-1. **Never cut a through-feature to z=0 on an open footprint.** Stand it on a sill of at
-   least 3 layers (0.6-0.8mm) so the bottom stays one connected region. A sill is usually
-   invisible to function — water steps over 0.8mm, airflow does not notice it.
-2. **Flare the bottom rather than chamfering it**, wherever nothing mates at the plate:
-   widen every wall ~0.5-0.8mm per side over that same height, tapering back at 45°. It is
-   self-supporting (widest at the bottom) and acts as a brim built into the part, reaching
-   interior features no slicer brim can. Set the slicer's elephant-foot compensation to 0
-   so it is not shaved back, and drop `ef_chamfer` on that face — squish costs nothing
-   where there is no mating surface.
-
-**Verify it, do not assume it.** Slice the exported mesh at half the first layer height and
-count connected regions. More than one island on what should be a connected grid — or a
-largest island under ~20% of the layer — means it will peel:
-
-```python
-# firstlayer.py <mesh.stl> <z>   e.g. python firstlayer.py part.stl 0.1
-import struct, sys
-from collections import deque
-p, z, g = sys.argv[1], float(sys.argv[2]), 0.3           # g = raster step (mm)
-f = open(p, 'rb'); f.read(80); (n,) = struct.unpack('<I', f.read(4))
-segs = []
-for _ in range(n):                                       # mesh x plane -> 2D segments
-    d = f.read(50); v = [struct.unpack('<3f', d[12+k*12:24+k*12]) for k in range(3)]
-    pts = [(a[0]+(z-a[2])/(b[2]-a[2])*(b[0]-a[0]), a[1]+(z-a[2])/(b[2]-a[2])*(b[1]-a[1]))
-           for a, b in [(v[i], v[(i+1) % 3]) for i in range(3)] if (a[2]-z)*(b[2]-z) < 0]
-    if len(pts) == 2: segs.append(pts)
-assert segs, "no material at that height"
-xs = [q[0] for s in segs for q in s]; ys = [q[1] for s in segs for q in s]
-nx = int((max(xs)-min(xs))/g)+2; ny = int((max(ys)-min(ys))/g)+2
-grid = [bytearray(nx) for _ in range(ny)]
-for j in range(ny):                                      # scanline fill, even-odd
-    y = min(ys)+(j+0.5)*g
-    xc = sorted(a[0]+(y-a[1])*(b[0]-a[0])/(b[1]-a[1]) for a, b in segs if (a[1] > y) != (b[1] > y))
-    for k in range(0, len(xc)-1, 2):
-        for i in range(max(0, int((xc[k]-min(xs))/g)), min(nx, int((xc[k+1]-min(xs))/g)+1)):
-            grid[j][i] = 1
-seen = [bytearray(nx) for _ in range(ny)]; comps = []
-for j in range(ny):
-    for i in range(nx):
-        if grid[j][i] and not seen[j][i]:
-            q = deque([(i, j)]); seen[j][i] = 1; c = 0
-            while q:
-                a, b = q.popleft(); c += 1
-                for da, db in ((1,0),(-1,0),(0,1),(0,-1)):
-                    u, w = a+da, b+db
-                    if 0 <= u < nx and 0 <= w < ny and grid[w][u] and not seen[w][u]:
-                        seen[w][u] = 1; q.append((u, w))
-            comps.append(c*g*g/100)
-comps.sort(reverse=True)
-print(f"islands={len(comps)}  total={sum(comps):.1f}cm2  largest={comps[0]:.1f}cm2")
-```
-
-### Moisture Degradation
-
-| Moisture Level | Strength Loss | Symptoms |
-|----------------|---------------|----------|
-| <0.02% (dry) | 0% | Perfect |
-| 0.05-0.15% | 0-5% | Slightly rough |
-| 0.2-0.4% | 10-20% | Bubbling, strings |
-| 0.5-0.8% | 25-35% | Gaps, very rough |
-| >1.0% | 40-50% | Unusable |
-
-**Always dry PETG before critical prints**: 60-65C for 4-6 hours.
+The gate's `first layer` report shows the regions and their areas; its `WARN` line flags an island under 1cm² or a largest region under 20%.
 
 ## Special Applications
 
-### Waterproof Containers
-- PETG itself is water-resistant (0.15% absorption)
-- Layer lines can wick water — design around this:
-  - Minimum walls: 2mm (5 perimeters), recommended 3mm
-  - Print walls vertically (layer lines perpendicular to water pressure)
-  - Use O-ring grooves for lids (groove depth: 70-80% of O-ring diameter)
-  - Labyrinth seals: 3-5 overlapping walls with 0.3-0.5mm gaps
-  - Post-process: 2-3 coats food-safe epoxy to seal layer lines
-
-### Outdoor / UV Use
-- Moderate UV resistance (better than PLA, worse than ASA)
-- 6-12 months: <15% strength loss
-- 1-2 years: 20-30% loss, noticeable embrittlement
-- **Design for outdoor**: 50% thicker walls, white/light colors (best UV reflection), UV-resistant coatings extend life 50-100%
-
-### Food Contact
-- Base PETG is FDA-approved for food contact
-- Printed parts have challenges: porous layer lines harbor bacteria
-- **Rules**: Use stainless steel nozzle (brass contains lead), food-safe filament, coat with food-safe epoxy
-- Suitable for: cookie cutters, dry food storage, cold beverage cups, funnels
-- NOT suitable for: repeated use without coating, hot food/beverages, dishwasher
-
-### Impact-Resistant Design
-- 3-5x better impact resistance than PLA
-- Absorbs energy through plastic deformation
-- **Design patterns**:
-  - Curved surfaces distribute impact over larger area
-  - 3-5mm radius on external corners subject to impacts
-  - Honeycomb/ribbed internal structure absorbs energy
-  - Thin outer shell (0.8-1.5mm) + internal ribs = best energy absorption
-
-## When to Recommend PETG
-
-**Good for**: Functional mechanical parts, snap-fits, living hinges, outdoor use (1-2 years), impact-resistant parts, waterproof containers, food storage (cold/dry), parts needing flexibility, parts operating 45-70C
-
-**Bad for**: Fine detail (stringing ruins it), parts needing crisp overhangs, dimensionally critical parts (shrinks more), environments >70C, strong chemical exposure (ketones, chlorinated solvents), parts requiring beautiful surface finish without post-processing
+- **Watertight:** layer lines wick water. Walls ≥2mm (5 perimeters), 3mm recommended, printed vertical so the layer lines are perpendicular to the water pressure. O-ring grooves 70-80% of the cord diameter deep; labyrinth seals of 3-5 overlapping walls with 0.3-0.5mm gaps. 2-3 coats of food-safe epoxy seal the layer lines.
+- **Outdoor/UV:** better than PLA, worse than ASA: under 15% strength loss in 6-12 months, 20-30% in 1-2 years. Walls 50% thicker, in white or a light colour.
+- **Food contact:** cold and dry only (dry storage, cookie cutters, cold drinks), never hot food or the dishwasher. Layer lines harbour bacteria: food-safe filament, a stainless nozzle (brass contains lead) and a food-safe epoxy coat.
+- **Impact:** absorbs energy by deforming. Curved surfaces, a 3-5mm radius on exposed external corners, and a thin outer shell (0.8-1.5mm) over internal ribs or honeycomb.
 
 ---
 
@@ -880,320 +515,31 @@ print(f"islands={len(comps)}  total={sum(comps):.1f}cm2  largest={comps[0]:.1f}c
 
 # ABS Material Reference for OpenSCAD Design
 
-## Material Properties
-
-| Property | Value | vs PLA | vs PETG |
-|----------|-------|--------|---------|
-| Tensile strength | 40-50 MPa (bulk), 25-40 MPa (printed XY) | Similar bulk, similar printed | Slightly lower |
-| Flexural strength | 60-80 MPa | Lower | Similar |
-| Young's modulus | 1.5-2.5 GPa | Less stiff (more flexible than PLA) | Similar |
-| Elongation at break | 10-50% (bulk), 5-25% (printed) | 5-10x more than PLA | Less than PETG |
-| Impact (Izod, notched) | 10-20 kJ/m^2 | 3-5x better than PLA | 2-3x better than PETG |
-| Glass transition (Tg) | 100-110C | +45C vs PLA | +25C vs PETG |
-| Heat deflection (HDT) | 80-100C at 0.45 MPa | +30C vs PLA | +20C vs PETG |
-| Shrinkage | 0.4-0.9% | More than PLA (0.3-0.5%) | Similar to PETG |
-| Density | 1.04 g/cm^3 | Lighter than PLA (1.24) | Lighter than PETG (1.27) |
-
-## Anisotropy (Z/XY Strength Ratios)
-
-| Property | Z/XY Ratio | Notes |
-|----------|------------|-------|
-| Tensile strength | 0.50-0.75 | Highly dependent on enclosure/cooling conditions |
-| Modulus | 0.65-0.85 | Stiffness moderately affected |
-| Impact | 0.40-0.60 | Better than PLA Z-axis impact |
-| Layer adhesion | 70-85% of bulk (with enclosure) | Drops to 40-60% without enclosure |
-
-ABS layer adhesion is **highly sensitive to print conditions** — proper enclosure and cooling control is critical. With optimal settings, ABS Z-strength can exceed PLA.
-
-### Layer Adhesion vs Temperature and Environment
-
-| Conditions | Bond Strength | Notes |
-|------------|---------------|-------|
-| 230C, no enclosure | 40-60% | Poor — expect delamination on tall parts |
-| 240C, no enclosure | 55-70% | Marginal — small parts only |
-| 235C, with enclosure | 70-80% | Good — acceptable for most uses |
-| 240-250C, with enclosure, no fan | 80-90% | Optimal — strongest ABS prints |
-
-## CRITICAL: Enclosure and Ventilation Requirements
-
-### Enclosure (Strongly Recommended)
-
-ABS has a high coefficient of thermal expansion. Without an enclosure, uneven cooling causes warping, cracking, and delamination.
-
-| Enclosure State | Outcome |
-|-----------------|---------|
-| Full enclosure (45-60C ambient) | Best results — minimal warping, strong layer bonds |
-| Partial enclosure / draft shield | Acceptable for parts <80mm |
-| No enclosure, draft-free room | Small parts only (<60mm), expect some warping |
-| No enclosure, drafty room | Will fail on anything beyond trivial prints |
-
-- The heated bed (100-110C) naturally raises enclosure temperature to 40-50C
-- Active enclosure heating is rarely needed for consumer printers
-- Keep printer electronics outside the enclosure or ensure adequate ventilation for them
-
-### Ventilation (MANDATORY — Safety Concern)
-
-ABS emits **styrene** (a suspected carcinogen), formaldehyde, and ultrafine particles during printing.
-
-| Ventilation Method | Effectiveness |
-|--------------------|---------------|
-| Enclosed printer ducted to outside | Best |
-| HEPA + activated carbon filter | Very good |
-| Open window + enclosure | Moderate |
-| Unventilated room | **NOT safe for regular use** |
-
-**Always note ventilation requirements in PRINT SETTINGS header when generating ABS models.**
-
-## ABS-Specific Design Rules
-
-### Wall Thickness
-
-| Use Case | Minimum | Recommended |
-|----------|---------|-------------|
-| Visual/decorative | 1.2mm | 1.6mm |
-| Light-duty functional | 1.6mm | 2.0mm |
-| Structural | 2.0mm | 2.4mm+ |
-| Impact-resistant | 2.4mm | 3.0mm+ |
-
-ABS minimum wall: **1.5mm** (thicker than PLA due to shrinkage stresses). Design walls as integer multiples of extrusion width (0.4mm nozzle: 0.8, 1.2, 1.6, 2.0mm).
-
-### Minimum Feature Sizes (0.4mm nozzle)
-
-| Feature | Minimum | Practical |
-|---------|---------|-----------|
-| Pin diameter | 2.0mm | 2.5mm |
-| Hole diameter | 1.5mm | 2.0mm |
-| Text stroke width | 0.6mm | 1.0mm |
-| Slot width | 0.8mm | 1.0mm |
-| Emboss/engrave depth | 0.4mm | 0.6mm |
-
-Features are slightly larger than PLA minimums due to ABS shrinkage and reduced overhang performance.
-
-### Overhang and Bridging
-
-ABS overhangs and bridges are **worse than PLA, similar to PETG** due to restricted cooling.
-
-| Angle/Distance | Performance | Notes |
-|----------------|-------------|-------|
-| 0-30 degrees overhang | Excellent | No issues |
-| 30-45 degrees | Good | Minor drooping |
-| 45-50 degrees | Fair | Noticeable sag |
-| 50+ degrees | Poor | Needs support |
-| Bridges <10mm | Good | Reliable with brief fan burst |
-| Bridges 10-20mm | Fair | Requires 30-50% fan during bridge |
-| Bridges 20mm+ | Poor | Needs support |
-
-**Design limit**: Keep overhangs to **45 degrees maximum**. For bridges, use a brief 30-50% fan burst during the bridge only — fan must be off otherwise.
-
-### Infill
-
-| Use Case | Infill % | Pattern | Notes |
-|----------|----------|---------|-------|
-| Visual models | 10-15% | Grid or Lines | Minimal material |
-| Light-duty functional | 20-25% | Grid or Gyroid | Good strength/weight |
-| General functional | 25-40% | Gyroid or Triangular | Sweet spot for ABS |
-| Structural | 40-60% | Triangular or Concentric | Diminishing returns above 60% |
-| Maximum strength | 80-100% | Concentric | Concentric is strongest for ABS |
-
-**Key insight**: Higher infill increases shrinkage forces. Use 25-40% with more walls (4-6 perimeters) rather than high infill with few walls. Adding 1 perimeter is more effective than adding 10% infill.
-
-### Shrinkage Compensation (CRITICAL for ABS)
-
-ABS shrinks **0.4-0.9%** — significantly more than PLA (0.3-0.5%).
-
-| Approach | Method |
-|----------|--------|
-| Slicer compensation | Scale to 100.5-101.0% or use horizontal size compensation |
-| OpenSCAD compensation | Use `shrinkage_factor = 1.007;` variable, apply to critical dimensions |
-| Hole compensation | Add **0.3-0.5mm** to functional hole diameters (more than PLA's 0.2-0.3mm) |
-| Calibration | Print 20mm cube, measure, calculate per-axis shrinkage |
-
-Shrinkage is **not isotropic**: XY shrinkage is typically greater than Z shrinkage. Parts with high infill shrink more than low-infill parts.
-
-### Clearances and Fits
-
-| Fit Type | Clearance | vs PLA |
-|----------|-----------|--------|
-| Sliding fit | 0.4-0.6mm per side | +0.2mm vs PLA |
-| Press fit | 0.1-0.2mm | +0.1mm vs PLA |
-| Clearance fit | 0.4-0.6mm per side | +0.2mm vs PLA |
-
-Tolerances are **larger than PLA** due to shrinkage variability. Consider printing mating parts on the same plate for consistent shrinkage.
-
-### Snap-Fit Design (ABS is Good — Between PLA and PETG)
-
-ABS's elongation (10-50%) makes snap-fits practical — unlike brittle PLA.
-
-| Parameter | ABS | PLA (comparison) | PETG (comparison) |
-|-----------|-----|-------------------|-------------------|
-| Max design strain | 3-5% | 1.0-1.5% | 5-8% |
-| Cantilever L:T ratio | 5:1 | 10:1 minimum | 10:1 to 15:1 |
-| Max undercut depth | 0.8-1.5mm | 0.3-0.5mm | 0.5-1.0mm |
-| Root fillet | 0.5mm minimum | 1mm minimum | 0.5mm minimum |
-| Lead-in angle | 30-45 degrees | N/A (too brittle) | 30-45 degrees |
-
-ABS snap-fits can handle repeated engagement. Print snap features parallel to layer lines.
-
-### Anti-Warping Design Strategies
-
-ABS warping is the **#1 printing challenge**. Design geometry to minimize it:
-
-1. **Round base corners** — sharp 90-degree corners concentrate warping stress. Use `offset(r=2)` or chamfer base corners before extruding.
-2. **Avoid large flat bottom surfaces** — add relief features, ribs, or a slight concavity to bases.
-3. **Use ribs on large flat panels** — ribs every 20-30mm break up shrinkage forces.
-4. **Minimize abrupt cross-section changes** — taper transitions over 3-5mm to avoid internal stress buildup.
-5. **Design for brim removal** — allow 8-15mm brim width; avoid delicate features at base edges.
-6. **Add mouse ears at corners** — 3-5mm diameter, 1-layer-thick discs at rectangular corners.
-7. **Prefer taller walls over wider flat areas** — vertical surfaces warp less than horizontal ones.
-
-## Slicer Parameters Affecting Design
-
-### Temperature
-
-| Purpose | Range | Notes |
-|---------|-------|-------|
-| Nozzle (general) | 235-245C | Start at 240C, adjust +/-5C |
-| Nozzle (max Z-strength) | 245-250C | Best layer adhesion |
-| Nozzle (first layer) | +5C above normal | Better bed adhesion |
-| Bed | 100-110C | Mandatory heated bed |
-| Enclosure ambient | 40-60C | Passive from bed heat is usually sufficient |
-
-### Cooling (CRITICAL — OPPOSITE of PLA)
-
-| Feature | Fan Speed | Reason |
-|---------|-----------|--------|
-| First 3-4 layers | 0% | Mandatory for bed adhesion |
-| Standard layers | **0%** | Any fan causes warping/delamination |
-| Bridges only | 30-50% (brief burst) | Only during bridge moves, off immediately after |
-| Small features <15mm | 10-20% temporarily | Prevent heat buildup |
-| Overhangs | 0-20% | Minimal — accept droop over cracking |
-
-**PLA uses 100% fan. PETG uses 30-40%. ABS uses 0%.** Cooling is ABS's enemy.
-
-### Speed
-
-| Feature | Speed | Notes |
-|---------|-------|-------|
-| Outer walls | 30-40 mm/s | Slower for surface quality |
-| Inner walls | 40-50 mm/s | Can be faster than outer |
-| Infill | 50-60 mm/s | Can match general speed |
-| First layer | 15-25 mm/s | Critical for adhesion — never exceed 30 |
-| Bridges | 15-25 mm/s | Slow to minimize sag |
-| General | 30-60 mm/s | Slower than PLA for best results |
-
-ABS benefits from slower speeds than PLA. If experiencing delamination, reduce speed by 5 mm/s increments.
-
-### Retraction
-
-| Setting | Direct Drive | Bowden |
-|---------|-------------|--------|
-| Distance | 1-2mm | 3-4mm |
-| Speed | 30-40 mm/s | 40-50 mm/s |
-| Minimum travel | 1.0-1.5mm | 1.5-2.0mm |
-| Z-hop | 0.1-0.2mm (optional) | 0.2-0.4mm (optional) |
-
-ABS is less prone to stringing than PETG at proper temperatures. Use combing mode to reduce retractions.
-
-### Bed Adhesion Helpers
-
-| Method | Effectiveness | Notes |
-|--------|---------------|-------|
-| PEI sheet (smooth or textured) | Excellent | Best overall; sticks at temp, releases when cool |
-| ABS slurry on glass | Very good | Dissolved ABS in acetone — chemical bond |
-| Kapton tape | Very good | Classic ABS surface |
-| PVA glue stick | Good | Easy, cheap, water-soluble for removal |
-| Hairspray on glass | Good | Unscented works best |
-
-**Brim**: Use 8-15mm width for ABS (wider than PLA's 3-5mm). Use 8-10 brim lines for large parts.
-
-**Draft shield**: A tall skirt around the entire part that blocks air currents — especially useful without a full enclosure.
-
-## ABS Failure Modes
-
-### Warping (Primary Challenge)
-
-- Corners of large rectangular bases lift from the bed
-- Caused by differential cooling and thermal contraction
-- **Mitigation**: Enclosure + brim + ABS slurry + bed 100-110C + no fan + dry filament + rounded base corners
-- Wet filament warps ~30% more than dry
-
-### Layer Delamination / Cracking
-
-- Layers separate due to rapid cooling — ABS's primary structural failure mode
-- Can cause complete part failure with loud cracking sounds during printing
-- **Mitigation**: Increase nozzle temp to 245-250C, use enclosure, disable fan, slow print speed, dry filament
-- If hearing cracks during print: raise enclosure temp and nozzle temp immediately
-
-### Surface Blistering / Bubbles
-
-- Caused by moisture in filament boiling at extrusion temperature
-- **Mitigation**: Dry filament at 80C for 4-6 hours; store in dry box with desiccant
-
-### Elephant's Foot
-
-- First layer over-squished due to high bed temperature + nozzle pressure
-- **Mitigation**: Slicer's elephant foot compensation (-0.1 to -0.2mm), reduce first layer flow to 90-95%
-- Compensation: `ef_chamfer = 0.4` (slightly more than PLA's 0.3)
-
-### Environmental Degradation
-
-- **UV**: Poor resistance — yellowing and embrittlement within months of outdoor exposure. Use ASA instead for outdoor.
-- **Heat**: Excellent — maintains properties up to 80C continuous use. Major advantage over PLA and PETG.
-- **Chemical**: Resistant to oils, alkalis, dilute acids. Dissolves in acetone, ketones, chlorinated solvents.
-
-## Post-Processing (ABS Excels Here)
-
-### Acetone Vapor Smoothing (Unique to ABS/ASA)
-
-Eliminates visible layer lines by chemically melting the surface. **Not possible with PLA or PETG.**
-
-| Method | Time | Control | Safety |
-|--------|------|---------|--------|
-| Cold vapor bath (sealed container) | 30-60 min | Best — slow and even | Moderate |
-| Warm vapor bath (water bath heated) | 10-30 min | Fast but uneven | **Flammable — never direct heat** |
-| Brush application | 1-5 min | Spot treatment only | Moderate |
-
-- Achieves 72-81% surface roughness reduction
-- Dissolves 0.1-0.3mm of surface — fine features lose definition
-- Design tolerance: account for 0.1-0.5mm loss on external surfaces if vapor smoothing planned
-
-### Acetone Welding
-
-Brush acetone on mating surfaces, press together, hold until evaporated. Creates a **solvent weld approaching base material strength** — far stronger than any glue. Design multi-part assemblies with flat mating surfaces (3-5mm minimum overlap width) for acetone welding.
-
-### Sanding and Painting
-
-- ABS sands easily (better than PETG which gums up)
-- Start at 100-200 grit, progress to 400-800+ grit
-- Accepts primer and paint very well
-- 2 coats filler primer + enamel spray paint for excellent finish
-
-## Print Orientation for ABS
-
-**Critical rule**: Orient so primary failure load does NOT pull layers apart (same as PLA/PETG), AND minimize large flat bottom surfaces that warp.
-
-| Load Type | Orientation Rule |
-|-----------|-----------------|
-| Tension | Load along layers (XY), never across (Z) |
-| Compression | Most forgiving — Z-axis compression is acceptable |
-| Impact | Impact surfaces parallel to layer planes — ABS excels here |
-| Flat panels | Print vertically if possible to avoid base warping |
-| Snap-fits | Print features parallel to layer lines |
-| Parts for vapor smoothing | Orient with cosmetic surfaces accessible |
-
-**Surface finish**:
-- Bed-facing: smoothest (PEI/glass finish), but may show elephant's foot
-- Top: good
-- Vertical walls: regular layer lines — can be vapor-smoothed to glossy
-- ABS vertical walls can be acetone smoothed to near-injection-mold finish
-
-## OpenSCAD Design Considerations for ABS
-
-When generating ABS models, apply these ABS-specific parameters:
+**Print settings (for the header):** nozzle 240C (245-250 for maximum Z-strength, +5 on the first layer), bed 100-110C, fan 0% (a 30-50% burst on bridges only), 8-15mm brim. Dry at 80C for 4-6h.
+
+**Enclosure and ventilation (put both in the PRINT SETTINGS notes):**
+- **Enclosure strongly recommended** (40-60C ambient; the bed's heat usually provides it). Without one, uneven cooling warps, cracks and delaminates parts: only parts under ~60mm print in a draft-free room, and a partial enclosure or draft shield suits parts under ~80mm.
+- **Ventilation is mandatory, for safety.** ABS emits styrene (a suspected carcinogen), formaldehyde and ultrafine particles. Vent the enclosure outdoors or through HEPA + activated carbon; never print it regularly in an unventilated room.
+
+## Properties
+
+| Property | ABS | vs PLA / vs PETG |
+|---|---|---|
+| Tensile strength | 40-50 MPa bulk, 25-40 MPa printed XY | Similar / slightly lower |
+| Flexural strength | 60-80 MPa | Lower / similar |
+| Young's modulus | 1.5-2.5 GPa | Less stiff / similar |
+| Elongation at break | 10-50% bulk, 5-25% printed | 5-10x more / less |
+| Impact (Izod, notched) | 10-20 kJ/m² | 3-5x / 2-3x better |
+| Tg / HDT (0.45 MPa) | 100-110C / 80-100C | +45C / +25C Tg |
+| Shrinkage | 0.4-0.9% | More (PLA 0.3-0.5%) / similar |
+| Density | 1.04 g/cm³ | Lighter (1.24 / 1.27) |
+
+**Anisotropy (Z/XY):** tensile 0.50-0.75, modulus 0.65-0.85, impact 0.40-0.60 (better than PLA's). Layer adhesion is **highly sensitive to print conditions**: 70-90% of bulk with an enclosure and no fan, 40-60% without, so expect delamination on tall parts printed open. With optimal settings, ABS Z-strength can exceed PLA's.
+
+## Design Rules
 
 ```openscad
 // === ABS-SPECIFIC PARAMETERS ===
-// Material: ABS
 tolerance = 0.4;               // ABS needs more clearance than PLA (0.2) or PETG (0.3)
 ef_chamfer = 0.4;              // Slightly more elephant foot than PLA
 shrinkage_factor = 1.007;      // 0.7% compensation — adjust after calibration cube
@@ -1201,47 +547,38 @@ base_corner_radius = 2;        // Round base corners to reduce warping stress
 min_wall = 1.6;                // ABS minimum wall (thicker than PLA's 1.2mm)
 ```
 
-**ABS-specific OpenSCAD patterns:**
+**Walls** (minimum / recommended), thicker than PLA's because of shrinkage stresses: decorative 1.2 / 1.6mm; light-duty functional 1.6 / 2.0mm; structural 2.0 / 2.4mm+; impact-resistant 2.4 / 3.0mm+.
 
-1. **Round base corners** to prevent warping:
-```openscad
-module abs_base(width, depth, height, corner_r=2) {
-    linear_extrude(height)
-        offset(r=corner_r)
-            offset(r=-corner_r)
-                square([width, depth]);
-}
-```
+**Minimum features, 0.4mm nozzle** (minimum / practical): pin diameter 2.0 / 2.5mm; hole diameter 1.5 / 2.0mm; text stroke 0.6 / 1.0mm; slot width 0.8 / 1.0mm; emboss or engrave depth 0.4 / 0.6mm.
 
-2. **Anti-warp ribs for flat panels**:
-```openscad
-module flat_panel_with_ribs(width, depth, thickness, rib_spacing=25) {
-    // Main panel
-    cube([width, depth, thickness]);
-    // Bottom-side ribs to resist warping
-    for (y = [rib_spacing : rib_spacing : depth - rib_spacing])
-        translate([0, y - 0.6, -1.2])
-            cube([width, 1.2, 1.2]);
-}
-```
+**Overhangs and bridges: worse than PLA, similar to PETG**, because the fan stays off. **Keep overhangs to 45° maximum**: 45-50° sags noticeably, past 50° needs support. Bridges under 10mm are good, 10-20mm fair, over 20mm need support.
 
-## Filament Drying
+**Infill:** 25-40% gyroid with 4-6 perimeters. Higher infill raises shrinkage forces, so add perimeters rather than infill: 1 perimeter does more than +10% infill.
 
-| Parameter | Value |
-|-----------|-------|
-| Drying temperature | 80C |
-| Drying time | 4-6 hours |
-| Storage | Dry box with desiccant, <15% RH |
-| Wet filament symptoms | Bubbles, popping, rough surface, internal voids |
-| Wet filament warping | ~30% worse than dry filament |
+**Shrinkage (CRITICAL for ABS):** 0.4-0.9%, more in XY than in Z, and more at high infill. Scale critical dimensions by `shrinkage_factor` (calibrate with a 20mm cube) or have the slicer scale 100.5-101%. Holes need +0.3-0.5mm compensation on functional diameters, more than PLA. Print mating parts on the same plate, so they shrink alike.
 
-**Always dry ABS before critical prints.** Note drying requirements in PRINT SETTINGS header.
+**Clearances, larger than PLA's because shrinkage varies:** sliding and clearance fits 0.4-0.6mm per side (+0.2mm vs PLA); press fit 0.1-0.2mm (+0.1mm).
 
-## When to Recommend ABS
+**Snap-fits: ABS is good, between PLA and PETG** (PLA, PETG in brackets): max design strain 3-5% (1.0-1.5%, 5-8%); cantilever L:T 5:1 (10:1, 10:1 to 15:1); max undercut 0.8-1.5mm (0.3-0.5mm, 0.5-1.0mm); root fillet 0.5mm minimum (1mm, 0.5mm); lead-in 30-45°. ABS snap-fits handle repeated engagement. Print snap features parallel to the layer lines.
 
-**Good for**: Heat-resistant parts (up to 80C continuous), impact-resistant functional parts, parts needing acetone vapor smoothing, multi-part assemblies using solvent welding, automotive/mechanical prototypes, snap-fit parts, parts needing painting, lightweight parts (lowest density of common filaments)
+**Anti-warping design (warping is ABS's #1 failure):**
+1. **Round base corners**: `offset(r=R) offset(r=-R)` on the 2D footprint before extruding, R = `base_corner_radius`; sharp corners concentrate warping stress
+2. **Avoid large flat bottoms**: add relief features or a slight concavity, and ribs every 20-30mm on large flat panels
+3. **Taper cross-section changes** over 3-5mm to avoid internal stress
+4. **Leave room for an 8-15mm brim**: no delicate features at the base edges; mouse ears (3-5mm discs, 1 layer thick) at rectangular corners
+5. **Prefer tall walls to wide flat areas**: print flat panels on edge where you can
 
-**Bad for**: Outdoor/UV exposure (use ASA instead), printing without enclosure or ventilation, dimensionally critical parts (shrinkage), food contact (styrene concerns), fine detail with tight tolerances, beginners (hardest common filament to print), environments without ventilation
+## Print Orientation
+
+Orient so the primary failure load does NOT pull layers apart (as for PLA and PETG), AND minimise large flat bottom surfaces that warp. Tension along the layers (XY), never across (Z); compression is the most forgiving. Impact surfaces parallel to the layer planes: ABS excels here. Flat panels vertical where possible. Snap features parallel to the layer lines. For vapor smoothing, keep cosmetic surfaces accessible.
+
+## Environment and Post-Processing
+
+- **Heat:** excellent: holds its properties to 80C in continuous use.
+- **UV:** poor: yellows and embrittles within months outdoors. Use ASA for outdoor parts.
+- **Chemicals:** resists oils, alkalis and dilute acids; dissolves in acetone, ketones and chlorinated solvents. Not food-safe (styrene).
+- **Acetone vapor smoothing** removes the layer lines but dissolves 0.1-0.3mm of surface: allow up to 0.5mm on external surfaces, and expect fine features to soften.
+- **Acetone welding** bonds parts close to bulk strength: give mating faces flat overlaps at least 3-5mm wide.
 
 ---
 
@@ -1562,7 +899,7 @@ wall_thickness = extrusion_w * walls; // 1.8mm
 
 # OpenSCAD Language Reference — Gotchas and Non-Obvious Behaviors
 
-Curated reference focusing on behaviors that produce incorrect code if forgotten. Based on the [OpenSCAD User Manual](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language).
+Behaviours that produce incorrect code if forgotten, plus print-aware module patterns. The language itself is in the [OpenSCAD User Manual](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language).
 
 ## 1. Mandatory Rules (broken geometry if violated)
 
@@ -1571,30 +908,18 @@ Curated reference focusing on behaviors that produce incorrect code if forgotten
 Coincident faces in `union()` produce undefined behavior. Cutting objects in `difference()` must extend past the surface being cut. This is **not optional**.
 
 ```openscad
-eps = 0.01; // ALWAYS define this
+fudge = 0.01; // ALWAYS define this (the file template does)
 
-// BAD — coincident top face
+// union: overlap by fudge (BAD: translate([0, 0, 10]) puts a face exactly at z=10)
 union() {
     cube([10, 10, 10]);
-    translate([0, 0, 10]) cube([5, 5, 5]); // face exactly at z=10
+    translate([0, 0, 10 - fudge]) cube([5, 5, 5 + fudge]);
 }
 
-// GOOD — epsilon overlap
-union() {
-    cube([10, 10, 10]);
-    translate([0, 0, 10 - eps]) cube([5, 5, 5 + eps]);
-}
-
-// BAD — flush cut
+// difference: extend the cutter beyond BOTH faces (BAD: translate([2, 2, 0]) cube([6, 6, 10]) is flush)
 difference() {
     cube([10, 10, 10]);
-    translate([2, 2, 0]) cube([6, 6, 10]); // flush top and bottom
-}
-
-// GOOD — extend beyond both faces
-difference() {
-    cube([10, 10, 10]);
-    translate([2, 2, -eps]) cube([6, 6, 10 + 2*eps]);
+    translate([2, 2, -fudge]) cube([6, 6, 10 + 2*fudge]);
 }
 ```
 
@@ -1604,16 +929,16 @@ Subtracting a 2D shape from a 3D object produces undefined results. Always extru
 
 ### Neighbouring Solids Must Overlap, Never Touch on a Bare Edge
 
-Two solids that meet only along a shared edge or corner (not a face) — e.g. diagonally adjacent cells in a grid — form a **non-manifold edge**: that edge borders the outside on both sides. OpenSCAD's Manifold backend silently self-heals this and the build gate passes, but **slicers (Bambu Studio) reject it** ("N non-manifold edges, may need repair"). Give adjacent solids a real shared volume by overlapping them laterally (extend each by `eps`), then clip the union back to the intended outline with an `intersection()`:
+Two solids that meet only along a shared edge or corner (not a face) — e.g. diagonally adjacent cells in a grid — form a **non-manifold edge**: that edge borders the outside on both sides. OpenSCAD's Manifold backend silently self-heals this and the build gate passes, but **slicers (Bambu Studio) reject it** ("N non-manifold edges, may need repair"). Give adjacent solids a real shared volume by overlapping them laterally (extend each by `fudge`), then clip the union back to the intended outline with an `intersection()`:
 
 ```openscad
 // BAD — diagonal neighbours touch only at a corner (non-manifold edge)
 translate([0, 0, 0]) cube([10, 10, h]);
 translate([10, 10, 0]) cube([10, 10, h]);
 
-// GOOD — overlap by eps so neighbours share volume, then clip to outline
+// GOOD — overlap by fudge so neighbours share volume, then clip to outline
 intersection() {
-    union() { for (c = cells) translate(c) cube([10 + eps, 10 + eps, h]); }
+    union() { for (c = cells) translate(c) cube([10 + fudge, 10 + fudge, h]); }
     cube([tile_w, tile_d, big_h]);   // exact outer boundary
 }
 ```
@@ -1624,111 +949,22 @@ The gate ([verification.md](verification.md)) counts non-manifold edges on every
 
 Wrong winding = non-manifold geometry. Use F12 "Thrown Together" mode to check — pink faces have wrong winding. Validate by unioning with any cube and rendering (F6) — if it disappears, winding is wrong.
 
-## 2. Variable System (most common source of confusion)
+## 2. Language Notes
 
-### Variables Are Constants
+- **Variables are constants.** A second assignment in the same scope silently replaces the first everywhere, earlier lines included (last wins), so there is no `a = a + 1`: accumulate with recursion or list comprehensions.
+- **Circles are inscribed polygons**: they never reach the nominal radius between vertices, so a coarse `$fn` makes holes undersize. Use `$fn` divisible by 4 for axis-aligned extents.
+- `text()` inherits `$fn` too: at 64, every glyph curve gets 64 segments (one dial face's STL reached 14 MB). Pass `$fn = 12` to `text()`.
+- `assert()` returns its children, so validations chain inside functions: `function f(a) = assert(a > 0, "a must be positive") a * 2;`
 
-OpenSCAD variables cannot be changed after assignment. A second assignment **retroactively replaces** the first — both echos below print `2`:
-
-```openscad
-a = 1;   // never actually executed
-echo(a); // 2
-a = 2;   // replaces the first assignment
-echo(a); // 2
-```
-
-There is no `a = a + 1`. Use recursion or list comprehensions for accumulation.
-
-**Exception (by design)**: A second assignment in the main file overrides one in an `include` file without warning. This is the intended mechanism for overriding library defaults. Same for `-D` command-line options and Customizer values.
-
-### Scope Rules
-
-- Braces `{}` after operators (if/for/module) create new scopes — variables inside are invisible outside.
-- **Bare braces `{}` are NOT scopes** — variables leak out.
-- `$`-prefixed variables are **dynamically scoped** (pass through module calls). Regular variables use lexical scope and do NOT pass through:
+### Preview vs Render Conditional
 
 ```openscad
-regular  = "global";
-$special = "global";
-module show() echo(regular, $special);
-// show() always sees "global" for regular
-// show() sees the calling scope's $special
+$fn = $preview ? 32 : 64;
+// $preview is true in F5, false in F6 and CLI STL export
+// render() does NOT affect $preview
 ```
 
-## 3. Parameter Cheat Sheet (easy to get wrong)
-
-### Primitives
-
-- `cube(size, center)` — size can be scalar or `[x,y,z]`. **Not centered by default** — corner at origin, first octant.
-- `sphere(r|d)` — `sphere(20)` sets r=20, NOT d=20. Use `sphere(d=20)` for diameter.
-- `cylinder(h, r1, r2, center)` — positional order is h, r1, r2. **If any parameter is named, all following must be named.**
-  - `cylinder(10, 5, 3)` — OK (h=10, r1=5, r2=3)
-  - `cylinder(h=10, 5, 3)` — ERROR
-  - `cylinder(10, r1=5, r2=3)` — OK
-
-### Circles
-
-- Circles are **inscribed polygons** (fit inside the specified radius, never reach it at segment midpoints)
-- For axis-aligned integer bounding boxes, use `$fn` divisible by 4
-- `$fn` > 128 not recommended for performance
-- `text()` inherits `$fn` too: at 64, every glyph curve gets 64 segments (one dial face's STL reached 14 MB). Pass `$fn = 12` to `text()`
-
-### Resolution Pattern
-
-```openscad
-$fn = $preview ? 32 : 64; // Low for preview (F5), high for render (F6)
-```
-
-### Transformation Order
-
-Transforms apply **right-to-left** (innermost first):
-
-```openscad
-translate([10, 0, 0]) rotate([0, 0, 45]) cube(5);
-// First rotates, THEN translates
-
-rotate([0, 0, 45]) translate([10, 0, 0]) cube(5);
-// First translates, THEN rotates (arc motion!) — DIFFERENT result
-```
-
-### rotate() Axis Order
-
-`rotate([ax, ay, az])` applies as **X then Y then Z**:
-
-```openscad
-rotate([ax, ay, az]) obj;
-// equivalent to:
-rotate([0, 0, az]) rotate([0, ay, 0]) rotate([ax, 0, 0]) obj;
-```
-
-A single scalar rotates around Z only: `rotate(45) square(10);`
-
-## 4. Common Patterns
-
-### Rounded 2D Shapes Using offset()
-
-```openscad
-// Fillet (round inside/concave corners):
-offset(r=-R) offset(delta=+R) shape();
-// WARNING: holes smaller than 2*R diameter will vanish
-
-// Round (round outside/convex corners):
-offset(r=+R) offset(delta=-R) shape();
-// WARNING: walls thinner than 2*R will vanish
-```
-
-### Rounded Box
-
-```openscad
-module rounded_box(size, r) {
-    minkowski() {
-        cube([size.x - 2*r, size.y - 2*r, size.z/2]);
-        cylinder(r=r, h=size.z/2);
-    }
-}
-```
-
-### FDM module patterns
+## 3. FDM Module Patterns
 
 Reusable, print-aware modules. They assume the derived constants from the file template (`fudge`, `tolerance`, `layer_height`). Screw holes, self-tap pilots, insert bosses and nut pockets are in [pattern-fasteners.md](pattern-fasteners.md).
 
@@ -1776,41 +1012,15 @@ module ef_base(size, ef=0.4) {
 }
 ```
 
-### Preview vs Render Conditional
+## 4. Performance Rules
 
-```openscad
-$fn = $preview ? 32 : 64;
-// $preview is true in F5, false in F6 and CLI STL export
-// render() does NOT affect $preview
-```
+- `minkowski()` costs O(N*M) in the segment counts of both children: reduce `$fn` on both. Compound (multi-object) children may be treated as separate inputs, so always wrap them in `union()`: `minkowski() { cube(10); union() { sphere(2); cylinder(1, 2, 2); } }`, never bare braces.
+- `resize()` runs full CGAL even in preview: use `scale()` while iterating.
+- `render()` forces full CSG in preview: use it only when preview artifacts are unacceptable.
+- `hull()` in 3D is slow: prefer `hull()` in 2D + `linear_extrude`.
+- Keep `$fn` <= 64 for most uses, 128 max: higher can freeze the system.
 
-## 5. Performance Rules
-
-| Operation | Cost | Mitigation |
-|-----------|------|------------|
-| `minkowski()` | O(N*M) on segment counts of both children | Reduce $fn on both. Wrap compound children in `union()`. |
-| `resize()` | Full CGAL even in preview | Avoid in iterative design. Use scale() instead when possible. |
-| `render()` | Forces full CSG in preview | Only use when preview artifacts are unacceptable. |
-| `hull()` on 3D | Slow | Prefer hull() on 2D + linear_extrude. |
-| `$fn > 128` | Can freeze the system | Keep $fn <= 64 for most uses, 128 max. |
-
-**minkowski() trap**: Compound (multi-object) children may be treated as separate inputs. Always wrap in `union()`:
-
-```openscad
-// BAD — may produce incorrect result
-minkowski() {
-    cube(10);
-    { sphere(2); cylinder(1, 2, 2); }
-}
-
-// GOOD
-minkowski() {
-    cube(10);
-    union() { sphere(2); cylinder(1, 2, 2); }
-}
-```
-
-## 6. Extrusion Gotchas
+## 5. Extrusion Gotchas
 
 ### linear_extrude and rotate_extrude
 
@@ -1822,72 +1032,6 @@ Both operate on the **XY-plane projection** of the 2D object. Transforms before 
 - X translation: increases diameter of result
 - Y translation: shifts result in Z
 - The 2D profile must be entirely on ONE side of the Y-axis
-
-## 7. Debugging Modifiers
-
-| Modifier | Effect | CSG Participation | Common Trap |
-|----------|--------|-------------------|-------------|
-| `%` (Background) | Transparent gray | **EXCLUDED** from CSG | Using as first child of `difference()` removes the base — nothing to subtract from |
-| `#` (Debug) | Transparent pink | Normal | Safe for debugging boolean operations |
-| `!` (Root) | Only shows this subtree | Parent transforms don't apply | Position changes when toggled |
-| `*` (Disable) | Completely hidden | Ignored | Like commenting out a subtree |
-
-## 8. Newer Features (likely training data gaps)
-
-### Function Literals (2021.01+)
-
-```openscad
-func = function (x) x * x;
-echo(func(5)); // 25
-
-// Higher-order
-selector = function (which)
-    which == "add" ? function (x) x + x : function (x) x * x;
-```
-
-No arrow operator — syntax is `function (params) expression`.
-
-### Tail Recursion (functions only)
-
-Non-tail: limited to ~thousands of calls. Tail-recursive: up to 1,000,000. The recursive call must be the final operation:
-
-```openscad
-// NOT tail-recursive (+ happens after recursive call)
-function sum(n) = n == 0 ? 0 : n + sum(n - 1);
-
-// Tail-recursive (recursive call IS the return value)
-function sum(n, acc=0) = n == 0 ? acc : sum(n - 1, acc + n);
-```
-
-Modules do NOT benefit from tail-recursion elimination.
-
-### assert() Chaining (2019.05+)
-
-`assert()` returns its children, enabling chained validation:
-
-```openscad
-function f(a, b) =
-    assert(a < 0, "a must be negative")
-    assert(b > 0, "b must be positive")
-    let(c = a + b)
-    assert(c != 0, "sum must not be zero")
-    a * b;
-```
-
-### Objects / Dicts (Development Snapshot)
-
-```openscad
-data = import("config.json");
-echo(data.width);   // dot-access
-echo(data["width"]); // bracket-access
-```
-
-### Numeric Edge Cases
-
-- Ranges `[0:10]` use **colons**, not commas — they are NOT vectors
-- Float step danger: `[0:0.2:1]` may give wrong element count. Use power-of-2 fractions.
-- `0/false` is `undef`. `0/0` is `nan`. `undef == undef` is true.
-- `1/0` is `inf`. `atan(1/0)` is 90. Many functions handle infinities per IEEE 754.
 
 ---
 
@@ -2207,7 +1351,7 @@ What it checks, by part name (the naming convention in SKILL.md):
 | `check_*`, `verify_*`, `debug_*` | Compiles; may be empty |
 | `all`, `assembly*`, `explode*`, `section*`, `view*` | Compiles |
 
-"Compiles clean" means exit 0 and no `ERROR:`, `WARNING:`, failed `assert()`, CGAL or manifold message on stderr. `ECHO:` lines are ignored. For printable parts it also reports sloped overhang past 45° and flat ceiling area. These don't fail the gate, since short ceilings bridge and some designs accept supports, but a non-zero overhang on a "support-free" part needs a reason. `--export DIR` writes each passing printable or layout part as a binary STL deliverable, named `<model>-<part>.stl`.
+"Compiles clean" means exit 0 and no `ERROR:`, `WARNING:`, failed `assert()`, CGAL or manifold message on stderr. `ECHO:` lines are ignored. For printable parts it also reports sloped overhang past 45° and flat ceiling area. These don't fail the gate, since short ceilings bridge and some designs accept supports, but a non-zero overhang on a "support-free" part needs a reason. It also reports the first layer's separate regions at Z=0.1 and their areas, with a `WARN` line (never a FAIL) when small islands could lift. `--export DIR` writes each passing printable or layout part as a binary STL deliverable, named `<model>-<part>.stl`.
 
 Fix failures in the model, not in a slicer:
 
@@ -2378,14 +1522,54 @@ The PRINT SETTINGS header in every generated .scad file maps directly to slicer 
 | **Triangular** | Maximum strength |
 | **Lightning** | Maximum speed, decorative parts |
 
-### Temperature (from material reference)
+### Slicer tuning by material
 
-| Material | Nozzle (C) | Bed (C) |
-|----------|-----------|---------|
-| PLA | 190-220 | 50-60 |
-| PETG | 230-250 | 70-85 |
+Starting points for the slicer; your filament brand's profile wins where it differs. The material files hold only what changes the geometry. **Always calibrate with a temperature tower for your specific filament brand/color.**
 
-**Always calibrate with a temperature tower for your specific filament brand/color.**
+**Temperature**
+
+| | PLA | PETG | ABS |
+|---|---|---|---|
+| Nozzle | 200-210C general; 215-225 max Z-strength (more stringing); 190-200 best overhangs | 240-245 structural (best layer bond); 230-235 detail, overhangs and bridges | 235-245 (start at 240, adjust ±5); 245-250 max Z-strength |
+| First layer | +5C | +5C | +5C |
+| Bed | 50-60C | 70-85C | 100-110C (mandatory) |
+| Enclosure | not needed | not needed | 40-60C ambient; the bed's heat is usually enough |
+
+Layer bond against nozzle temperature: PETG 80-85% at 230C, 90-95% at 240C, 95-98% at 250C (with extreme stringing). ABS 40-60% at 230C without an enclosure, 55-70% at 240C without, 70-80% at 235C with one, 80-90% at 240-250C with an enclosure and no fan.
+
+**Cooling**: PLA uses 100% fan, PETG 30-40%, ABS 0%.
+
+| Feature | PLA | PETG | ABS |
+|---|---|---|---|
+| First layer(s) | 0% | 0%, then 0-20% for layers 2-4 | 0% for the first 3-4 layers |
+| Standard layers | 100% (50-70% only to favour Z-strength over surface) | **30-40%**: more cooling weakens layer adhesion | **0%**: any fan causes warping and delamination |
+| Overhangs >45° | 100% | 50-70% | 0-20%: accept droop over cracking |
+| Bridges | 100% | 80-100%, 5-10C cooler, 20-30 mm/s | 30-50% burst during the bridge only |
+| Small parts | 100% | 50-60% under 20mm | 10-20% under 15mm, temporarily |
+
+**Speed (mm/s)**
+
+| Feature | PLA | PETG | ABS |
+|---|---|---|---|
+| Walls | 40-70 general | 30-50 (outer 25-40) | outer 30-40, inner 40-50 |
+| Infill | | 50-80 | 50-60 |
+| First layer | 15-20 | 15-20 | 15-25, never over 30 |
+| Bridges / overhangs | | 20-30 / 20-35 | 15-25 |
+| Travel | | 150-200 (fast, to cut oozing) | |
+
+- PLA: volumetric flow limit 10-12 mm³/s on a standard hotend; above 100 mm/s, Z-strength drops 10-20%. Layer height 0.16-0.20mm balances strength and time, 0.10mm gives the best XY strength and surface (slow), and above 0.28mm Z-strength suffers.
+- PETG: strength against speed is 100% at 30 mm/s, 95% at 50, 88% at 70, 80% at 90.
+- ABS: if layers delaminate, slow down in 5 mm/s steps; cracking sounds mid-print mean raise the enclosure and nozzle temperatures at once. For elephant's foot, set the slicer's compensation to -0.1 to -0.2mm and first-layer flow to 90-95%.
+
+**Retraction (ABS)**: direct drive 1-2mm at 30-40 mm/s, Bowden 3-4mm at 40-50 mm/s; minimum travel 1.0-2.0mm; optional Z-hop 0.1-0.4mm. Use combing to cut retractions. ABS strings less than PETG at the right temperature.
+
+**Drying**
+
+| | Temperature | Time | Notes |
+|---|---|---|---|
+| PLA | 45C, never over 60 | 4-6h | |
+| PETG | 60-65C | 4-6h | Hygroscopic. Strength loss with moisture: 0-5% at 0.05-0.15%, 10-20% at 0.2-0.4% (bubbling, strings), 25-35% at 0.5-0.8%, 40-50% (unusable) over 1% |
+| ABS | 80C | 4-6h | Store under 15% RH. Wet ABS bubbles and pops, and warps ~30% more |
 
 ### Orientation in Slicer
 
@@ -2427,17 +1611,19 @@ After slicing (PrusaSlicer: F5, then Preview tab; Cura: Preview button), check:
 - [ ] Nozzle clean (no burnt filament buildup)
 
 ### Material
-- [ ] Filament dried if needed (PETG: 65C for 4-6h; PLA: 45C for 4-6h, never >60C)
+- [ ] Filament dried if needed ([Drying](#slicer-tuning-by-material))
 - [ ] Spool rotates freely, no tangles
 - [ ] Enough filament for print + 20% buffer (check slicer estimate)
 
 ### Bed Adhesion
 
-| Surface | PLA | PETG |
-|---------|-----|------|
-| **PEI (smooth/textured)** | Excellent, no adhesive needed | Use glue stick as RELEASE agent (PETG bonds too strongly) |
-| **Glass** | Use glue stick or hairspray | Use glue stick |
-| **Painter's tape** | Good | Not recommended |
+| Surface | PLA | PETG | ABS |
+|---------|-----|------|-----|
+| **PEI (smooth/textured)** | Excellent, no adhesive needed | Use glue stick as RELEASE agent (PETG bonds too strongly) | Excellent: sticks hot, releases cool |
+| **Glass** | Use glue stick or hairspray | Use glue stick | ABS slurry (ABS dissolved in acetone), glue stick or unscented hairspray |
+| **Painter's tape** | Good | Not recommended | Kapton tape instead |
+
+ABS also wants an 8-15mm brim (8-10 lines on large parts), and a draft shield (a tall skirt that blocks air currents) without a full enclosure.
 
 ### Slicer Verification
 - [ ] Correct printer and filament profiles selected
