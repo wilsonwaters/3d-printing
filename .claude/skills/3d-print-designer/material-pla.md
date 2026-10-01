@@ -82,12 +82,8 @@ PLA's low elongation (2.5-6%) makes it the worst common filament for snap fits.
 
 ### Thread Design
 
-- Printable at **M4 and above** only
-- Use coarse pitch threads
-- Add 0.2-0.3mm clearance
-- Prefer trapezoidal profiles over standard metric
-- For **M5 and below**: strongly recommend heat-set brass inserts
-  - Insert pull-out: 200-600 N vs printed thread: 50-150 N
+- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts). Use a heat-set insert (pull-out 200-600 N, against 50-150 N for a printed thread), a captive nut, or a self-tap hole at about 50% thread depth. Insert holes are in printing-guidelines.md.
+- Printed threads suit coarse plastic-to-plastic joints only: ≥M10, trapezoidal profile, 0.2-0.3mm clearance.
 
 ### Creep and Sustained Loads
 
