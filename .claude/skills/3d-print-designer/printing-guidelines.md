@@ -70,26 +70,7 @@ Design tips:
 
 ## Screw Holes
 
-### Clearance Holes (designed for FDM — already compensated)
-
-| Screw Size | Clearance Hole | Through-Hole |
-|------------|----------------|-------------|
-| M2 | 2.4mm | 2.6mm |
-| M2.5 | 3.0mm | 3.2mm |
-| M3 | 3.4mm | 3.6mm |
-| M4 | 4.5mm | 4.8mm |
-| M5 | 5.5mm | 5.8mm |
-
-### Heat-Set Insert Holes (recommended over printed threads)
-
-| Insert Size | Hole Diameter | Hole Depth | Boss OD |
-|-------------|---------------|------------|---------|
-| M2 | 3.2mm | 4mm | 6mm |
-| M3 | 4.0mm | 5mm | 8mm |
-| M4 | 5.6mm | 6mm | 10mm |
-| M5 | 6.4mm | 7mm | 12mm |
-
-Heat-set inserts provide 200-600 N pull-out force vs 50-150 N for printed threads. **Any metal screw goes into an insert, a captive nut or a self-tap hole, never a printed thread.**
+Clearance holes, self-tap pilots, heat-set inserts and captive nuts: [pattern-fasteners.md](pattern-fasteners.md).
 
 ## Print-in-Place Clearances
 

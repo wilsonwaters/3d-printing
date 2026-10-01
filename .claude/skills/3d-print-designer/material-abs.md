@@ -137,8 +137,6 @@ Shrinkage is **not isotropic**: XY shrinkage is typically greater than Z shrinka
 | Sliding fit | 0.4-0.6mm per side | +0.2mm vs PLA |
 | Press fit | 0.1-0.2mm | +0.1mm vs PLA |
 | Clearance fit | 0.4-0.6mm per side | +0.2mm vs PLA |
-| Screw hole (M3 clearance) | 3.5-3.6mm diameter | +0.1mm vs PLA |
-| Screw hole (M3 tap) | 2.6-2.8mm diameter | +0.1mm vs PLA |
 
 Tolerances are **larger than PLA** due to shrinkage variability. Consider printing mating parts on the same plate for consistent shrinkage.
 
@@ -155,12 +153,6 @@ ABS's elongation (10-50%) makes snap-fits practical — unlike brittle PLA.
 | Lead-in angle | 30-45 degrees | N/A (too brittle) | 30-45 degrees |
 
 ABS snap-fits can handle repeated engagement. Print snap features parallel to layer lines.
-
-### Thread Design
-
-- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts). Use a heat-set insert, a captive nut, or a self-tap hole at about 50% thread depth.
-- Printed threads suit coarse plastic-to-plastic joints only: ≥M10, 0.25-0.35mm clearance (slightly more than PLA).
-- **Heat-set brass inserts work especially well in ABS** (high Tg). Take the hole and boss sizes from the insert's datasheet or the table in printing-guidelines.md; the hole is well under the insert's knurl diameter. Insert temperature 230-250C (higher than PETG).
 
 ### Anti-Warping Design Strategies
 
@@ -305,7 +297,6 @@ Brush acetone on mating surfaces, press together, hold until evaporated. Creates
 | Tension | Load along layers (XY), never across (Z) |
 | Compression | Most forgiving — Z-axis compression is acceptable |
 | Impact | Impact surfaces parallel to layer planes — ABS excels here |
-| Screw bosses | Print vertically (layers wrap around hole) |
 | Flat panels | Print vertically if possible to avoid base warping |
 | Snap-fits | Print features parallel to layer lines |
 | Parts for vapor smoothing | Orient with cosmetic surfaces accessible |
@@ -342,24 +333,7 @@ module abs_base(width, depth, height, corner_r=2) {
 }
 ```
 
-2. **Hole compensation** — add 0.3-0.5mm (more than PLA):
-```openscad
-// M3 clearance hole for ABS
-abs_m3_clearance = 3.5;  // PLA uses 3.3-3.4
-```
-
-3. **Heat-set insert bosses** (sizes from the insert's datasheet, or printing-guidelines.md: M3 is a 4.0 hole in an 8 boss):
-```openscad
-module heat_set_boss(hole_d, insert_len, boss_od) {
-    difference() {
-        cylinder(d=boss_od, h=insert_len + 1);
-        translate([0, 0, -fudge])
-            cylinder(d=hole_d, h=insert_len + 1 + 2*fudge);
-    }
-}
-```
-
-4. **Anti-warp ribs for flat panels**:
+2. **Anti-warp ribs for flat panels**:
 ```openscad
 module flat_panel_with_ribs(width, depth, thickness, rib_spacing=25) {
     // Main panel

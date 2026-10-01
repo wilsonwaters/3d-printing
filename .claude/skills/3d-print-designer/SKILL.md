@@ -54,7 +54,7 @@ The same steps for a single part or an assembly.
 2. **Orientation.** Choose the print orientation that removes supports first, then puts the primary loads along the layers (XY). Model in it, with Z=0 as the build plate.
 3. **Acceptance list and design summary.** Restate the requirements as a **numbered, measurable list** with units and tolerances ("fits 18mm tube → OD ≤ 17mm", "≤ 21mm deep"), plus orientation, support strategy, structure and key dimensions. For a complex job (a mechanism, several parts, or unclear requirements), settle the open questions first: in plan mode if a user is present, otherwise state your assumptions in one line and go on.
 4. **Write the .scad** using the [file structure](#file-structure) below. Read [openscad-reference.md](openscad-reference.md) first. Encode each measurable criterion as an `assert()`.
-5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
+5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots; read the matching [pattern](#patterns) first), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
 6. **Verify:** run the gate ([Verification](#verification)) and fix until it's green.
 7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](bambu-3mf-export.md)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Build it from the `.scad`, or with `--mesh` from the STL. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
 8. **Design review:** spawn it ([Design Review](#design-review)), triage the findings, fix and re-verify.
@@ -183,12 +183,18 @@ The load-bearing FDM invariants, referenced throughout.
 
 ## Mechanical Parts
 
-For gears, threads, snap-fits, living hinges and joints, see [mechanical.md](mechanical.md). Material-critical notes:
+For gears, snap-fits, living hinges and joints, see [mechanical.md](mechanical.md). Material-critical notes:
 
 - **Snap-fits:** PETG excels (5-8% strain), ABS is good (3-5%), PLA is fragile (1-1.5% max).
 - **Living hinges:** PETG only (0.4mm thick, 50,000+ cycles). PLA breaks within 50-100 cycles; ABS is marginal.
-- **Metal fasteners into plastic:** use a heat-set insert, a captive nut, or a plain **self-tap hole at about 50% thread depth**. Don't print a metric thread that a metal screw must mate with. A real print failed that way: a printed M8 thread in PETG didn't form. A self-tapped Ø7.5 hole for M8 held, while Ø7.0 seized. Printed threads suit coarse plastic-to-plastic joints (≥M10, trapezoidal or buttress profile).
+- **Metal fasteners:** a metal screw goes into a heat-set insert, a captive nut or a ~50% self-tap hole, never a printed metric thread.
 - **Flexing features** (fins, barbs, cantilevers, springs) bend **within the layer plane**. Bending across layers delaminates them.
+
+## Patterns
+
+Read one only when its trigger matches.
+
+- [pattern-fasteners.md](pattern-fasteners.md): the design takes a screw, bolt, threaded stem, nut or insert.
 
 ## Verification
 
@@ -250,5 +256,5 @@ Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any rende
 | [bambu-3mf-export.md](bambu-3mf-export.md) | When making a Bambu 3MF |
 | [fdm-design-principles.md](fdm-design-principles.md) | Only for hard support-free or structural cases |
 | [printing-guidelines.md](printing-guidelines.md) | Only for tolerance or overhang data the material file lacks |
-| [mechanical.md](mechanical.md) | Only for gears, threads, snap-fits, hinges, joints |
+| [mechanical.md](mechanical.md) | Only for gears, snap-fits, hinges, joints (threads: [pattern-fasteners.md](pattern-fasteners.md)) |
 | [printing-workflow.md](printing-workflow.md) | Only for a new user's export-to-print walkthrough |

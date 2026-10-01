@@ -1,5 +1,7 @@
 # Mechanical Parts Patterns for OpenSCAD
 
+Screws, inserts, nuts, threads and bosses are in [pattern-fasteners.md](pattern-fasteners.md).
+
 ## Gears
 
 ### Recommended Libraries
@@ -59,25 +61,6 @@ translate([center_distance, 0, 0])
     rotate([0, 0, 180/teeth2])  // Offset by half a tooth
         spur_gear(teeth2, mod, 5);
 ```
-
-## Threads
-
-### Simple Thread Module
-
-For plastic-to-plastic threads only (coarse, ≥M10, trapezoidal is best). A metal screw goes into a heat-set insert, a captive nut, or a plain self-tap hole at about 50% thread depth (Ø7.5 for M8 in PETG): a printed M8 thread failed to form in a real print.
-```openscad
-module thread(d, pitch, length, internal=false) {
-    tol = internal ? tolerance : 0;
-    r = d/2 + tol;
-    starts = 1;
-
-    linear_extrude(height=length, twist=-360*length/pitch, slices=length/pitch*20)
-        translate([r - pitch*0.65, 0, 0])
-            circle(d=pitch*0.5, $fn=3);
-}
-```
-
-For production threads, use BOSL2 `trapezoidal_threaded_rod()` or `threaded_rod()`.
 
 ## Snap Fits
 
@@ -177,32 +160,5 @@ bearing_h = 7;     // Height
 module bearing_seat(od, h, press_fit=true) {
     tol = press_fit ? -0.1 : tolerance;
     cylinder(d=od + tol, h=h);
-}
-```
-
-## Standoffs and Bosses
-
-```openscad
-module standoff(od, id, height) {
-    difference() {
-        cylinder(d=od, h=height);
-        translate([0, 0, -fudge])
-            cylinder(d=id, h=height + 2*fudge);
-    }
-}
-
-module screw_boss(od, screw_d, height) {
-    difference() {
-        union() {
-            cylinder(d=od, h=height);
-            // Reinforcement ribs
-            for (a = [0:90:270])
-                rotate([0, 0, a])
-                    translate([0, -1, 0])
-                        cube([od/2 + 2, 2, height]);
-        }
-        translate([0, 0, -fudge])
-            cylinder(d=screw_d, h=height + 2*fudge);
-    }
 }
 ```
