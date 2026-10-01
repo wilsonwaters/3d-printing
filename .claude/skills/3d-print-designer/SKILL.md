@@ -33,6 +33,7 @@ Pick the material **within the printer's capabilities**. Warn if the printer can
 | Functional/mechanical parts, snap-fits | **PETG** | Ductile, impact-resistant, good layer adhesion |
 | Outdoor use, heat exposure | **PETG** | Higher Tg (75-85C vs 55-65C), moderate UV resistance |
 | Living hinges, flexible features | **PETG** | 200-300% elongation vs PLA's 2.5-6% |
+| Watertight containers, cold food contact | **PETG** | Low water absorption, food-safe resin (coated) |
 | High heat resistance (up to 80C) | **ABS** | Tg 100-110C, best heat resistance of common filaments |
 | Impact-resistant parts | **ABS** | 3-5x impact strength of PLA |
 | Smooth surface finish (vapor smoothing) | **ABS** | Acetone vapor smoothing eliminates layer lines |
