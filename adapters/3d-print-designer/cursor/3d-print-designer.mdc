@@ -53,7 +53,7 @@ The same steps for a single part or an assembly.
 2. **Orientation.** Choose the print orientation that removes supports first, then puts the primary loads along the layers (XY). Model in it, with Z=0 as the build plate.
 3. **Acceptance list and design summary.** Restate the requirements as a **numbered, measurable list** with units and tolerances ("fits 18mm tube → OD ≤ 17mm", "≤ 21mm deep"), plus orientation, support strategy, structure and key dimensions. For a complex job (a mechanism, several parts, or unclear requirements), settle the open questions first: in plan mode if a user is present, otherwise state your assumptions in one line and go on.
 4. **Write the .scad** using the [file structure](#file-structure) below. Read [openscad-reference.md](#openscad-reference) first. Encode each measurable criterion as an `assert()`.
-5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
+5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots; read the matching [pattern](#patterns) first), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
 6. **Verify:** run the gate ([Verification](#verification)) and fix until it's green.
 7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](#bambu-3mf-export)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Build it from the `.scad`, or with `--mesh` from the STL. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
 8. **Design review:** spawn it ([Design Review](#design-review)), triage the findings, fix and re-verify.
@@ -173,7 +173,7 @@ The load-bearing FDM invariants, referenced throughout.
 5. **Fudge factor:** every `difference()` and `intersection()` cutter overshoots the faces it cuts by `fudge = 0.01`. Coincident faces produce broken geometry.
 6. **Bottom chamfers, top fillets:** 45° chamfers on bottom surfaces are self-supporting; fillets on top are cosmetic. No sharp internal corners (minimum 1mm fillet for stress).
 7. **Elephant-foot compensation:** apply `ef_chamfer` (0.3-0.5mm at 45°) to every bottom edge.
-8. **Holes oversize:** a bore is `nominal + hole compensation + fit allowance`, two separate numbers. Measured for PETG on a Bambu X1C with a 0.4mm nozzle: compensation **+0.30mm**; allowance **-0.08** press (it must be interference: 0.00 is a slide, not a press), **+0.15** bearing (shaft rotates in it), **+0.30** free-running. For a 3mm rod: press 3.22, bearing 3.45, running 3.60.
+8. **Holes oversize:** a bore is `nominal + hole compensation + fit allowance`, two separate numbers. Use the user's measured compensation if memory or the model header has one. Otherwise use this default, measured on one Bambu X1C (0.4mm nozzle, PETG): compensation **+0.30mm**; allowance **-0.08** press (interference: 0.00 slides), **+0.15** bearing, **+0.30** free-running. Where a fit matters, offer the ladder coupon in printing-guidelines.md.
 9. **No magic numbers:** every numeric value is a parameter or derived from parameters.
 10. **Prefer ribs over thick walls:** a 1.6mm rib is stronger per gram than a 5mm solid wall.
 11. **Support-free by default:** choose orientations, chamfers, teardrops and splits that eliminate supports. Accept supports only when the geometry truly needs them, then minimise contact and document why in PRINT SETTINGS.
@@ -182,12 +182,18 @@ The load-bearing FDM invariants, referenced throughout.
 
 ## Mechanical Parts
 
-For gears, threads, snap-fits, living hinges and joints, see [mechanical.md](#mechanical). Material-critical notes:
+For gears, snap-fits, living hinges and joints, see [mechanical.md](#mechanical). Material-critical notes:
 
 - **Snap-fits:** PETG excels (5-8% strain), ABS is good (3-5%), PLA is fragile (1-1.5% max).
 - **Living hinges:** PETG only (0.4mm thick, 50,000+ cycles). PLA breaks within 50-100 cycles; ABS is marginal.
-- **Metal fasteners into plastic:** use a heat-set insert, a captive nut, or a plain **self-tap hole at about 50% thread depth**. Don't print a metric thread that a metal screw must mate with. A real print failed that way: a printed M8 thread in PETG didn't form. A self-tapped Ø7.5 hole for M8 held, while Ø7.0 seized. Printed threads suit coarse plastic-to-plastic joints (≥M10, trapezoidal or buttress profile).
+- **Metal fasteners:** a metal screw goes into a heat-set insert, a captive nut or a ~50% self-tap hole, never a printed metric thread.
 - **Flexing features** (fins, barbs, cantilevers, springs) bend **within the layer plane**. Bending across layers delaminates them.
+
+## Patterns
+
+Read one only when its trigger matches.
+
+- [pattern-fasteners.md](#pattern-fasteners): the design takes a screw, bolt, threaded stem, nut or insert.
 
 ## Verification
 
@@ -235,6 +241,7 @@ Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any rende
 
 - **New users** (check memory for 3D-printing experience; none means new): offer help getting the model viewed, exported and printed, including installing OpenSCAD. Walk through [printing-workflow.md](#printing-workflow) if they accept, then save a `user` memory that they've been introduced.
 - **Simple part, Fable available, no final review recorded yet:** offer the Fable review ([Design Review](#design-review)).
+- **Pattern proposal:** offer once, in one sentence, never unattended, only if a real print or measured calibration (not a gate or review pass) gave numbers or a rule for a reusable joint, fit or technique that you wouldn't produce unaided, or that contradict this skill, and no pattern holds it (new evidence for one counts). Yes: [pattern-proposal.md](#pattern-proposal).
 - **Bambu Lab printer:** the project 3MF from step 7 is the file to open in Bambu Studio or OrcaSlicer. Without Python, or if the user slices in something else, hand off the STL with the PRINT SETTINGS header for manual entry.
 
 ## References
@@ -249,7 +256,7 @@ Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any rende
 | [bambu-3mf-export.md](#bambu-3mf-export) | When making a Bambu 3MF |
 | [fdm-design-principles.md](#fdm-design-principles) | Only for hard support-free or structural cases |
 | [printing-guidelines.md](#printing-guidelines) | Only for tolerance or overhang data the material file lacks |
-| [mechanical.md](#mechanical) | Only for gears, threads, snap-fits, hinges, joints |
+| [mechanical.md](#mechanical) | Only for gears, snap-fits, hinges, joints (threads: [pattern-fasteners.md](#pattern-fasteners)) |
 | [printing-workflow.md](#printing-workflow) | Only for a new user's export-to-print walkthrough |
 
 
@@ -363,7 +370,7 @@ build_z = 256;
 | Min wall thickness | 2 * extrusion width | 0.9mm | 1.35mm | 0.45mm |
 | Ideal wall multiples | N * extrusion width | 0.9, 1.35, 1.8mm | 1.35, 2.0, 2.7mm | 0.45, 0.9, 1.35mm |
 | Min standalone feature | ~4 * extrusion width | ~1.8mm | ~2.7mm | ~0.9mm |
-| Hole diameter compensation | +0.3 to +0.4mm | **+0.30mm** (measured, PETG/X1C) | +0.4mm | +0.2mm |
+| Hole diameter compensation | measured (SKILL.md Rule 8), else typical | +0.3mm | +0.4mm | +0.2mm |
 | Sliding fit clearance (per side) | ~0.5 * nozzle | 0.2mm | 0.3mm | 0.1mm |
 | Min embossed text line width | ~6 * nozzle | 2.5mm | 3.0mm | 1.5mm |
 | Min engraved text line width | ~2.5 * nozzle | 1.0mm | 1.5mm | 0.5mm |
@@ -470,11 +477,6 @@ PLA's low elongation (2.5-6%) makes it the worst common filament for snap fits.
 - Print snap features parallel to layer lines
 - Consider PETG instead if repeated snap engagement needed
 
-### Thread Design
-
-- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts). Use a heat-set insert (pull-out 200-600 N, against 50-150 N for a printed thread), a captive nut, or a self-tap hole at about 50% thread depth. Insert holes are in printing-guidelines.md.
-- Printed threads suit coarse plastic-to-plastic joints only: ≥M10, trapezoidal profile, 0.2-0.3mm clearance.
-
 ### Creep and Sustained Loads
 
 - Measurable creep above 10-15 MPa at room temperature
@@ -542,9 +544,7 @@ PLA's low elongation (2.5-6%) makes it the worst common filament for snap fits.
 | Tension | Load along layers (XY), never across (Z) |
 | Compression | Most forgiving — Z-axis compression is acceptable |
 | Impact | Impact surfaces parallel to layer planes |
-| Screw bosses | Print vertically (layers wrap around hole) |
 | Gears | Print flat (tooth loads in XY plane) |
-| Threads | Axis vertical |
 | Mating surfaces | On vertical walls (best dimensional consistency) |
 
 **Surface finish**:
@@ -687,11 +687,6 @@ PETG's elongation and fatigue resistance make it one of the best filaments for l
 - Taper from thick (2-3mm) to thin (0.4mm) over 2-3mm
 - First 5-10 bends should be slow ("work in" the hinge)
 
-### Thread Design
-
-- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts): a printed M8 thread in PETG didn't form in a real print. Use a heat-set insert (iron at 200-220C; PETG flows around it well), a captive nut, or a self-tap hole at about 50% thread depth.
-- Printed threads suit coarse plastic-to-plastic joints only (≥M10). Clearance 0.25-0.35mm, more than PLA because PETG flexes. Buttress profiles suit FDM better than metric (45 degree load face, 5 degree relief).
-
 ### Clearances and Fits
 
 | Fit Type | Clearance |
@@ -699,11 +694,6 @@ PETG's elongation and fatigue resistance make it one of the best filaments for l
 | Sliding fit | 0.3-0.4mm |
 | Press fit | -0.05 to -0.10mm (interference; 0.00 slides) |
 | Snap fit | 0.2mm |
-| Thread | 0.25-0.35mm |
-
-**Steel rod in a printed bore** — measured, X1C 0.4mm nozzle:
-`bore = rod + 0.30 + allowance`, allowance **-0.08** press / **+0.15** bearing / **+0.30**
-free-running. For 3mm rod: **3.22 / 3.45 / 3.60**.
 
 ## Slicer Parameters Affecting Design
 
@@ -1027,8 +1017,6 @@ Shrinkage is **not isotropic**: XY shrinkage is typically greater than Z shrinka
 | Sliding fit | 0.4-0.6mm per side | +0.2mm vs PLA |
 | Press fit | 0.1-0.2mm | +0.1mm vs PLA |
 | Clearance fit | 0.4-0.6mm per side | +0.2mm vs PLA |
-| Screw hole (M3 clearance) | 3.5-3.6mm diameter | +0.1mm vs PLA |
-| Screw hole (M3 tap) | 2.6-2.8mm diameter | +0.1mm vs PLA |
 
 Tolerances are **larger than PLA** due to shrinkage variability. Consider printing mating parts on the same plate for consistent shrinkage.
 
@@ -1045,12 +1033,6 @@ ABS's elongation (10-50%) makes snap-fits practical — unlike brittle PLA.
 | Lead-in angle | 30-45 degrees | N/A (too brittle) | 30-45 degrees |
 
 ABS snap-fits can handle repeated engagement. Print snap features parallel to layer lines.
-
-### Thread Design
-
-- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts). Use a heat-set insert, a captive nut, or a self-tap hole at about 50% thread depth.
-- Printed threads suit coarse plastic-to-plastic joints only: ≥M10, 0.25-0.35mm clearance (slightly more than PLA).
-- **Heat-set brass inserts work especially well in ABS** (high Tg). Take the hole and boss sizes from the insert's datasheet or the table in printing-guidelines.md; the hole is well under the insert's knurl diameter. Insert temperature 230-250C (higher than PETG).
 
 ### Anti-Warping Design Strategies
 
@@ -1195,7 +1177,6 @@ Brush acetone on mating surfaces, press together, hold until evaporated. Creates
 | Tension | Load along layers (XY), never across (Z) |
 | Compression | Most forgiving — Z-axis compression is acceptable |
 | Impact | Impact surfaces parallel to layer planes — ABS excels here |
-| Screw bosses | Print vertically (layers wrap around hole) |
 | Flat panels | Print vertically if possible to avoid base warping |
 | Snap-fits | Print features parallel to layer lines |
 | Parts for vapor smoothing | Orient with cosmetic surfaces accessible |
@@ -1232,24 +1213,7 @@ module abs_base(width, depth, height, corner_r=2) {
 }
 ```
 
-2. **Hole compensation** — add 0.3-0.5mm (more than PLA):
-```openscad
-// M3 clearance hole for ABS
-abs_m3_clearance = 3.5;  // PLA uses 3.3-3.4
-```
-
-3. **Heat-set insert bosses** (sizes from the insert's datasheet, or printing-guidelines.md: M3 is a 4.0 hole in an 8 boss):
-```openscad
-module heat_set_boss(hole_d, insert_len, boss_od) {
-    difference() {
-        cylinder(d=boss_od, h=insert_len + 1);
-        translate([0, 0, -fudge])
-            cylinder(d=hole_d, h=insert_len + 1 + 2*fudge);
-    }
-}
-```
-
-4. **Anti-warp ribs for flat panels**:
+2. **Anti-warp ribs for flat panels**:
 ```openscad
 module flat_panel_with_ribs(width, depth, thickness, rib_spacing=25) {
     // Main panel
@@ -1766,7 +1730,7 @@ module rounded_box(size, r) {
 
 ### FDM module patterns
 
-Reusable, print-aware modules. They assume the derived constants from the file template (`fudge`, `tolerance`, `layer_height`).
+Reusable, print-aware modules. They assume the derived constants from the file template (`fudge`, `tolerance`, `layer_height`). Screw holes, self-tap pilots, insert bosses and nut pockets are in [pattern-fasteners.md](pattern-fasteners.md).
 
 ```openscad
 // Through-hole / pocket: extend cutting shapes beyond every surface they exit
@@ -1779,15 +1743,6 @@ difference() {
 // Through-hole (extend BOTH directions):
 translate([x, y, -fudge])
     cylinder(h = wall + 2*fudge, d = hole_d + tolerance);
-
-// Screw hole with countersink
-module screw_hole(h, d, head_d, head_h) {
-    translate([0, 0, -fudge]) {
-        cylinder(h=h + 2*fudge, d=d + tolerance);
-        translate([0, 0, h - head_h])
-            cylinder(h=head_h + fudge, d1=d + tolerance, d2=head_d + tolerance);
-    }
-}
 
 // Teardrop hole — a horizontal hole whose top rises to a 45° point (apex r*sqrt(2) above
 // the axis), so it prints without support. axis = "x" or "y" is the hole's direction; the
@@ -1987,6 +1942,8 @@ Pass flags only for values the header specifies; everything else comes from the 
 
 # Mechanical Parts Patterns for OpenSCAD
 
+Screws, inserts, nuts, threads and bosses are in [pattern-fasteners.md](pattern-fasteners.md).
+
 ## Gears
 
 ### Recommended Libraries
@@ -2046,25 +2003,6 @@ translate([center_distance, 0, 0])
     rotate([0, 0, 180/teeth2])  // Offset by half a tooth
         spur_gear(teeth2, mod, 5);
 ```
-
-## Threads
-
-### Simple Thread Module
-
-For plastic-to-plastic threads only (coarse, ≥M10, trapezoidal is best). A metal screw goes into a heat-set insert, a captive nut, or a plain self-tap hole at about 50% thread depth (Ø7.5 for M8 in PETG): a printed M8 thread failed to form in a real print.
-```openscad
-module thread(d, pitch, length, internal=false) {
-    tol = internal ? tolerance : 0;
-    r = d/2 + tol;
-    starts = 1;
-
-    linear_extrude(height=length, twist=-360*length/pitch, slices=length/pitch*20)
-        translate([r - pitch*0.65, 0, 0])
-            circle(d=pitch*0.5, $fn=3);
-}
-```
-
-For production threads, use BOSL2 `trapezoidal_threaded_rod()` or `threaded_rod()`.
 
 ## Snap Fits
 
@@ -2167,29 +2105,76 @@ module bearing_seat(od, h, press_fit=true) {
 }
 ```
 
-## Standoffs and Bosses
+---
+
+<a id="pattern-fasteners"></a>
+
+## Pattern Fasteners
+
+# Pattern: fasteners
+
+**Use when:** the design takes a screw, bolt, threaded stem, nut or heat-set insert, or two printed parts screw together.
+
+## Choose
+
+| Option | When | Refits | Space |
+|---|---|---|---|
+| Heat-set insert | Load or torque matters | Many | Boss ≈ 2× insert hole |
+| Captive nut | High clamp load, no insert or iron | Many | Nut across-corners + 2 walls, and a way in |
+| Self-tap hole | No room for a nut, nothing to buy | A few | 2.75 wall round the pilot at M8 |
+| Printed thread | Plastic to plastic only (caps, jars), ≥M10 | Many | Depth P/4 |
+
+A metal screw never goes into a printed metric thread: it doesn't form.
+
+## Rules
+
+- **Axis vertical** where you can, so perimeters wrap the hole. A boss or hub taking an insert or a formed thread: ≥4 perimeters, 50-100% infill.
+- **Clearance hole:** SKILL.md Rule 8, free-running: `D + hole_comp + 0.30` (M3: 3.6). Recess a head at head Ø + `hole_comp`; a countersink at the top face is self-supporting.
+- **Self-tap pilot:** `D − 0.4·P` drawn, about 50% thread as printed. M8: 7.5 held, 7.0 seized. The rule gives M2 1.8, M3 2.8, M4 3.7, M5 4.7, M6 5.6, M10 9.4, the loose end of published tables. Open the mouth to D + 0.6 for 0.5·D so the thread forms only deeper; engage about 1.4·D; pre-form the thread once with a plain bolt. For a size not proven here, print `self_tap_coupon()`.
+- **Insert:** the datasheet first. Otherwise typical drawn holes M2 3.2, M3 4.0, M4 5.6, M5 6.4 (well under the knurl Ø); depth = insert length + 1; boss ≈ 2× hole. Iron: PETG 200-220 °C, ABS 230-250 °C (inserts hold best in ABS), PLA per the datasheet.
+- **Captive nut:** `$fn = 6` sizes across corners, so divide across-flats by cos 30°. A pocket under a smaller hole leaves a hex ceiling: put it on the top face, slide the nut in from the side, or print one sacrificial layer and drill it out.
+- **Printed thread:** axis vertical, downward flank ≤45° from vertical: trapezoidal, buttress with its flat face up, or `coarse_thread()` (BOSL2 `trapezoidal_threaded_rod()` if installed). Radial clearance: PLA 0.2-0.3, PETG and ABS 0.25-0.35. Clash-check mating threads posed a whole number of pitches apart.
+
+## Evidence
+
+| Value | Printer, nozzle | Material | Result | Status | Source | Date |
+|---|---|---|---|---|---|---|
+| Printed M8×1.25 thread in a cone nut | Bambu, 0.4 | PETG | Didn't form; teeth broke driving it | **failed** | `3d-models/caster-tube-insert` v1 | 2026-07-25 |
+| M8 self-tap Ø7.0 (~90% thread) | Bambu, 0.4 | PETG | Seized | **failed** | same, v2 | 2026-07-25 |
+| M8 self-tap Ø7.5 (~50%), Ø8.6×4 mouth, 11 engaged, 2.75 wall, pre-formed | X1C, 0.4 | PETG | Held the caster | **proven** | same, v3 | 2026-07-25 |
+| Self-tap M6 Ø5.0, M10 Ø9.3 (5.0 breaks the rule: use 5.6) | – | PETG | – | **designed, not printed** | same, README | 2026-07-25 |
+| Insert and M2-M5 self-tap sizes, thread clearances, pull-out (insert 200-600 N, printed thread 50-150 N) | – | – | – | **typical** | published tables | – |
+
+## Modules
+
+Gate-tested: each builds one manifold body; a rod and nut cut with `gap = 0.3` clash empty. They use `fudge` and `hole_comp` (Rule 8). Holes run up +Z from z = 0; cut them with `difference()`.
 
 ```openscad
-module standoff(od, id, height) {
+module self_tap_hole(d, pitch, engage, mouth = 0, adj = 0) {
+    pilot = d - 0.4 * pitch + adj;
+    assert(pilot < d, "pilot must be under the screw's major diameter");
+    if (mouth > 0) translate([0, 0, -fudge]) cylinder(d = d + 0.6, h = mouth + 2 * fudge);
+    translate([0, 0, mouth - fudge]) cylinder(d = pilot, h = engage + 2 * fudge);
+}
+module insert_boss(hole_d, insert_len, boss_d, h, flare = 1) {   // stands on z = 0
+    assert(h >= insert_len + 1, "pocket shallower than insert length + 1");
+    assert(boss_d >= 1.75 * hole_d, "boss wall too thin");
     difference() {
-        cylinder(d=od, h=height);
-        translate([0, 0, -fudge])
-            cylinder(d=id, h=height + 2*fudge);
+        union() { cylinder(d = boss_d, h = h); cylinder(d1 = boss_d + 2 * flare, d2 = boss_d, h = flare); }  // 45° root
+        translate([0, 0, h - insert_len - 1]) cylinder(d = hole_d, h = insert_len + 1 + fudge);
     }
 }
-
-module screw_boss(od, screw_d, height) {
+module nut_pocket(af, h) cylinder(d = (af + hole_comp + 0.1) / cos(30), h = h, $fn = 6);
+module coarse_thread(d, pitch, length, gap = 0) {   // gap: radial, for the internal cut
+    e = pitch / 8;  n = max($fn, 32);                // depth P/4, flanks ~38° from vertical
+    linear_extrude(height = length, twist = -360 * length / pitch, slices = ceil(n * length / pitch))
+        translate([e, 0]) circle(d = d - 2 * e + 2 * gap, $fn = n);   // one slice per facet, or flanks overhang
+}
+module self_tap_coupon(d, pitch, engage, step = 0.1) {   // pilots -step, 0, +step: keep the tightest that drives
+    w = d + 6;
     difference() {
-        union() {
-            cylinder(d=od, h=height);
-            // Reinforcement ribs
-            for (a = [0:90:270])
-                rotate([0, 0, a])
-                    translate([0, -1, 0])
-                        cube([od/2 + 2, 2, height]);
-        }
-        translate([0, 0, -fudge])
-            cylinder(d=screw_d, h=height + 2*fudge);
+        translate([-1.5 * w, -w / 2, 0]) cube([3 * w, w, engage]);
+        for (i = [-1 : 1]) translate([i * w, 0, 0]) self_tap_hole(d, pitch, engage, adj = i * step);
     }
 }
 ```
@@ -2494,13 +2479,41 @@ After generating a model, include these steps:
 
 ---
 
+<a id="pattern-proposal"></a>
+
+## Pattern Proposal
+
+# Proposing a pattern
+
+**Inside this skill's own source repo** (a `wilsonwaters/3d-printing` checkout): skip the issue. Offer to add the evidence row, or write the pattern from the template in the repo README.
+
+Otherwise draft an issue for the repo owner, who writes the pattern. Fields, by their issue-form id:
+
+- title: `Pattern: <name>: <lesson>`, or `Evidence: pattern-<name>.md: …` for an existing pattern
+- `pattern`: the new name, or the existing file
+- `lesson`: the rule, in a sentence or two
+- `numbers`: what worked or failed, with units
+- `setup`: printer, nozzle, material and brand, key slicer settings
+- `result`: the outcome and how it was judged (fit test, load, calipers)
+- `scad`: the module or excerpt
+- `date`: when it was printed. Photos are optional.
+
+1. **Show the draft; post only once the user approves.** The issue is public: remove names, emails, addresses and local paths.
+2. **File it**, the first way that works:
+   - `gh issue create --repo wilsonwaters/3d-printing --title … --body-file …`, or a GitHub tool, with a `###` heading per field;
+   - if it fits in about 8,000 characters, a link for the user: `https://github.com/wilsonwaters/3d-printing/issues/new?template=pattern-proposal.yml&title=…&pattern=…`, one URL-encoded parameter per field id;
+   - otherwise Markdown for the user to paste into a new issue.
+3. Give the link and carry on; don't offer again this session.
+
+---
+
 <a id="design-review"></a>
 
 ## Design Review
 
 # Design Review — fresh-eyes peer review of a generated model
 
-**Loading**: the reviewer sub-agent's complete brief. The author spawns the Design Review as a sub-agent and points it here. This file stands alone: to do the job you need only this file, the `.scad` path, the numbered acceptance criteria, the printer and material, and the OpenSCAD path. Don't invoke the 3d-print-designer skill or read its other files.
+**Loading**: the reviewer sub-agent's complete brief. The author spawns the Design Review as a sub-agent and points it here. This file stands alone: to do the job you need only this file, the `.scad` path, the numbered acceptance criteria, the printer and material, and the OpenSCAD path. Don't invoke the 3d-print-designer skill or read its other files, except a pattern file this checklist names.
 
 **Budget:** one pass, about 6-8 renders and 25 tool calls, then return. Incomplete findings returned on time beat a complete list that never arrives, so stop and report if you're running long. The author has already run the build gate: every part compiles, is one manifold body, sits on the plate and fits the printer, and every `clash_*` part is empty. Don't repeat that.
 
@@ -2570,6 +2583,7 @@ For assemblies, also render an **assembled** view, an **exploded** view (`-D exp
 - [ ] Bottom chamfers (45°), top fillets; no sharp internal corners (min 1mm fillet for stress)
 - [ ] Elephant foot compensation, **checked in the code**: find where `ef_chamfer` (or equivalent) is applied to the plate-contact outline. A parameter that is defined but never used is a FAIL.
 - [ ] Holes oversized 0.2–0.3mm above nominal
+- [ ] If the design uses fasteners (screws, inserts, nuts, threads), check them against [pattern-fasteners.md](pattern-fasteners.md)
 - [ ] Ribs over thick walls where applicable
 
 **Support-Free Compliance:**
@@ -2651,7 +2665,7 @@ cylinder(d = peg_diameter + tolerance);  // Hole
 cylinder(d = peg_diameter - tolerance);  // Peg
 ```
 
-**Holes print 0.1-0.2mm undersized.** Design clearance holes 0.2-0.3mm oversize to compensate.
+**Holes print undersized**, typically by 0.1-0.3mm: the hole compensation in SKILL.md Rule 8. To measure it, print a ladder coupon: a bar with one hole per candidate `c` from 0.18 to 0.42 in 0.04 steps, each `rod + c - 0.08` across and labelled with `c`, in the job's material. Push the real rod or pin into each. The smallest hole it enters with a firm push and can't turn in gives `c`. Put it in the model header and in memory.
 
 ## Overhangs
 
@@ -2690,26 +2704,7 @@ Design tips:
 
 ## Screw Holes
 
-### Clearance Holes (designed for FDM — already compensated)
-
-| Screw Size | Clearance Hole | Through-Hole |
-|------------|----------------|-------------|
-| M2 | 2.4mm | 2.6mm |
-| M2.5 | 3.0mm | 3.2mm |
-| M3 | 3.4mm | 3.6mm |
-| M4 | 4.5mm | 4.8mm |
-| M5 | 5.5mm | 5.8mm |
-
-### Heat-Set Insert Holes (recommended over printed threads)
-
-| Insert Size | Hole Diameter | Hole Depth | Boss OD |
-|-------------|---------------|------------|---------|
-| M2 | 3.2mm | 4mm | 6mm |
-| M3 | 4.0mm | 5mm | 8mm |
-| M4 | 5.6mm | 6mm | 10mm |
-| M5 | 6.4mm | 7mm | 12mm |
-
-Heat-set inserts provide 200-600 N pull-out force vs 50-150 N for printed threads. **Any metal screw goes into an insert, a captive nut or a self-tap hole, never a printed thread.**
+Clearance holes, self-tap pilots, heat-set inserts and captive nuts: [pattern-fasteners.md](pattern-fasteners.md).
 
 ## Print-in-Place Clearances
 
@@ -2733,7 +2728,7 @@ Clearance must be at least 2x the layer height. At 0.3mm layers, 0.3mm is absolu
 
 ### Critical Compensation Rules
 
-- **Holes**: Design 0.2-0.3mm oversize (holes shrink inward)
+- **Holes**: nominal + hole compensation + fit allowance (SKILL.md Rule 8)
 - **External features**: Print 0.05-0.1mm oversized
 - **Z dimensions**: Use multiples of layer height for exact sizes
 - **First layer**: 10-30% compressed, 0.2-0.5mm wider (elephant foot)
