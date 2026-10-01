@@ -1,0 +1,65 @@
+name: Pattern proposal
+description: Print-proven knowledge for a new 3d-print-designer pattern, or new evidence for an existing one.
+title: "Pattern: "
+labels: ["pattern"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share a lesson from a real print: a joint, fastening, fit, mechanism or print technique that other designs can reuse. It needs a print result or a measurement behind it; a design that only compiled or passed review isn't enough yet. The maintainer turns accepted proposals into a `pattern-<name>.md` file in the skill.
+
+        This issue is public, so leave out personal details.
+  - type: input
+    id: pattern
+    attributes:
+      label: Pattern
+      description: A new pattern name (for example `ball-joint`), or the existing file this adds evidence to (for example `pattern-fasteners.md`).
+    validations:
+      required: true
+  - type: textarea
+    id: lesson
+    attributes:
+      label: Rule or lesson
+      description: One or two sentences. What should a design do, or avoid?
+    validations:
+      required: true
+  - type: textarea
+    id: numbers
+    attributes:
+      label: Numbers
+      description: The values that worked or failed, with units.
+      placeholder: "Self-tap pilot 7.5 mm for an M8 stem: held. 7.0 mm: seized."
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Printer, nozzle, material and slicer settings
+      description: Printer model, nozzle size, material and brand, and the settings that matter (layer height, walls, infill, temperatures).
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Result and how it was judged
+      description: Worked, failed or measured, and the test (go/no-go fit, load, cycles, calipers).
+    validations:
+      required: true
+  - type: textarea
+    id: scad
+    attributes:
+      label: OpenSCAD module or excerpt
+      description: The module or lines that make the feature, trimmed to it.
+      render: OpenSCAD
+  - type: input
+    id: date
+    attributes:
+      label: Date printed
+      placeholder: YYYY-MM-DD
+    validations:
+      required: true
+  - type: textarea
+    id: photos
+    attributes:
+      label: Photos (optional)
+      description: Drag images in here.

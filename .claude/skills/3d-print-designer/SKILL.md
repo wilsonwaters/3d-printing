@@ -242,6 +242,7 @@ Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any rende
 
 - **New users** (check memory for 3D-printing experience; none means new): offer help getting the model viewed, exported and printed, including installing OpenSCAD. Walk through [printing-workflow.md](printing-workflow.md) if they accept, then save a `user` memory that they've been introduced.
 - **Simple part, Fable available, no final review recorded yet:** offer the Fable review ([Design Review](#design-review)).
+- **Pattern proposal:** offer once, in one sentence, never unattended, only if a real print or measured calibration (not a gate or review pass) gave numbers or a rule for a reusable joint, fit or technique that you wouldn't produce unaided, or that contradict this skill, and no pattern holds it (new evidence for one counts). Yes: [pattern-proposal.md](pattern-proposal.md).
 - **Bambu Lab printer:** the project 3MF from step 7 is the file to open in Bambu Studio or OrcaSlicer. Without Python, or if the user slices in something else, hand off the STL with the PRINT SETTINGS header for manual entry.
 
 ## References
