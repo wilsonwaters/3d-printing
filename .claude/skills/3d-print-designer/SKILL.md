@@ -54,7 +54,7 @@ The same steps for a single part or an assembly.
 2. **Orientation.** Choose the print orientation that removes supports first, then puts the primary loads along the layers (XY). Model in it, with Z=0 as the build plate.
 3. **Acceptance list and design summary.** Restate the requirements as a **numbered, measurable list** with units and tolerances ("fits 18mm tube → OD ≤ 17mm", "≤ 21mm deep"), plus orientation, support strategy, structure and key dimensions. For a complex job (a mechanism, several parts, or unclear requirements), settle the open questions first: in plan mode if a user is present, otherwise state your assumptions in one line and go on.
 4. **Write the .scad** using the [file structure](#file-structure) below. Read [openscad-reference.md](openscad-reference.md) first. Encode each measurable criterion as an `assert()`.
-5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
+5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots; read the matching [pattern](#patterns) first), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
 6. **Verify:** run the gate ([Verification](#verification)) and fix until it's green.
 7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](bambu-3mf-export.md)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Build it from the `.scad`, or with `--mesh` from the STL. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
 8. **Design review:** spawn it ([Design Review](#design-review)), triage the findings, fix and re-verify.
@@ -174,7 +174,7 @@ The load-bearing FDM invariants, referenced throughout.
 5. **Fudge factor:** every `difference()` and `intersection()` cutter overshoots the faces it cuts by `fudge = 0.01`. Coincident faces produce broken geometry.
 6. **Bottom chamfers, top fillets:** 45° chamfers on bottom surfaces are self-supporting; fillets on top are cosmetic. No sharp internal corners (minimum 1mm fillet for stress).
 7. **Elephant-foot compensation:** apply `ef_chamfer` (0.3-0.5mm at 45°) to every bottom edge.
-8. **Holes oversize:** a bore is `nominal + hole compensation + fit allowance`, two separate numbers. Measured for PETG on a Bambu X1C with a 0.4mm nozzle: compensation **+0.30mm**; allowance **-0.08** press (it must be interference: 0.00 is a slide, not a press), **+0.15** bearing (shaft rotates in it), **+0.30** free-running. For a 3mm rod: press 3.22, bearing 3.45, running 3.60.
+8. **Holes oversize:** a bore is `nominal + hole compensation + fit allowance`, two separate numbers. Use the user's measured compensation if memory or the model header has one. Otherwise use this default, measured on one Bambu X1C (0.4mm nozzle, PETG): compensation **+0.30mm**; allowance **-0.08** press (interference: 0.00 slides), **+0.15** bearing, **+0.30** free-running. Where a fit matters, offer the ladder coupon in printing-guidelines.md.
 9. **No magic numbers:** every numeric value is a parameter or derived from parameters.
 10. **Prefer ribs over thick walls:** a 1.6mm rib is stronger per gram than a 5mm solid wall.
 11. **Support-free by default:** choose orientations, chamfers, teardrops and splits that eliminate supports. Accept supports only when the geometry truly needs them, then minimise contact and document why in PRINT SETTINGS.
@@ -183,12 +183,18 @@ The load-bearing FDM invariants, referenced throughout.
 
 ## Mechanical Parts
 
-For gears, threads, snap-fits, living hinges and joints, see [mechanical.md](mechanical.md). Material-critical notes:
+For gears, snap-fits, living hinges and joints, see [mechanical.md](mechanical.md). Material-critical notes:
 
 - **Snap-fits:** PETG excels (5-8% strain), ABS is good (3-5%), PLA is fragile (1-1.5% max).
 - **Living hinges:** PETG only (0.4mm thick, 50,000+ cycles). PLA breaks within 50-100 cycles; ABS is marginal.
-- **Metal fasteners into plastic:** use a heat-set insert, a captive nut, or a plain **self-tap hole at about 50% thread depth**. Don't print a metric thread that a metal screw must mate with. A real print failed that way: a printed M8 thread in PETG didn't form. A self-tapped Ø7.5 hole for M8 held, while Ø7.0 seized. Printed threads suit coarse plastic-to-plastic joints (≥M10, trapezoidal or buttress profile).
+- **Metal fasteners:** a metal screw goes into a heat-set insert, a captive nut or a ~50% self-tap hole, never a printed metric thread.
 - **Flexing features** (fins, barbs, cantilevers, springs) bend **within the layer plane**. Bending across layers delaminates them.
+
+## Patterns
+
+Read one only when its trigger matches.
+
+- [pattern-fasteners.md](pattern-fasteners.md): the design takes a screw, bolt, threaded stem, nut or insert.
 
 ## Verification
 
@@ -236,6 +242,7 @@ Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any rende
 
 - **New users** (check memory for 3D-printing experience; none means new): offer help getting the model viewed, exported and printed, including installing OpenSCAD. Walk through [printing-workflow.md](printing-workflow.md) if they accept, then save a `user` memory that they've been introduced.
 - **Simple part, Fable available, no final review recorded yet:** offer the Fable review ([Design Review](#design-review)).
+- **Pattern proposal:** offer once, in one sentence, never unattended, only if a real print or measured calibration (not a gate or review pass) gave numbers or a rule for a reusable joint, fit or technique that you wouldn't produce unaided, or that contradict this skill, and no pattern holds it (new evidence for one counts). Yes: [pattern-proposal.md](pattern-proposal.md).
 - **Bambu Lab printer:** the project 3MF from step 7 is the file to open in Bambu Studio or OrcaSlicer. Without Python, or if the user slices in something else, hand off the STL with the PRINT SETTINGS header for manual entry.
 
 ## References
@@ -250,5 +257,5 @@ Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any rende
 | [bambu-3mf-export.md](bambu-3mf-export.md) | When making a Bambu 3MF |
 | [fdm-design-principles.md](fdm-design-principles.md) | Only for hard support-free or structural cases |
 | [printing-guidelines.md](printing-guidelines.md) | Only for tolerance or overhang data the material file lacks |
-| [mechanical.md](mechanical.md) | Only for gears, threads, snap-fits, hinges, joints |
+| [mechanical.md](mechanical.md) | Only for gears, snap-fits, hinges, joints (threads: [pattern-fasteners.md](pattern-fasteners.md)) |
 | [printing-workflow.md](printing-workflow.md) | Only for a new user's export-to-print walkthrough |

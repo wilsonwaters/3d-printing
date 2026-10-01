@@ -1,6 +1,6 @@
 # Design Review — fresh-eyes peer review of a generated model
 
-**Loading**: the reviewer sub-agent's complete brief. The author spawns the Design Review as a sub-agent and points it here. This file stands alone: to do the job you need only this file, the `.scad` path, the numbered acceptance criteria, the printer and material, and the OpenSCAD path. Don't invoke the 3d-print-designer skill or read its other files.
+**Loading**: the reviewer sub-agent's complete brief. The author spawns the Design Review as a sub-agent and points it here. This file stands alone: to do the job you need only this file, the `.scad` path, the numbered acceptance criteria, the printer and material, and the OpenSCAD path. Don't invoke the 3d-print-designer skill or read its other files, except a pattern file this checklist names.
 
 **Budget:** one pass, about 6-8 renders and 25 tool calls, then return. Incomplete findings returned on time beat a complete list that never arrives, so stop and report if you're running long. The author has already run the build gate: every part compiles, is one manifold body, sits on the plate and fits the printer, and every `clash_*` part is empty. Don't repeat that.
 
@@ -70,6 +70,7 @@ For assemblies, also render an **assembled** view, an **exploded** view (`-D exp
 - [ ] Bottom chamfers (45°), top fillets; no sharp internal corners (min 1mm fillet for stress)
 - [ ] Elephant foot compensation, **checked in the code**: find where `ef_chamfer` (or equivalent) is applied to the plate-contact outline. A parameter that is defined but never used is a FAIL.
 - [ ] Holes oversized 0.2–0.3mm above nominal
+- [ ] If the design uses fasteners (screws, inserts, nuts, threads), check them against [pattern-fasteners.md](pattern-fasteners.md)
 - [ ] Ribs over thick walls where applicable
 
 **Support-Free Compliance:**

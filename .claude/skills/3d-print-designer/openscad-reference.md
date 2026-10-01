@@ -168,7 +168,7 @@ module rounded_box(size, r) {
 
 ### FDM module patterns
 
-Reusable, print-aware modules. They assume the derived constants from the file template (`fudge`, `tolerance`, `layer_height`).
+Reusable, print-aware modules. They assume the derived constants from the file template (`fudge`, `tolerance`, `layer_height`). Screw holes, self-tap pilots, insert bosses and nut pockets are in [pattern-fasteners.md](pattern-fasteners.md).
 
 ```openscad
 // Through-hole / pocket: extend cutting shapes beyond every surface they exit
@@ -181,15 +181,6 @@ difference() {
 // Through-hole (extend BOTH directions):
 translate([x, y, -fudge])
     cylinder(h = wall + 2*fudge, d = hole_d + tolerance);
-
-// Screw hole with countersink
-module screw_hole(h, d, head_d, head_h) {
-    translate([0, 0, -fudge]) {
-        cylinder(h=h + 2*fudge, d=d + tolerance);
-        translate([0, 0, h - head_h])
-            cylinder(h=head_h + fudge, d1=d + tolerance, d2=head_d + tolerance);
-    }
-}
 
 // Teardrop hole — a horizontal hole whose top rises to a 45° point (apex r*sqrt(2) above
 // the axis), so it prints without support. axis = "x" or "y" is the hole's direction; the

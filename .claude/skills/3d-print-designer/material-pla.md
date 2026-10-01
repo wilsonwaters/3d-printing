@@ -80,11 +80,6 @@ PLA's low elongation (2.5-6%) makes it the worst common filament for snap fits.
 - Print snap features parallel to layer lines
 - Consider PETG instead if repeated snap engagement needed
 
-### Thread Design
-
-- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts). Use a heat-set insert (pull-out 200-600 N, against 50-150 N for a printed thread), a captive nut, or a self-tap hole at about 50% thread depth. Insert holes are in printing-guidelines.md.
-- Printed threads suit coarse plastic-to-plastic joints only: ≥M10, trapezoidal profile, 0.2-0.3mm clearance.
-
 ### Creep and Sustained Loads
 
 - Measurable creep above 10-15 MPa at room temperature
@@ -152,9 +147,7 @@ PLA's low elongation (2.5-6%) makes it the worst common filament for snap fits.
 | Tension | Load along layers (XY), never across (Z) |
 | Compression | Most forgiving — Z-axis compression is acceptable |
 | Impact | Impact surfaces parallel to layer planes |
-| Screw bosses | Print vertically (layers wrap around hole) |
 | Gears | Print flat (tooth loads in XY plane) |
-| Threads | Axis vertical |
 | Mating surfaces | On vertical walls (best dimensional consistency) |
 
 **Surface finish**:

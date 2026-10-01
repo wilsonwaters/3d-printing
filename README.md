@@ -70,7 +70,7 @@ An AI skill that designs and generates parametric OpenSCAD (.scad) models optimi
 - **Material selection** — PLA, PETG, ABS with material-specific design rules
 - **Support-free design** — 9 techniques to eliminate supports (chamfers, teardrop holes, part splitting, etc.)
 - **Structural optimization** — wall thickness, infill, ribs, layer adhesion
-- **Mechanical features** — gears, threads, snap-fits, living hinges
+- **Mechanical features** — gears, snap-fits, living hinges, and print-proven fastener rules (heat-set inserts, captive nuts, self-tap holes)
 - **Design review** — 45-item checklist covering geometry, printability, and assembly
 - **Print-ready export** — STL/3MF, plus settings-baked-in Bambu Studio project files
 
@@ -173,6 +173,39 @@ More example prompts are at the [top of this README](#try-it).
 
 Parametric OpenSCAD models in the [3d-models/](3d-models/) directory — each one
 designed from a prompt with this skill.
+
+## Adding a pattern
+
+Patterns hold the skill's specialised mechanical knowledge, one topic per file, loaded only when a design needs it: `.claude/skills/3d-print-designer/pattern-<name>.md`. [`pattern-fasteners.md`](.claude/skills/3d-print-designer/pattern-fasteners.md) is the first. Users propose new patterns, or new evidence for an existing one, with the **Pattern proposal** issue form (label `pattern`). The skill offers to draft that issue only when a session produced a print result it didn't already know.
+
+To turn an issue into a pattern:
+
+1. **Check the bar.** It's a reusable interface or technique; a real print result or a measurement backs it; it gives numbers or a rule a capable model wouldn't produce unaided, or contradicts the skill; and no pattern covers it yet. Evidence for an existing pattern is a new row in that pattern's Evidence table.
+2. **Write the file** from the template below, in the skill directory itself: `build-adapters.py` and `footprint.py` don't look in subfolders. Aim for about 1-1.5k tokens.
+3. **Gate the modules.** Make each module a `part` in a scratch `.scad`, with a `clash_*` part for any mating pair, and run `verify-model.py` on it.
+4. **Wire it in.** Add one line to the Patterns list in `SKILL.md` (the trigger and the file) and a profile to `evals/footprint-profiles.json`. Move any overlapping text out of the other reference files, so each fact is stated once.
+5. **Measure it.** Run `python evals/bench/footprint.py`, then an A/B with `evals/bench/run.py` on a case that needs the pattern (see [`evals/README.md`](evals/README.md)). Commit the footprint baseline (`--update`) and `evals/history/` with the change.
+
+```markdown
+# Pattern: <name>
+
+**Use when:** <one line naming the trigger, e.g. "the design takes a screw, bolt, threaded stem, nut or insert">
+
+## Choose
+<a short decision table: the options, against the few criteria that decide between them>
+
+## Rules
+<only what is decisive for FDM; nothing a capable model already knows>
+
+## Evidence
+| Value | Printer, nozzle | Material | Result | Status | Source | Date |
+|---|---|---|---|---|---|---|
+<Status is **proven**, **failed** or **designed, not printed**. Anything not measured here, such as values
+from published tables, is **typical**. Source is a `3d-models/` folder or an issue link.>
+
+## Modules
+<OpenSCAD modules that pass the gate, with the asserts or test coupon that check them>
+```
 
 ## Building Skill Artifacts
 

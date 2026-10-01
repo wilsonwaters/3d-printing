@@ -120,11 +120,6 @@ PETG's elongation and fatigue resistance make it one of the best filaments for l
 - Taper from thick (2-3mm) to thin (0.4mm) over 2-3mm
 - First 5-10 bends should be slow ("work in" the hinge)
 
-### Thread Design
-
-- A metal screw never mates with a printed thread (SKILL.md, Mechanical Parts): a printed M8 thread in PETG didn't form in a real print. Use a heat-set insert (iron at 200-220C; PETG flows around it well), a captive nut, or a self-tap hole at about 50% thread depth.
-- Printed threads suit coarse plastic-to-plastic joints only (≥M10). Clearance 0.25-0.35mm, more than PLA because PETG flexes. Buttress profiles suit FDM better than metric (45 degree load face, 5 degree relief).
-
 ### Clearances and Fits
 
 | Fit Type | Clearance |
@@ -132,11 +127,6 @@ PETG's elongation and fatigue resistance make it one of the best filaments for l
 | Sliding fit | 0.3-0.4mm |
 | Press fit | -0.05 to -0.10mm (interference; 0.00 slides) |
 | Snap fit | 0.2mm |
-| Thread | 0.25-0.35mm |
-
-**Steel rod in a printed bore** — measured, X1C 0.4mm nozzle:
-`bore = rod + 0.30 + allowance`, allowance **-0.08** press / **+0.15** bearing / **+0.30**
-free-running. For 3mm rod: **3.22 / 3.45 / 3.60**.
 
 ## Slicer Parameters Affecting Design
 
