@@ -8,6 +8,7 @@ Costs ($) are US dollars at Anthropic's list API prices (https://platform.claude
 
 | Date | Suite | Change | Effort | Base → Cand | Cases × trials | Pass rate | Check score Δ | Cost ratio [95% CI] | Context ratio [95% CI] | Judge cand/base/tie |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-01 | smoke-fastener-pattern | fastener pattern + pattern proposals | xhigh | `main` c055328 · 225f99d40d → `WORKTREE` b0b23ad · 3a63900f0f | 3 × 3 | 1.00 → 1.00 | +0.03 [-0.04, +0.10] ~same | x0.94 [0.75-1.17] ~same | x1.09 [0.91-1.31] ~same | 0/1/2 |
 | 2026-09-29 | skill-review-v2-2026-09-29 | skill review: gate + 3MF tools, 3MF by default, Sonnet/Fable reviews, leaner refs | xhigh | `origin/main` 2d8f6e1 · 1d09abd8d4 → `c76ad10` c76ad10 · 344f91ff10 | 7 × 3 | 0.67 → 0.81 | +0.20 [+0.14, +0.28] better | x0.68 [0.61-0.77] lower | x0.46 [0.36-0.59] lower | - |
 
 ## Per case over time
@@ -18,6 +19,8 @@ Newest first. Median $, context and calls are per run; pass is passes/trials.
 
 | Date | Suite | Arm | Skill | Effort | Pass | Score | Median $ | Median context | Calls | Wall s | Sub-agent share | Static tokens | Failing checks |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 2026-10-01 | smoke-fastener-pattern | cand | `WORKTREE` b0b23ad · 3a63900f0f | xhigh | 3/3 | 1.00 | $0.12 | 72,459 | 2 | 8 | 0% | 26,943 |  |
+| 2026-10-01 | smoke-fastener-pattern | base | `main` c055328 · 225f99d40d | xhigh | 3/3 | 1.00 | $0.12 | 72,325 | 2 | 8 | 0% | 27,056 |  |
 | 2026-09-29 | skill-review-v2-2026-09-29 | cand | `c76ad10` c76ad10 · 344f91ff10 | xhigh | 3/3 | 1.00 | $0.12 | 71,124 | 2 | 15 | 0% | 26,714 |  |
 | 2026-09-29 | skill-review-v2-2026-09-29 | base | `origin/main` 2d8f6e1 · 1d09abd8d4 | xhigh | 0/3 | 0.00 | $1.95 (3 est.) | 1,075,479 | 12 | 600 | 8% | 33,767 | asks_printer x3, is_a_question x3, no_premature_scad x3, timeout x3 |
 | 2026-09-28 | baseline-2026-09-29 | main | `main` 10746b0 · 1d09abd8d4 | xhigh | 2/3 | 0.67 | $0.43 | 162,959 | 4 | 36 | 0% | 39,112 | asks_printer x1, is_a_question x1, no_premature_scad x1 |
@@ -35,6 +38,8 @@ Newest first. Median $, context and calls are per run; pass is passes/trials.
 
 | Date | Suite | Arm | Skill | Effort | Pass | Score | Median $ | Median context | Calls | Wall s | Sub-agent share | Static tokens | Failing checks |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 2026-10-01 | smoke-fastener-pattern | cand | `WORKTREE` b0b23ad · 3a63900f0f | xhigh | 3/3 | 1.00 | $5.67 | 4,293,415 | 32 | 1,960 | 17% | 26,943 |  |
+| 2026-10-01 | smoke-fastener-pattern | base | `main` c055328 · 225f99d40d | xhigh | 3/3 | 1.00 | $5.41 | 3,584,922 | 33 | 1,883 | 18% | 27,056 |  |
 | 2026-09-29 | skill-review-v2-2026-09-29 | cand | `c76ad10` c76ad10 · 344f91ff10 | xhigh | 3/3 | 1.00 | $7.63 | 3,797,701 | 36 | 1,606 | 11% | 26,714 |  |
 | 2026-09-29 | skill-review-v2-2026-09-29 | base | `origin/main` 2d8f6e1 · 1d09abd8d4 | xhigh | 2/3 | 0.61 | $6.55 (2 est.) | 4,988,785 | 34 | 2,700 | 18% | 33,767 | file_structure x1, fits_build_volume x1, gate x1, has_asserts x1, manifold x1, on_plate x1, parts_min x1, ran_openscad x1, shells_max x1, small_part x1, spawned_review x1, stl_exported x1, support_free x3, timeout x2 |
 | 2026-09-28 | baseline-2026-09-29 | main | `main` 10746b0 · 1d09abd8d4 | xhigh | 1/3 | 0.61 | $4.54 (3 est.) | 1,620,932 | 16 | 2,700 | 2% | 39,112 | file_structure x1, fits_build_volume x1, gate x1, has_asserts x1, manifold x1, on_plate x1, parts_min x1, ran_openscad x1, shells_max x1, small_part x1, spawned_review x1, stl_exported x2, support_free x2, timeout x3 |
@@ -68,6 +73,8 @@ Newest first. Median $, context and calls are per run; pass is passes/trials.
 
 | Date | Suite | Arm | Skill | Effort | Pass | Score | Median $ | Median context | Calls | Wall s | Sub-agent share | Static tokens | Failing checks |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 2026-10-01 | smoke-fastener-pattern | cand | `WORKTREE` b0b23ad · 3a63900f0f | xhigh | 3/3 | 0.83 | $1.54 | 1,106,846 | 20 | 537 | 32% | 26,943 | coincident x2, elephant_foot x1, fillet x1 |
+| 2026-10-01 | smoke-fastener-pattern | base | `main` c055328 · 225f99d40d | xhigh | 3/3 | 0.75 | $1.68 | 1,267,465 | 20 | 557 | 30% | 27,056 | coincident x3, elephant_foot x1, fillet x1, teardrop x1 |
 | 2026-09-29 | skill-review-v2-2026-09-29 | cand | `c76ad10` c76ad10 · 344f91ff10 | xhigh | 3/3 | 0.83 | $3.70 | 1,029,928 | 17 | 669 | 35% | 26,714 | coincident x3, fillet x1 |
 | 2026-09-29 | skill-review-v2-2026-09-29 | base | `origin/main` 2d8f6e1 · 1d09abd8d4 | xhigh | 3/3 | 0.75 | $2.78 | 2,678,926 | 34 | 654 | 40% | 33,767 | coincident x3, elephant_foot x2, teardrop x1 |
 | 2026-09-28 | baseline-2026-09-29 | main | `main` 10746b0 · 1d09abd8d4 | xhigh | 3/3 | 0.79 | $2.93 | 2,502,507 | 31 | 700 | 42% | 39,112 | coincident x3, elephant_foot x2 |
