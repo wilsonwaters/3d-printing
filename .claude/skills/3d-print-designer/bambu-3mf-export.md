@@ -35,4 +35,8 @@ Pass flags only for values the header specifies; everything else comes from the 
 
 **Full-bed prints (X1/P1).** These printers reserve an 18×28mm front-left corner for the filament cutter, and the tool warns when a footprint covers it. Above roughly 220mm that can't be avoided. Either shrink the part, or, if the user agrees to fit Bambu's stopper-clip mod, pass `--full-bed`. Say every time that the clip disables the cutter, so no AMS or multi-colour on those prints.
 
+**Second filament** (inlay, logo, two-colour part): `--add-part "NAME=SOURCE@N"` adds a part to the same object on filament N (SOURCE: a `.stl`/`.3mf`, or `part:<value>` rendered from the `--scad`). Pass one `--filament` per number. With two or more filaments the tool runs `bambu-cli.py complete`, so Bambu Studio writes whole presets (a lean file can open filament 2 as PLA with no density); without Bambu Studio it warns. A preset meant for other nozzles is swapped for the printer's, with a note. Read [playbook-multicolour.md](playbook-multicolour.md).
+
+**Slice check:** `python "<skill-dir>/bambu-cli.py" slice model.3mf --temp-range 240-270` reports time, grams per filament, filament changes, prime tower and temperatures, and warns on mixed plastic families, broken presets and temperatures outside the box's range.
+
 **Fallbacks.** `--mesh part.stl` (or `.3mf`) packs an existing mesh instead of rendering the `.scad`. `--base-3mf existing.3mf` reuses another project's full settings as the baseline, though Bambu may then ask to confirm its embedded G-code. With no Python: *"I can't generate the Bambu 3MF here because Python isn't available, so I've exported the STL. Import it into Bambu Studio and apply the PRINT SETTINGS header (layer height, walls, infill, supports)."*

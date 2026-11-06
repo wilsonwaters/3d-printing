@@ -338,6 +338,30 @@ def resolve_preset(profiles_dir, ptype, name, _seen=None):
     return merged
 
 
+def compatible_filament_name(profiles_dir, name, printer):
+    """Return the filament preset meant for this printer and nozzle. Bambu ships, e.g.,
+    'Generic PETG HF @BBL P2S' for the 0.6/0.8 nozzles only, and 'Generic PETG HF @BBL P2S 0.4
+    nozzle' for the 0.4; a project naming the first on a 0.4 printer opens with a preset that
+    does not belong to it."""
+    try:
+        preset = resolve_preset(profiles_dir, "filament", name)
+    except FileNotFoundError:
+        return name
+    compat = preset.get("compatible_printers") or []
+    if not compat or printer in compat:
+        return name
+    m = re.search(r"(\d\.\d) nozzle$", printer)
+    alt = f"{name} {m.group(1)} nozzle" if m else None
+    try:
+        if alt and printer in (resolve_preset(profiles_dir, "filament", alt).get("compatible_printers") or []):
+            print(f"  note     : filament {name!r} is not for {printer}; using {alt!r}")
+            return alt
+    except FileNotFoundError:
+        pass
+    print(f"  WARNING  : filament {name!r} does not list {printer} as compatible")
+    return name
+
+
 def bed_from_printable_area(area):
     """Derive (x,y) bed size from a printable_area list like ['0x0','256x0','256x256','0x256']."""
     xs, ys = [], []
@@ -633,15 +657,14 @@ def uuid_str():
     return str(uuid.uuid4())
 
 
-def object_model_xml(verts, tris, obj_uuid):
-    v = "\n".join(f'     <vertex x="{x:.6f}" y="{y:.6f}" z="{z:.6f}"/>'
-                  for (x, y, z) in verts)
-    t = "\n".join(f'     <triangle v1="{a}" v2="{b}" v3="{c}"/>' for (a, b, c) in tris)
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:BambuStudio="http://schemas.bambulab.com/package/2021" xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" requiredextensions="p">
- <metadata name="BambuStudio:3mfVersion">1</metadata>
- <resources>
-  <object id="1" p:UUID="{obj_uuid}" type="model">
+def object_model_xml(parts):
+    """One mesh <object> per part (ids 1..n), all in the same coordinate frame."""
+    objs = []
+    for i, (_, verts, tris, _) in enumerate(parts, start=1):
+        v = "\n".join(f'     <vertex x="{x:.6f}" y="{y:.6f}" z="{z:.6f}"/>'
+                      for (x, y, z) in verts)
+        t = "\n".join(f'     <triangle v1="{a}" v2="{b}" v3="{c}"/>' for (a, b, c) in tris)
+        objs.append(f"""  <object id="{i}" p:UUID="{uuid_str()}" type="model">
    <mesh>
     <vertices>
 {v}
@@ -650,16 +673,25 @@ def object_model_xml(verts, tris, obj_uuid):
 {t}
     </triangles>
    </mesh>
-  </object>
+  </object>""")
+    body = "\n".join(objs)
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:BambuStudio="http://schemas.bambulab.com/package/2021" xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" requiredextensions="p">
+ <metadata name="BambuStudio:3mfVersion">1</metadata>
+ <resources>
+{body}
  </resources>
  <build/>
 </model>
 """
 
 
-def root_model_xml(transform, studio_version, container_uuid, component_uuid, build_uuid, item_uuid):
+def root_model_xml(transform, studio_version, n_parts, build_uuid, item_uuid):
     # NOTE: every p:UUID in the package must be unique (3MF production extension).
-    # The <component> gets its OWN uuid, distinct from the object it references.
+    # Each <component> gets its OWN uuid, distinct from the object it references.
+    components = "\n".join(
+        f'    <component p:path="/3D/Objects/object_1.model" objectid="{i}" p:UUID="{uuid_str()}"'
+        f' transform="1 0 0 0 1 0 0 0 1 0 0 0"/>' for i in range(1, n_parts + 1))
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:BambuStudio="http://schemas.bambulab.com/package/2021" xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" requiredextensions="p">
  <metadata name="Application">BambuStudio-{studio_version}</metadata>
@@ -671,34 +703,42 @@ def root_model_xml(transform, studio_version, container_uuid, component_uuid, bu
  <metadata name="ModificationDate">1970-01-01</metadata>
  <metadata name="Title"></metadata>
  <resources>
-  <object id="2" p:UUID="{container_uuid}" type="model">
+  <object id="{n_parts + 1}" p:UUID="{uuid_str()}" type="model">
    <components>
-    <component p:path="/3D/Objects/object_1.model" objectid="1" p:UUID="{component_uuid}" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>
+{components}
    </components>
   </object>
  </resources>
  <build p:UUID="{build_uuid}">
-  <item objectid="2" p:UUID="{item_uuid}" transform="{transform}" printable="1"/>
+  <item objectid="{n_parts + 1}" p:UUID="{item_uuid}" transform="{transform}" printable="1"/>
  </build>
 </model>
 """
 
 
-def model_settings_xml(part_name, face_count):
+def model_settings_xml(parts):
+    """The object takes the first part's name and filament; every further part names its own
+    filament (Bambu's per-part 'extruder')."""
+    n = len(parts)
+    rows = []
+    for i, (name, _, tris, extruder) in enumerate(parts, start=1):
+        own = f'\n      <metadata key="extruder" value="{extruder}"/>' if i > 1 else ""
+        rows.append(f"""    <part id="{i}" subtype="normal_part">
+      <metadata key="name" value="{name}"/>
+      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>{own}
+      <metadata key="source_file" value="{name}"/>
+      <metadata key="source_object_id" value="0"/>
+      <metadata key="source_volume_id" value="{i - 1}"/>
+      <mesh_stat face_count="{len(tris)}" edges_fixed="0" degenerate_facets="0" facets_removed="0" facets_reversed="0" backwards_edges="0"/>
+    </part>""")
+    part_rows = "\n".join(rows)
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <config>
-  <object id="2">
-    <metadata key="name" value="{part_name}"/>
-    <metadata key="extruder" value="1"/>
-    <metadata face_count="{face_count}"/>
-    <part id="1" subtype="normal_part">
-      <metadata key="name" value="{part_name}"/>
-      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>
-      <metadata key="source_file" value="{part_name}"/>
-      <metadata key="source_object_id" value="0"/>
-      <metadata key="source_volume_id" value="0"/>
-      <mesh_stat face_count="{face_count}" edges_fixed="0" degenerate_facets="0" facets_removed="0" facets_reversed="0" backwards_edges="0"/>
-    </part>
+  <object id="{n + 1}">
+    <metadata key="name" value="{parts[0][0]}"/>
+    <metadata key="extruder" value="{parts[0][3]}"/>
+    <metadata face_count="{sum(len(p[2]) for p in parts)}"/>
+{part_rows}
   </object>
   <plate>
     <metadata key="plater_id" value="1"/>
@@ -706,7 +746,7 @@ def model_settings_xml(part_name, face_count):
     <metadata key="locked" value="false"/>
     <metadata key="thumbnail_file" value="Metadata/plate_1.png"/>
     <model_instance>
-      <metadata key="object_id" value="2"/>
+      <metadata key="object_id" value="{n + 1}"/>
       <metadata key="instance_id" value="0"/>
     </model_instance>
   </plate>
@@ -725,8 +765,11 @@ def slice_info_xml(studio_version):
 """
 
 
-def assemble_3mf(out_path, verts, tris, cfg, part_name, studio_version,
+def assemble_3mf(out_path, parts, cfg, studio_version,
                  scatter="on", scatter_max=60.0, scatter_seed=None, exclude_area=None):
+    """parts: [(name, verts, tris, filament)], the first one the main body; all share one frame
+    and are placed together."""
+    verts = [v for p in parts for v in p[1]]
     xs = [v[0] for v in verts]; ys = [v[1] for v in verts]; zs = [v[2] for v in verts]
     cx = (min(xs) + max(xs)) / 2.0
     cy = (min(ys) + max(ys)) / 2.0
@@ -746,19 +789,17 @@ def assemble_3mf(out_path, verts, tris, cfg, part_name, studio_version,
         px - w / 2.0 < 7.9 or px + w / 2.0 > bed_x - 7.9
         or py - h / 2.0 < 7.9 or py + h / 2.0 > bed_y - 7.9)
 
-    obj_uuid = uuid_str()
     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("[Content_Types].xml", CONTENT_TYPES)
         zf.writestr("_rels/.rels", ROOT_RELS)
         zf.writestr("3D/3dmodel.model",
-                    root_model_xml(transform, studio_version, uuid_str(), uuid_str(),
-                                   uuid_str(), uuid_str()))
+                    root_model_xml(transform, studio_version, len(parts), uuid_str(), uuid_str()))
         zf.writestr("3D/_rels/3dmodel.model.rels", MODEL_RELS)
-        zf.writestr("3D/Objects/object_1.model", object_model_xml(verts, tris, obj_uuid))
+        zf.writestr("3D/Objects/object_1.model", object_model_xml(parts))
         zf.writestr("Metadata/project_settings.config",
                     json.dumps(cfg, indent=4, ensure_ascii=False))
         zf.writestr("Metadata/model_settings.config",
-                    model_settings_xml(part_name, len(tris)))
+                    model_settings_xml(parts))
         zf.writestr("Metadata/slice_info.config", slice_info_xml(studio_version))
 
 
@@ -869,6 +910,13 @@ def main():
     ap.add_argument("--full-bed", action="store_true",
                     help="X1/P1 only: clear bed_exclude_area (the front-left cutter corner) for a "
                          "full-bed print; the user must fit Bambu's stopper clip (single colour only)")
+    ap.add_argument("--add-part", action="append", metavar="NAME=SOURCE@N",
+                    help="add a part to the same object on filament N (e.g. a second-colour inlay). "
+                         "SOURCE is a .stl/.3mf, or part:<value> to render --scad with -D part=<value>. "
+                         "Repeatable; pass one --filament per filament number used")
+    ap.add_argument("--complete", choices=["auto", "on", "off"], default="auto",
+                    help="have Bambu Studio write the full settings (bambu-cli.py complete). auto: "
+                         "whenever more than one filament is named and Bambu Studio is installed")
     ap.add_argument("--no-verify", action="store_true",
                     help="skip the OpenSCAD/lib3mf round trip of the written file")
 
@@ -888,6 +936,24 @@ def main():
         ext = Path(args.mesh).suffix.lower()
         verts, tris = (load_mesh_from_stl if ext == ".stl" else load_mesh_from_3mf)(args.mesh)
         default_name = Path(args.mesh).with_suffix(".stl").name
+    parts = [(default_name, verts, tris, 1)]
+    for spec in args.add_part or []:
+        m = re.match(r"^(.+?)=(.+)@(\d+)$", spec)
+        if not m:
+            raise SystemExit(f"--add-part {spec!r}: expected NAME=SOURCE@N")
+        name, source, fil_no = m.group(1), m.group(2), int(m.group(3))
+        if source.startswith("part:"):
+            if not args.scad:
+                raise SystemExit(f"--add-part {spec!r}: part: needs --scad")
+            defs = [d for d in (args.defines or []) if not d.replace(" ", "").startswith("part=")]
+            pv, pt = load_mesh_from_3mf(render_scad(openscad, args.scad,
+                                                    defs + [f'part="{source[5:]}"']))
+        else:
+            ext = Path(source).suffix.lower()
+            pv, pt = (load_mesh_from_stl if ext == ".stl" else load_mesh_from_3mf)(source)
+        if fil_no > max(1, len(filaments)):
+            raise SystemExit(f"--add-part {spec!r} uses filament {fil_no}: pass {fil_no} --filament values")
+        parts.append((name, pv, pt, fil_no))
 
     # 2) Settings
     overrides = collect_overrides(args)
@@ -913,6 +979,8 @@ def main():
         profiles_dir = find_profiles_dir(args.profiles_dir)
         if args.profiles_dir and not profiles_dir:
             raise SystemExit(f"--profiles-dir not found: {args.profiles_dir}")
+        if profiles_dir:
+            filaments = [compatible_filament_name(profiles_dir, f, args.printer) for f in filaments]
         cfg, exclude_area, source = build_minimal_config(
             profiles_dir, args.printer, args.process, filaments, overrides, args.studio_version)
 
@@ -924,11 +992,12 @@ def main():
         exclude_area = None
 
     # 3) Assemble
-    assemble_3mf(args.out, verts, tris, cfg, default_name, args.studio_version,
+    assemble_3mf(args.out, parts, cfg, args.studio_version,
                  scatter=args.scatter, scatter_max=args.scatter_max,
                  scatter_seed=args.scatter_seed, exclude_area=exclude_area)
     print(f"Wrote {args.out}")
-    print(f"  geometry : {len(verts)} vertices, {len(tris)} triangles")
+    for name, pv, pt, fil_no in parts:
+        print(f"  geometry : {name}: {len(pv)} vertices, {len(pt)} triangles, filament {fil_no}")
     print(f"  printer  : {args.printer}")
     print(f"  process  : {cfg.get('print_settings_id')}")
     print(f"  identity : {source}")
@@ -954,12 +1023,35 @@ def main():
     if at_edge:
         print(f"  WARNING  : footprint reaches within 8mm of a bed edge - check first-layer "
               f"adhesion, or reduce the part size.")
-    problems, note = verify_3mf(args.out, verts, len(cfg.get("filament_settings_id") or []),
+    all_verts = [v for prt in parts for v in prt[1]]
+    problems, note = verify_3mf(args.out, all_verts, len(cfg.get("filament_settings_id") or []),
                                 None if args.no_verify else openscad)
     if problems:
         print("  verify   : FAILED - " + "; ".join(problems))
         sys.exit(2)
     print(f"  verify   : OK - {note}")
+    multi = len(filaments) > 1
+    if args.complete == "off" or (args.complete == "auto" and not multi):
+        return
+    # With two or more filaments, Bambu Studio 2.x may rebuild the second one from the lean
+    # values only: no filament_type (it shows as PLA) and no density (0 g). Let Bambu Studio
+    # write whole presets into the file.
+    cli = Path(__file__).resolve().with_name("bambu-cli.py")
+    tmp = Path(tempfile.mkdtemp(prefix="complete_")) / "full.3mf"
+    proc = subprocess.run([sys.executable, str(cli), "complete", args.out, "--out", str(tmp)],
+                          capture_output=True, text=True)
+    if proc.returncode != 0 or not tmp.exists():
+        msg = (proc.stdout + proc.stderr).strip().splitlines()
+        print("  WARNING  : the file has lean settings for " + str(len(filaments)) + " filaments. "
+              "Bambu Studio may open filament 2 as a project preset of type PLA with no density. "
+              "Run bambu-cli.py complete on a machine with Bambu Studio, or check every filament's "
+              "type in Bambu Studio before printing. (" + (msg[-1] if msg else "no output") + ")")
+        if args.complete == "on":
+            sys.exit(2)
+        return
+    shutil.move(str(tmp), args.out)
+    for line in proc.stdout.strip().splitlines()[1:]:
+        print(line.replace("  settings :", "  complete :", 1))
 
 
 if __name__ == "__main__":

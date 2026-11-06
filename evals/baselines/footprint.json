@@ -2,16 +2,16 @@
   "estimator": "bytes/2.8",
   "budgets": {
     "always_on": 152,
-    "total_md_tokens": 40782,
-    "profile:invoke": 7972,
-    "profile:author_petg": 17817,
-    "profile:author_pla": 17264,
-    "profile:author_abs": 17839,
-    "profile:author_petg_fasteners": 19557,
-    "profile:reviewer": 3330,
-    "profile:reviewer_fasteners": 5070,
+    "total_md_tokens": 45113,
+    "profile:invoke": 8223,
+    "profile:author_petg": 18068,
+    "profile:author_pla": 17515,
+    "profile:author_abs": 18090,
+    "profile:author_petg_fasteners": 19808,
+    "profile:reviewer": 3506,
+    "profile:reviewer_fasteners": 5246,
     "profile:pattern_proposal": 508,
-    "profile:bambu_export": 1444,
-    "profile:typical_run_petg_bambu": 22591
+    "profile:bambu_export": 1739,
+    "profile:typical_run_petg_bambu": 23313
   }
 }

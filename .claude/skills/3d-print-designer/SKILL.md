@@ -53,11 +53,11 @@ The same steps for a single part or an assembly.
 
 1. **Printer, material, supports** (Steps 0-2), loading their references.
 2. **Orientation.** Choose the print orientation that removes supports first, then puts the primary loads along the layers (XY). Model in it, with Z=0 as the build plate.
-3. **Acceptance list and design summary.** Restate the requirements as a **numbered, measurable list** with units and tolerances ("fits 18mm tube → OD ≤ 17mm", "≤ 21mm deep"), plus orientation, support strategy, structure and key dimensions. For a complex job (a mechanism, several parts, or unclear requirements), settle the open questions first: in plan mode if a user is present, otherwise state your assumptions in one line and go on.
+3. **Acceptance list and design summary.** Restate the requirements as a **numbered, measurable list** with units and tolerances ("fits 18mm tube → OD ≤ 17mm", "≤ 21mm deep"), plus orientation, support strategy, structure and key dimensions. For a complex job (a mechanism, several parts, or unclear requirements), settle the open questions first: in plan mode if a user is present, otherwise state your assumptions in one line and go on. **Mating real hardware?** Read [playbook-real-parts.md](playbook-real-parts.md) and ask for its measurements before modelling.
 4. **Write the .scad** using the [file structure](#file-structure) below. Read [openscad-reference.md](openscad-reference.md) first. Encode each measurable criterion as an `assert()`.
 5. **Add features incrementally:** structure first (ribs, gussets, fillets), then mounting (oversize holes, heat-set bosses, slots; read the matching [pattern](#patterns) first), then support-free geometry (underside chamfers, teardrops, elephant-foot chamfer). Apply the Critical Rules as you go.
 6. **Verify:** run the gate ([Verification](#verification)) and fix until it's green.
-7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](bambu-3mf-export.md)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Build it from the `.scad`, or with `--mesh` from the STL. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix.
+7. **Save the deliverables now:** the gate's `--export .` writes one STL per printable part. **On a Bambu Lab printer, also make the project 3MF now** ([bambu-3mf-export.md](bambu-3mf-export.md)), without waiting to be asked: it opens in Bambu Studio with the print settings applied. Build it from the `.scad`, or with `--mesh` from the STL. Doing this **before** the review means a slow or stalled review can't cost the user their files. Re-export after any fix. Second filament: [playbook-multicolour.md](playbook-multicolour.md), and `bambu-cli.py slice` the file.
 8. **Design review:** spawn it ([Design Review](#design-review)), triage the findings, fix and re-verify.
 9. **Hand off** ([After generation](#after-generation)).
 
@@ -245,6 +245,7 @@ Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any rende
 - **Simple part, Fable available, no final review recorded yet:** offer the Fable review ([Design Review](#design-review)).
 - **Pattern proposal:** offer once, in one sentence, never unattended, only if a real print or measured calibration (not a gate or review pass) gave numbers or a rule for a reusable joint, fit or technique that you wouldn't produce unaided, or that contradict this skill, and no pattern holds it (new evidence for one counts). Yes: [pattern-proposal.md](pattern-proposal.md).
 - **Bambu Lab printer:** the project 3MF from step 7 is the file to open in Bambu Studio or OrcaSlicer. Without Python, or if the user slices in something else, hand off the STL with the PRINT SETTINGS header for manual entry.
+- **Mating part, first print:** offer a coupon of the interface first; when the user reports back, run the test fit in [playbook-first-print.md](playbook-first-print.md) and change the model once.
 
 ## References
 
@@ -256,6 +257,9 @@ Hand off the `.scad`, the STLs (and 3MF) saved in Workflow step 7, and any rende
 | [verification.md](verification.md) | Before running the gate |
 | [design-review.md](design-review.md) | Never yourself: it's the review sub-agent's brief |
 | [bambu-3mf-export.md](bambu-3mf-export.md) | When making a Bambu 3MF |
+| [playbook-real-parts.md](playbook-real-parts.md) | Step 3, part mates with real hardware |
+| [playbook-multicolour.md](playbook-multicolour.md) | A second filament |
+| [playbook-first-print.md](playbook-first-print.md) | First print of a mating part; a reported test fit |
 | [fdm-design-principles.md](fdm-design-principles.md) | Only for hard support-free or structural cases |
 | [printing-guidelines.md](printing-guidelines.md) | Only for tolerance or overhang data the material file lacks |
 | [mechanical.md](mechanical.md) | Only for gears, snap-fits, hinges, joints (threads: [pattern-fasteners.md](pattern-fasteners.md)) |

@@ -94,6 +94,11 @@ For assemblies, also render an **assembled** view, an **exploded** view (`-D exp
 - [ ] `part` parameter allows individual part rendering
 - [ ] Print orientation documented for EACH part separately
 
+**Real parts and robustness (from failed prints):**
+- [ ] A freestanding plate, post, stop or tongue taller than ~10x its thickness is tied to a neighbour (web, gusset, rib)
+- [ ] Protrusions on the hardware's mating faces (screw heads, flanges, posts) are modelled and clash-checked, including on the way in; the part is located on measured surfaces with stated play, not tight pins in unseen holes
+- [ ] An inlay is the same plastic family as its body; the filament-change count is stated
+
 **Mechanisms (if anything moves, flexes or latches):**
 - [ ] Every moving part is held in all six directions; nothing can tip, lift or slide out of its guide
 - [ ] Each part has a way into place: an assembly order, with nothing that has to pass through a solid
