@@ -1,28 +1,5 @@
 # 3D Printing
 
-> **Fork of [wilsonwaters/3d-printing](https://github.com/wilsonwaters/3d-printing)** (MIT), with what
-> real prints taught us added to the `3d-print-designer` skill:
->
-> - **Playbooks**, each loaded at the step it applies to:
->   - [designing around real parts](.claude/skills/3d-print-designer/playbook-real-parts.md):
->     what to ask and measure before modelling, locating on measured surfaces, slender features;
->   - [first print and test fit](.claude/skills/3d-print-designer/playbook-first-print.md):
->     coupons, reviewing the model against reality, one batch of fixes, explaining with a drawing;
->   - [two colours and the Bambu hand-off](.claude/skills/3d-print-designer/playbook-multicolour.md):
->     what each filament change costs, same plastic family, the filament box's temperatures,
->     AMS and external spool.
-> - **`bambu-cli.py`** drives Bambu Studio's command line:
->   - `complete` has Bambu Studio write whole presets into a lean project, so filament 2 doesn't
->     open as PLA with no density;
->   - `slice` reports time, grams, filament changes and temperatures, and warns on mixed
->     plastics, broken presets and temperatures outside the box's range.
-> - **`make-bambu-3mf.py`**:
->   - `--add-part` puts an inlay or second-colour part in the same object on its own filament;
->   - it picks the filament preset for the printer's nozzle;
->   - it completes multi-filament projects automatically.
-> - **The design reviewer** also checks slender features, protrusions on mating faces and the
->   plastic family of an inlay.
-
 **One shot from Prompt-to-Print.**
 
 Describe the part you want in a sentence. Get back an OpenSCAD model, rendered images, stl file and
