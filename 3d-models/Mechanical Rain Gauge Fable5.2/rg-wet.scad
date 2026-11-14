@@ -131,3 +131,13 @@ module leaf_guard() {
         cylinder(r1 = guard_seat_r, r2 = guard_seat_r + 20 / tan(funnel_slope), h = 20, $fn = 96);   // tips cut to the funnel's slope
     }
 }
+
+// ---- foot: one under each mounting ear. They lift the base so the drains run free and the
+//      calibration screws can be reached from below with a hex key while the gauge is mounted ----
+foot_h = 20; foot_d_out = 18;
+module foot() {
+    difference() {
+        hull() { cylinder(d = foot_d_out - 2 * ef_chamfer, h = fudge, $fn = 48); translate([0, 0, ef_chamfer]) cylinder(d = foot_d_out, h = foot_h - ef_chamfer, $fn = 48); }
+        bore(ear_hole + hole_comp, foot_h);
+    }
+}

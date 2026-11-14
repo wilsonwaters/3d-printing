@@ -17,7 +17,7 @@ module reg_frame() { translate([0, bp_rear_y, 0.02]) rotate([90, 0, 0]) children
 module fd(f_front) { translate([0, 0, f_front]) rotate([0, 180, 0]) children(); }    // seat a front-down part
 module spin(pos, f, ang) { translate([pos[0], pos[1], f]) rotate(ang) children(); }
 
-n_elem = 29;
+n_elem = 30;
 module elem(i, P) {
     if (i == 0) reg_frame() back_plate();
     if (i == 1) reg_frame() translate([0, 0, 0.02]) fd(f_card) dial_plate();
@@ -41,6 +41,7 @@ module elem(i, P) {
     if (i >= 23 && i <= 26) { k = i - 23;
         reg_frame() translate([dial_x[k], dial_z - roller_rest + bar_lift(P), f_slide + slide_t + 0.35]) roller(); }
     if (i == 28) translate([0, 0, guard_z + 0.05]) leaf_guard();
+    if (i == 29) for (a = [90, 210, 330]) rotate(a) translate([ear_r, 0, -base_t - foot_h - 0.02]) foot();
     if (i == 27) for (sx = [-1, 1]) translate([sx * stop_x, 0, pivot_z - stop_x * tan(tilt_nom) - 20]) cylinder(d = 2.7, h = 20, $fn = 16);   // calibration screws (M3 x 20), view only
 }
 function elem_col(i) = i <= 2 ? "#e8e4d8" : i == 3 ? "#cfd6da" : i == 4 ? "#f4f4f0" : i == 5 ? "#3f88c5" : i == 6 ? "#d1495b"
@@ -97,3 +98,29 @@ assert(reset_stroke <= reset_travel - 0.3, "reset bar slots too short to seat th
 assert(dial_z - roller_rest + 2.6 + reset_stroke < dial_z - collar_d / 2 - 0.5, "reset bar would hit the rotor collars");
 assert(norm([plate_x, reg_front_y + dp_t]) < upstand_ro && norm([bar_x, bp_rear_y - f_slide]) < upstand_ro - 2, "register must fit inside the skirt");
 assert(bp_rear_y + 1.2 < collar_y - 1.2 + 0.01 || bp_rear_y < -bk_y - 3, "bucket too close to the back plate");
+
+// --- axial retention: every idler floats 0.5 mm between a post shoulder and the flat web of a neighbouring big gear ---
+idler_lap = gear_rf(z_g2, -x_pin) + gear_rf(z_g1, -x_pin) - max(a1, a2);
+assert(idler_lap >= 3, "an idler's face must overlap a neighbouring big gear's web, or nothing stops it sliding off its post");
+// --- calibration screws (M3 x 20 from below) ---
+stop_screw_len = 20; stop_head_h = 3;
+function stop_tip_z(t) = pivot_z - stop_x * tan(t) - knife_r / cos(t);      // screw tip height that rests the bucket at tilt t
+stop_tip_home = head_recess_z + stop_screw_len;                             // tip height with the screw fully home
+echo(stop_tip_home = stop_tip_home, tip_at_tilt_min = stop_tip_z(tilt_min), tip_at_nominal = stop_tip_z(tilt_nom), tip_at_tilt_max = stop_tip_z(tilt_max));
+assert(stop_tip_home >= stop_tip_z(tilt_min) + 0.5, "calibration screw cannot reach the bucket at tilt_min");
+assert(head_recess_z - (stop_tip_home - stop_tip_z(tilt_max)) - stop_head_h >= -base_t, "calibration screw head would stand proud of the base at tilt_max");
+assert(stop_tip_z(tilt_max) >= boss_top_z + 1, "the bucket would land on the boss, not the screw");
+// --- the bucket cannot leave its pivots once the collector is on: the nozzle stops it first ---
+assert(nozzle_z - mast_top_z <= 9 - 3, "the nozzle must stop the bucket before its knife edge can lift out of the 9 mm pivot slot");
+// --- friction clutches: must carry a pointer when weak and still slip under the reset bar when strong ---
+function clutch_force(E, b, L) = 3 * E * (b * pow(clutch_t, 3) / 12) * clutch_defl / pow(L, 3);     // N, cantilever tip load
+function clutch_torque(E, mu, b, L) = 2 * mu * clutch_force(E, b, L) * arbor_d / 2;                // N.mm: beam pad + opposite bore wall
+rotor_drag = 0.030;        // N.mm a clutch must carry: 1.85 g.mm of cam imbalance (rotor STL centroid) plus journal friction
+b_gear = gear_t - 2 * clutch_roof; b_disc = disc_t - 2 * clutch_roof;
+clutch_weak = 0.5 * min(clutch_torque(1500, 0.2, b_gear, clutch_L), clutch_torque(1500, 0.2, b_disc, clutch_L_wheel));   // soft, slippery, half lost to creep
+clutch_strong = max(clutch_torque(2100, 0.4, b_gear, clutch_L), clutch_torque(2100, 0.4, b_disc, clutch_L_wheel));
+reset_push = clutch_strong / min(reset_arm(cam_rmin), reset_arm(cam_rmax));                          // N per dial, worst case
+echo(clutch_weak_Nmm = clutch_weak, clutch_strong_Nmm = clutch_strong, reset_push_N_per_dial = reset_push);
+assert(clutch_weak >= 3 * rotor_drag, "clutch too weak to carry a pointer round");
+assert(reset_push <= 1.5, "reset would need more than 1.5 N per dial");
+assert(1.5 * clutch_t * clutch_defl / pow(min(clutch_L, clutch_L_wheel), 2) <= 0.01, "clutch beam strain above 1 %");

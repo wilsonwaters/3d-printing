@@ -129,6 +129,13 @@ module cam2d() {   // cusp (pointer at 0) points down, towards the reset roller
 }
 module dee2d(d) { intersection() { circle(d = d, $fn = 40); translate([-d, -d]) square([2 * d, d + 0.72 * d / 2]); } }
 socket_depth = 3.0;
+cam_rim = 1.8; cam_win_r = 5.5; cam_win_half = 60;
+module cam_window2d() {   // lightening window in the tip half: removes about half of the cam's out-of-balance moment
+    difference() {
+        intersection() { offset(delta = -cam_rim) cam2d(); sector2d(40, 90 - cam_win_half, 90 + cam_win_half); }
+        circle(r = cam_win_r, $fn = 48);
+    }
+}
 module rotor(collar_len) {
     arbor_end = (f_cam + cam_t) - 0.4;           // total length: stops 0.4 short of the back plate's rear face
     front_down() difference() {
@@ -139,17 +146,19 @@ module rotor(collar_len) {
             translate([0, 0, arbor_end - 0.5 - fudge]) cylinder(d1 = arbor_d, d2 = arbor_d - 1, h = 0.5, $fn = 32);
         }
         translate([0, 0, -fudge]) linear_extrude(socket_depth) dee2d(stub_d + hole_comp + fit_press);
+        translate([0, 0, -fudge]) linear_extrude(cam_t + 2 * fudge) cam_window2d();
     }
 }
 
 // ---- pointer (front-down): needle + balanced tail + D-shaped stub ----
 stub_len = f_ptr - (f_cam + cam_t - socket_depth + 0.2);
+ptr_len = dial_face_r - 1.8;
 module pointer() {
     front_down() union() {
         linear_extrude(ptr_t) union() {
             circle(d = 8, $fn = 40);
-            polygon([[-1.3, 0], [1.3, 0], [0.5, 9.2], [-0.5, 9.2]]);
-            hull() { translate([-1.3, -4]) square([2.6, 4]); translate([0, -4.6]) circle(r = 2.1, $fn = 24); }
+            polygon([[-1.3, 0], [1.3, 0], [0.45, ptr_len], [-0.45, ptr_len]]);                 // tip reaches the tick marks
+            hull() { translate([-1.3, -4]) square([2.6, 4]); translate([0, -4.9]) circle(r = 2.3, $fn = 24); }
         }
         linear_extrude(ptr_t + stub_len) dee2d(stub_d);
     }
@@ -158,21 +167,22 @@ module pointer() {
 // ---- friction clutch: a cantilever beam inside the gear web that drags on the rotor arbor ----
 clutch_L = 12; clutch_t = 0.9; clutch_slot = 0.8; clutch_defl = 0.6; clutch_roof = 0.4;   // roof = air gap = 2 layers
 clutch_face = (-(run_d_arbor - hole_comp) / 2 + arbor_d) - clutch_defl;   // beam face height above the bore centre
-module clutch_cut2d() {   // slots that free the beam (the beam itself is left standing)
+clutch_L_wheel = 10;       // the pin wheel's disc is thinner than a gear, so its beam is shorter to give the same drag
+module clutch_cut2d(L) {   // slots that free the beam (the beam itself is left standing)
     y0 = clutch_face; y1 = y0 + clutch_t;
-    translate([-clutch_L, y1]) square([clutch_L + 2.0 + clutch_slot, clutch_slot]);           // above the beam
+    translate([-L, y1]) square([L + 2.0 + clutch_slot, clutch_slot]);                         // above the beam
     translate([2.0, y0 - 0.4]) square([clutch_slot, clutch_t + clutch_slot + 0.4]);           // free end
-    translate([-clutch_L + 1.5, y0 - clutch_slot]) square([clutch_L - 1.5, clutch_slot]);     // below the beam, into the bore
+    translate([-L + 1.5, y0 - clutch_slot]) square([L - 1.5, clutch_slot]);                   // below the beam, into the bore
 }
-module clutch_roof2d() {   // gap over the beam so it is not fused to the layers above
-    translate([-clutch_L + 0.8, clutch_face - clutch_slot]) square([clutch_L + 1.9 + clutch_slot, clutch_t + 2 * clutch_slot]);
+module clutch_roof2d(L) {  // gap over the beam so it is not fused to the layers above
+    translate([-L + 0.8, clutch_face - clutch_slot]) square([L + 1.9 + clutch_slot, clutch_t + 2 * clutch_slot]);
 }
-module clutch_beam(h) {    // the beam itself: re-added after the bore is cut, because it reaches into the bore
-    linear_extrude(h - 2 * clutch_roof) translate([-clutch_L - 0.5, clutch_face]) square([clutch_L + 2.5, clutch_t]);
+module clutch_beam(h, L = clutch_L) {    // the beam itself: re-added after the bore is cut, because it reaches into the bore
+    linear_extrude(h - 2 * clutch_roof) translate([-L - 0.5, clutch_face]) square([L + 2.5, clutch_t]);
 }
-module clutch_cut(h) {     // h = thickness of the layer holding the beam
-    translate([0, 0, -fudge]) linear_extrude(h - clutch_roof + fudge) clutch_cut2d();
-    translate([0, 0, h - 2 * clutch_roof]) linear_extrude(clutch_roof) clutch_roof2d();
+module clutch_cut(h, L = clutch_L) {     // h = thickness of the layer holding the beam
+    translate([0, 0, -fudge]) linear_extrude(h - clutch_roof + fudge) clutch_cut2d(L);
+    translate([0, 0, h - 2 * clutch_roof]) linear_extrude(clutch_roof) clutch_roof2d(L);
 }
 
 // ---- gear cluster (x10, x100, x1000 dials): 32-tooth gear + 8-tooth pinion ----
@@ -181,10 +191,10 @@ module cluster(beam = true) {     // beam = false poses the part without its (de
     difference() {
         union() {
             gear_bed(z_g2, -x_pin, gear_t);
-            cylinder(r = gear_rf(z_p1, x_pin), h = gear_t + gear_gap + fudge, $fn = 32);
-            translate([0, 0, gear_t + gear_gap]) linear_extrude(gear_t) gear2d(z_p1, x_pin, pin_short);
+            cylinder(r = ra_p1, h = gear_t + shroud_t, $fn = 48);              // shroud: the pinion teeth print on it, not over air
+            translate([0, 0, gear_t + shroud_t - fudge]) linear_extrude(gear_t + gear_gap - shroud_t + fudge) gear2d(z_p1, x_pin, pin_short);
         }
-        bore(run_d_arbor, 2 * gear_t + 2);
+        bore(run_d_arbor, 2 * gear_t + 3);
         clutch_cut(gear_t);
     }
 }
@@ -194,8 +204,8 @@ module idler() {
     difference() {
         union() {
             gear_bed(z_g1, -x_pin, gear_t);
-            cylinder(r = gear_rf(z_p2, x_pin), h = gear_t + gear_gap + fudge, $fn = 32);
-            translate([0, 0, gear_t + gear_gap]) linear_extrude(gear_t) gear2d(z_p2, x_pin, pin_short);
+            cylinder(r = ra_p2, h = gear_t + shroud_t, $fn = 48);
+            translate([0, 0, gear_t + shroud_t - fudge]) linear_extrude(gear_t + gear_gap - shroud_t + fudge) gear2d(z_p2, x_pin, pin_short);
         }
         bore(run_d_arbor, 2 * gear_t + 2);
     }
@@ -206,7 +216,7 @@ wheel_disc_r = esc_rp + esc_pin_d / 2 + 0.5;
 wheel_sleeve_r = 3.3;
 module units_wheel(beam = true) {
     z_cone = f_A - 2.0 - f_disc; z_pin = f_A - f_disc;
-    if (beam) clutch_beam(disc_t);
+    if (beam) clutch_beam(disc_t, clutch_L_wheel);
     difference() {
         union() {
             cylinder(r = wheel_disc_r, h = disc_t);
@@ -218,7 +228,7 @@ module units_wheel(beam = true) {
             }
         }
         bore(run_d_arbor, 40);
-        clutch_cut(disc_t);
+        clutch_cut(disc_t, clutch_L_wheel);
     }
 }
 

@@ -10,7 +10,7 @@ usage: bucket.py [name=value ...]     e.g.  bucket.py bk_mast_t=5.5      (needs 
 import math, os, subprocess, sys, tempfile
 sys.path.insert(0, os.path.dirname(__file__)); import stl_tools
 RHO = 1.27e-3      # g/mm3, PETG printed solid (100 % infill)
-P = dict(bk_L=48, bk_W=38, bk_floor=1.6, bk_mast_t=6.0, bk_mast_h=46.5, bk_end_h=4, bk_end_peak=26, knife_r=0.3)
+P = dict(bk_L=48, bk_W=36, bk_floor=1.6, bk_mast_t=6.0, bk_mast_h=48, bk_end_h=4, bk_end_peak=26, knife_r=0.3)
 here = os.path.dirname(os.path.abspath(__file__)); scad = os.path.join(here, '..', 'mechanical-rain-gauge.scad')
 
 def clip(poly, h):            # keep the part of a polygon below the water level z <= h
@@ -71,3 +71,12 @@ if __name__ == "__main__":
         mid = (lo + hi) / 2; V, _ = tip_volume(M, c, mid)
         lo, hi = (mid, hi) if (V is not None and V < 10.0) else (lo, mid)
     print(f"  10.00 ml per tip needs a tilt of {lo:.2f} deg")
+    # Energy check for the drive: the water gives up potential energy as it runs from the raised pocket to the
+    # pouring edge; the register needs only the work of turning the pin wheel 18 degrees against its drag.
+    th = math.radians(lo); z0 = P['bk_floor'] - P['knife_r']
+    z_start = rot((-P['bk_L'] / 3, z0 + 3), th)[1]            # rough centroid of the charge before the tip
+    z_exit = rot((-P["bk_L"], z0), -th)[1]                    # pouring edge after the tip (that side now down)
+    e_water = 10e-3 * 9.81 * (z_start - z_exit)               # mJ  (kg * m/s2 * mm)
+    drag = 0.05; eff = 0.5                                    # N.mm at the wheel (rotor imbalance, journals, gears); ramp efficiency
+    e_need = drag * math.radians(18) / eff                    # mJ
+    print(f"  drive: the water releases about {e_water:.1f} mJ per tip; stepping the wheel takes about {e_need:.3f} mJ ({e_water/e_need:.0f} times less)")

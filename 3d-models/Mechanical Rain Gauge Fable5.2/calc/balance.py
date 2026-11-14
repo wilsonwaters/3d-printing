@@ -9,10 +9,6 @@ def measure(over=()):
     for k,v in over: cmd+=['-D',f'{k}={v}']
     subprocess.run(cmd+[scad],capture_output=True,check=True)
     V,C=stl_tools.vol_centroid(stl_tools.load(out)); return V,C
-def pivot():
-    r=subprocess.run([osc,'-o',os.path.join(tempfile.gettempdir(),'e.echo'),'-D','part="check_echo"',scad],capture_output=True,text=True)
-    for line in (r.stdout+r.stderr).splitlines():
-        if 'pivot_pos' in line: return eval(line.split('=')[1])
 if __name__=="__main__":
     a=sys.argv[1:]; over=list(zip(('cw_r','cw_a0','cw_a1'),a)) if a else []
     V,C=measure(over); px,py=0.0,float(os.environ.get('PIVOT_Z','36'))

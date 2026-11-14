@@ -12,3 +12,4 @@ mk dial_plate $G
 mk dial_card $G
 mk slide $G
 mk plate_register --layer-height 0.16 --walls 4 --infill 100
+mk plate_extras $G

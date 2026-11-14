@@ -4,8 +4,9 @@
 // It reads 0 to 9999 mm, resets to zero with one lift of a tab, and needs no electronics: the falling water
 // does the counting.
 //
-// Physical context: lives outdoors on a level post or board (three M4 screws through the base ears), rim
-// about 1 m up, clear of splash and shelter. Rain falls into a 200 cm2 collector (159.6 mm orifice, the
+// Physical context: lives outdoors on a level post or board, standing on three 20 mm feet (screws pass
+// through the ears and feet) so the drains run free and the calibration screws stay reachable; rim about
+// 1 m up, clear of splash and shelter. Rain falls into a 200 cm2 collector (159.6 mm orifice, the
 // WMO / Hellmann standard size), runs down a 47-degree funnel and drips from a 6 mm nozzle into a see-saw
 // bucket. Every 10 ml (0.5 mm of rain) the bucket tips, pours through the drain slots and swings an anchor
 // that steps a 10-pin wheel half a pitch, so 20 tips turn the x1 pointer once (10 mm). Loads are grams.
@@ -27,6 +28,22 @@
 //     at a friction coefficient of 0.35; a log-spiral cam or a plain pin would stall near zero.
 //   - Collector printed rim-down in one piece: the funnel closes like a dome, the skirt and its register
 //     window need no support, and nothing leaks at a joint.
+//   - Every pinion stands on a shroud disc of its own tip radius: its teeth print on the disc instead of
+//     over air, and the shroud overlaps the mating gear, which limits end float to 0.5 mm.
+//
+// How each turning part is held endways (all float about 0.5 mm):
+//   rotors: cam against the dial plate in front, pointer hub against the dial card's boss behind it.
+//   clusters: rotor collar in front, back-plate boss behind.  pin wheel: collar in front, thrust pad behind.
+//   idlers 0 and 1: dial-plate post shoulder in front, a neighbouring big gear's web behind.
+//   idler 2: back-plate post shoulder behind, the web of the x100 gear in front (its post cannot be longer).
+//   rocker (bucket + anchor): the anchor hub between the back plate and the dial plate's centre post.
+//   The bucket cannot lift out of its pivots once the collector is on: the nozzle stops the mast first.
+//
+// Assembly order (README has the full steps): build the register face down on the dial card and plate:
+//   pointers and rotors, rollers and reset bar, gears from plane C back to B, anchor, pin wheel, back plate,
+//   three screws. Push the bucket's neck through the back plate into the anchor hub (a 5-degree taper),
+//   lower register and bucket onto the base together, two screws from below. To take the bucket out, lift
+//   that unit off and pull the bucket backwards: the hub bears on the back plate, not on the pallets.
 //
 // Terminology -> code:
 //   "collector / funnel / rim"   -> collector(), collector_area_cm2, funnel_slope, rim_wall_h, wall_t
@@ -43,6 +60,7 @@
 //   "register frame"             -> back_plate(), dial_plate(), so_low, so_top, foot_x
 //   "base / drains / ears"       -> base(), drain_slots2d(), ear_r, upstand_h
 //   "leaf guard"                 -> leaf_guard(), guard_r, guard_spokes (optional; lifts out by its knob)
+//   "feet"                       -> foot(), foot_h (one under each ear)
 //
 // Common modifications:
 //   Different collector size     -> collector_area_cm2 (then rerun calc/bucket.py: tip volume = area x 0.5 mm)
@@ -54,7 +72,7 @@
 //   Anchor or pallet shape       -> rerun calc/balance.py and retune cw_r / cw_a0 / cw_a1 to zero the bias
 //   Taller funnel wall           -> rim_wall_h (collector must stay under 250 mm)
 //
-// Overall dimensions: 163 mm diameter (177 x 183 mm over the mounting ears) x 214 mm tall.
+// Overall dimensions: 163 mm diameter (177 x 183 mm over the mounting ears) x 233 mm tall on its feet.
 //   Largest prints: collector 163 x 163 x 211 mm, base 177 x 183 x 48 mm (Bambu X1C, 256 mm cube; both
 //   fit the 220 mm area that clears the front-left exclusion zone).
 // Coordinate system (assembly): X = right as you face the dials, Y = back, Z = up from the base floor.
@@ -72,7 +90,8 @@
 // Infill: 20 % gyroid for base, back_plate, dial_plate, slide, dial_card.
 //   100 % for bucket and anchor (their mass and balance set the calibration) and for plate_register.
 // Supports: None required. Every overhang is 45 degrees or less (funnel 43, knife edges 30); the only
-//   bridges are 6.5 mm screw recesses, 2.8 mm pilot holes and the 2.5 mm clutch-pocket roofs.
+//   bridges are 6.5 mm screw recesses, 2.8 mm pilot holes and the 2.5 mm clutch-pocket roofs. The funnel's
+//   rain side is the overhang side, so it prints slightly rough: rub it smooth if drops cling.
 // Orientation: as modelled (Z = 0 on the bed) for every part.
 // Notes:
 //   - collector: prints rim-down on a 0.9 mm rim, 211 mm tall. Use an 8 mm outer brim, slow outer walls,
@@ -81,7 +100,8 @@
 //   - bucket: knife edges print as a single first-layer line; no brim there, and do not sand them.
 //   - Dry PETG (65 C, 4-6 h) before the gears and the collector; stringing between gear teeth must be cleaned.
 //   - Hardware: M3 x 10 pan head x 3 (dial plate), M3 x 10 countersunk x 2 (register feet),
-//     M3 x 20 pan head x 2 (calibration stops), M3 x 8 pan head x 3 (collector skirt), 3 mounting screws.
+//     M3 x 20 socket head cap x 2 (calibration stops, 2.5 mm hex key), M3 x 8 pan head x 3 (collector skirt),
+//     3 mounting screws about 4 x 40 mm (they pass through the 20 mm feet).
 
 // === PRINTER ===
 // Printer: Bambu Lab X1 Carbon, 0.4 mm nozzle. Build volume 256 x 256 x 256 mm.
@@ -108,7 +128,8 @@ gear_m = 1.0;              // module: 1.0 is the smallest that prints reliably w
 gear_pa = 20;
 gear_backlash = 0.20;      // tooth thinning per gear (all the running clearance: centre distances are standard)
 gear_t = 3.5;              // face width of every gear
-gear_gap = 0.5;            // axial gap between gear planes
+gear_gap = 1.0;            // axial gap between gear planes: 0.5 shroud under each pinion + 0.5 running clearance
+shroud_t = 0.5;            // disc under each pinion (tooth tips' radius): the teeth print on it, and it limits end float
 z_p1 = 8;  z_g1 = 25;      // stage 1: dial pinion -> idler gear   (3.125 : 1)
 z_p2 = 10; z_g2 = 32;      // stage 2: idler pinion -> next dial   (3.2 : 1)   product = 10 exactly
 x_pin = 0.5;               // profile shift of both pinions (the gears get -x_pin, centre distance stays standard)
@@ -158,11 +179,11 @@ esc_table = [[0,-21,0.425], [0,-18,0.425], [0,-15,0.425], [0,-12,0.425], [0,-9,0
 tilt_nom = 20;             // rest tilt for 10 ml per tip (set by the two calibration screws)
 tilt_min = 18.5; tilt_max = 21.5;   // calibration range the mechanism accepts
 bk_L = 48;                 // floor half-length (pivot to pouring edge)
-bk_W = 38;                 // inside width along the pivot axis
+bk_W = 36;                 // inside width along the pivot axis
 bk_floor = 1.6;
-bk_wall = 1.2;             // end walls
+bk_wall = 1.35;            // end walls (3 perimeters)
 bk_mast_t = 6.0;           // divider / ballast mast thickness
-bk_mast_h = 46.5;           // mast height above the floor
+bk_mast_h = 48;             // mast height above the floor
 bk_end_h = 4;              // end wall height at the pouring edge
 bk_end_peak = 26;          // end wall height at the mast
 knife_half = 30;           // knife edge half angle (degrees from vertical)
@@ -184,7 +205,7 @@ roller_gap = 1.0;          // roller clear of the cam tip at rest
 wall_t = 1.8;              // collector wall (4 perimeters)
 rim_wall_h = 35;           // vertical wall above the funnel (splash guard)
 funnel_slope = 47;         // funnel slope from horizontal (WMO: at least 45)
-funnel_t = 1.6;
+funnel_t = 1.8;            // 4 perimeters
 nozzle_id = 6.0;
 nozzle_len = 8;
 nozzle_z = 87;             // nozzle tip height above the base floor
@@ -269,7 +290,7 @@ include <rg-assembly.scad>
 
 // === ASSEMBLY / RENDER ===
 P_view = [pose_stroke, pose_anchor, pose_count_mm, pose_reset];
-part = "all"; // "all", "assembly_open", "section", "view_train", "view_escapement", "base", "collector", "bucket", "anchor", "back_plate", "dial_plate", "dial_card", "units_wheel", "cluster", "idler", "rotor_long", "rotor_short", "pointer", "slide", "roller", "leaf_guard", "plate_register", "clash_rest", "clash_handover", "clash_push", "clash_end", "clash_return", "clash_reset", "clash_esc_a", "clash_esc_b", "clash_esc_c", "clash_esc_d", "clash_guard", "check_pair"
+part = "all"; // "all", "assembly_open", "section", "view_train", "view_escapement", "base", "collector", "bucket", "anchor", "back_plate", "dial_plate", "dial_card", "units_wheel", "cluster", "idler", "rotor_long", "rotor_short", "pointer", "slide", "roller", "leaf_guard", "foot", "plate_register", "plate_extras", "clash_rest", "clash_handover", "clash_push", "clash_end", "clash_return", "clash_reset", "clash_esc_a", "clash_esc_b", "clash_esc_c", "clash_esc_d", "clash_guard", "check_pair"
 if (part == "all") assembly(P_view);
 if (part == "assembly_open") assembly(P_view, [4]);                                   // collector removed
 if (part == "section") difference() { assembly(P_view); translate([0, -200, -50]) cube([200, 400, 400]); }
@@ -291,7 +312,9 @@ if (part == "pointer") pointer();
 if (part == "slide") slide();
 if (part == "roller") roller();
 if (part == "leaf_guard") leaf_guard();
+if (part == "foot") foot();
 if (part == "plate_register") plate_register();
+if (part == "plate_extras") { for (k = [0:2]) translate([k * 26, 0, 0]) foot(); translate([26, 36, 0]) leaf_guard(); }   // three feet and the leaf guard
 // whole-assembly pairwise interference at six poses: [stroke, anchor angle, reading in mm, reset 0..1]
 if (part == "clash_rest") clash_all([0, -21.5, 0, 0]);
 if (part == "clash_handover") clash_all([0, 0, 1234.5, 0]);
