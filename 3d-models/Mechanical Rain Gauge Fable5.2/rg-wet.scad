@@ -3,11 +3,11 @@
 
 // ---- tipping bucket (prints as used: floor on the bed, knife edges on the bed) ----
 bk_y = bk_W / 2 + bk_wall;                       // outer face of each end wall
-trunnion_len = 6;
+trunnion_len = 8;
 neck_straight_end = bp_rear_y - (bp_t + 0.2);    // gauge y where the neck starts to taper
 neck_tip_f = f_anchor + anchor_t - 1.5;            // stops short of the hub's front face: room for the taper to seat deeper
 neck_tip_y = bp_rear_y - neck_tip_f;
-collar_y = -bk_y - 1.0;                          // drip collar between the bucket and the back plate
+collar_y = -bk_y - 0.6;                          // drip collar between the bucket and the back plate
 module bucket_end2d() {                          // end wall profile (x along the floor, y up)
     polygon([[-bk_L, 0], [bk_L, 0], [bk_L, bk_floor + bk_end_h], [bk_mast_t / 2, bk_floor + bk_end_peak],
              [-bk_mast_t / 2, bk_floor + bk_end_peak], [-bk_L, bk_floor + bk_end_h]]);
@@ -27,7 +27,7 @@ module bucket() {                                // origin: pivot axis (centre o
             translate([-0.4, -bk_W / 2 - fudge, 0]) cube([0.8, bk_W + 2 * fudge, bk_floor + bk_mast_h]);
         }
         for (sy = [-1, 1]) translate([0, sy > 0 ? bk_y : -bk_W / 2, 0]) rotate([90, 0, 0]) linear_extrude(bk_wall) bucket_end2d();
-        translate([0, collar_y, 0]) rotate([90, 0, 0]) linear_extrude(1.2)       // drip collar
+        translate([0, collar_y, 0]) rotate([90, 0, 0]) linear_extrude(1.0)       // drip collar
             intersection() { translate([0, 4]) circle(r = 8.5, $fn = 48); translate([-10, 0]) square([20, 20]); }
       }
         key_prism(bk_y + trunnion_len, bk_y - 0.5);                              // rear trunnion
@@ -37,11 +37,12 @@ module bucket() {                                // origin: pivot axis (centre o
 }
 
 // ---- base (prints as used; z = 0 here is the underside, the floor top is at base_t) ----
-post_y0 = bk_y + 0.8;                            // rear pivot post front face
-post_len = trunnion_len + 2.0;                   // V slot length; the rocker is located endways by the anchor hub, not here
+post_gap = 2.5;                                  // bucket wall to post: more than the rocker can ever shift
+post_y0 = bk_y + post_gap;                       // rear pivot post front face
+post_len = trunnion_len - post_gap + 2.0;                   // V slot length; the rocker is located endways by the anchor hub, not here
 post_w = 16;
 boss_top_z = 19; boss_d = 11; head_recess_z = 6; // calibration screw boss (M3 x 20 from below)
-foot_screw_y = bp_rear_y - (bp_t + foot_d / 2);
+foot_screw_y = bp_rear_y - (bp_t + rfoot_d / 2);
 skirt_screw_z = 4.5;
 skirt_screw_ang = [0, 90, 180];
 upstand_ro = orifice_r - tolerance;
@@ -88,7 +89,7 @@ module base() {
             cylinder(d = screw_pilot, h = base_t + boss_top_z + 1, $fn = 24);
         }
         // register feet: countersunk M3 from below
-        for (sx = [-1, 1]) translate([sx * foot_x, foot_screw_y, 0]) {
+        for (sx = [-1, 1]) translate([sx * rfoot_x, foot_screw_y, 0]) {
             translate([0, 0, -fudge]) cylinder(d = screw_clear, h = base_t + 1, $fn = 24);
             translate([0, 0, -fudge]) cylinder(d1 = 6.6, d2 = screw_clear, h = 1.6, $fn = 32);
         }

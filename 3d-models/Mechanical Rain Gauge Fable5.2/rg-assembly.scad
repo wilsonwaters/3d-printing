@@ -11,6 +11,7 @@ function ptr_rot(i, P) = -360 * P[2] / pow(10, i + 1);                          
 seat_q = max([for (a = [0:0.25:89]) let (r = cam_r(a), h = r * sin(a)) if (h < roller_d / 2) r * cos(a) + sqrt(pow(roller_d / 2, 2) - h * h)]);
 reset_stroke = roller_rest - seat_q;
 function bar_lift(P) = P[3] * (reset_stroke - 0.05);
+function rock(P) = len(P) > 4 ? P[4] : 0;                                             // rocker end float (+ = forward)
 lift = 0.05;                                                                         // poses resting contacts just apart
 
 module reg_frame() { translate([0, bp_rear_y, 0.02]) rotate([90, 0, 0]) children(); }
@@ -24,8 +25,8 @@ module elem(i, P) {
     if (i == 2) reg_frame() translate([0, 0, f_card + 0.04]) dial_card();
     if (i == 3) translate([0, 0, -base_t]) base();
     if (i == 4) translate([0, 0, 0.02]) collector_use();
-    if (i == 5) translate([0, 0, pivot_z + lift]) rotate([0, P[1], 0]) bucket();
-    if (i == 6) reg_frame() translate([0, lift, f_anchor + anchor_t]) translate(pivot_pos) rotate(-P[1]) translate(-pivot_pos) rotate([0, 180, 0]) anchor();
+    if (i == 5) translate([0, -rock(P), pivot_z + lift]) rotate([0, P[1], 0]) bucket();
+    if (i == 6) reg_frame() translate([0, lift, f_anchor + anchor_t + rock(P)]) translate(pivot_pos) rotate(-P[1]) translate(-pivot_pos) rotate([0, 180, 0]) anchor();
     if (i == 7) reg_frame() spin(dial_pos(0), f_disc, wheel_rot(P)) units_wheel(false);
     if (i >= 8 && i <= 10) { k = i - 7;                                              // clusters on dials 1..3
         reg_frame() if (cluster_front(k)) spin(dial_pos(k), f_C + gear_t, cluster_rot(k, P)) rotate([180, 0, 0]) cluster(false);
@@ -77,6 +78,10 @@ assert(abs(tip_volume_ml - 10) < 1e-6, "0.5 mm on 200 cm2 is 10 ml per tip");
 assert(abs(tips_per_rev * tip_mm - 10) < 1e-9, "one turn of the x1 pointer must be 10 mm");
 assert(z_g1 * z_g2 == 10 * z_p1 * z_p2, "each stage must be exactly 10:1");
 assert(gear_eps(z_p1, x_pin, pin_short, z_g1, -x_pin, 0, a1) > 1.2 && gear_eps(z_p2, x_pin, pin_short, z_g2, -x_pin, 0, a2) > 1.2, "contact ratio");
+mesh_open = 0.15;          // how far journal play and the clutch push can open a mesh
+echo(contact_ratio_1_open = gear_eps(z_p1, x_pin, pin_short, z_g1, -x_pin, 0, a1 + mesh_open), contact_ratio_2_open = gear_eps(z_p2, x_pin, pin_short, z_g2, -x_pin, 0, a2 + mesh_open));
+assert(gear_eps(z_p1, x_pin, pin_short, z_g1, -x_pin, 0, a1 + mesh_open) >= 1.05 && gear_eps(z_p2, x_pin, pin_short, z_g2, -x_pin, 0, a2 + mesh_open) >= 1.05, "contact ratio with the mesh opened by journal play");
+assert(a1 - (3 * fit_gear / 2 + 0.05) - ra_g1 - (gear_rf(z_p1, x_pin) - root_extra) >= 0.03, "a tight mesh would bottom the gear tips in the pinion roots");
 assert(gear_tip_w(z_p1, x_pin, pin_short) >= 0.4 && gear_tip_w(z_p2, x_pin, pin_short) >= 0.4, "pinion tip land too thin to print");
 assert(esc_rp == 21 && esc_pin_d == 4 && esc_c == 0.6 && esc_blade == 4.5 && esc_blade1 == 3.5 && esc_ramp == 7 && esc_dwell == 5.5 && esc_lead == 1.5 && esc_lead1 == 0.5 && esc_tip_w == 1,
        "escapement changed: rerun calc/escapement.py and paste its new esc_table and esc_done_deg");
@@ -111,7 +116,12 @@ assert(stop_tip_home >= stop_tip_z(tilt_min) + 0.5, "calibration screw cannot re
 assert(head_recess_z - (stop_tip_home - stop_tip_z(tilt_max)) - stop_head_h >= -base_t, "calibration screw head would stand proud of the base at tilt_max");
 assert(stop_tip_z(tilt_max) >= boss_top_z + 1, "the bucket would land on the boss, not the screw");
 // --- the bucket cannot leave its pivots once the collector is on: the nozzle stops it first ---
-assert(nozzle_z - mast_top_z <= 9 - 3, "the nozzle must stop the bucket before its knife edge can lift out of the 9 mm pivot slot");
+trunnion_capture = key_swing_r * cos(vee_half) - knife_r / sin(vee_half);          // height of the V walls beside the rear knife edge
+rear_lift = hub_float / hub_r * ((post_y0 + post_len / 2) - (bp_rear_y - bp_t - hub_len / 2));   // most the rear can rise while the hub is trapped
+echo(trunnion_capture = trunnion_capture, rear_lift = rear_lift);
+assert(trunnion_capture >= 2 * rear_lift, "the trapped hub and closed keyhole must keep the rear knife edge in its slot");
+assert(hub_float <= esc_end_gap - 0.3, "the anchor hub must touch its stops before the pallets reach the wheel");
+assert(post_gap >= 2.5 && -bk_y - 1.6 - bp_rear_y >= 2.0, "the bucket must clear the post and the back plate at any taper seat position");
 // --- friction clutches: must carry a pointer when weak and still slip under the reset bar when strong ---
 function clutch_force(E, b, L) = 3 * E * (b * pow(clutch_t, 3) / 12) * clutch_defl / pow(L, 3);     // N, cantilever tip load
 function clutch_torque(E, mu, b, L) = 2 * mu * clutch_force(E, b, L) * arbor_d / 2;                // N.mm: beam pad + opposite bore wall
@@ -123,4 +133,13 @@ reset_push = clutch_strong / min(reset_arm(cam_rmin), reset_arm(cam_rmax));     
 echo(clutch_weak_Nmm = clutch_weak, clutch_strong_Nmm = clutch_strong, reset_push_N_per_dial = reset_push);
 assert(clutch_weak >= 3 * rotor_drag, "clutch too weak to carry a pointer round");
 assert(reset_push <= 1.5, "reset would need more than 1.5 N per dial");
+// the whole bar: a centred tab, a single outer dial resisting, friction at the guides
+rack = 2 * reset_mu * dial_x[0] / guide_L;
+tab_force = max(4 * reset_push, reset_push / (1 - rack));
+echo(guide_L = guide_L, rack = rack, tab_force_N = tab_force, cam_dead_deg = cam_dead);
+assert(rack <= 0.8, "reset bar would jam: guides too short for the offset load");
+assert(tab_force <= 8, "reset tab force too high");
+assert(2 * dial_x[0] * 0.5 / guide_L <= 1.5, "reset bar can cock too far");
+assert(cam_skew >= cam_dead + 1.7 + 1, "the cam's dead point must fall between x1 stations (dead band + wheel play + margin)");
+assert(cam_sym >= 50, "the cusp region must be symmetric where the roller seats");
 assert(1.5 * clutch_t * clutch_defl / pow(min(clutch_L, clutch_L_wheel), 2) <= 0.01, "clutch beam strain above 1 %");

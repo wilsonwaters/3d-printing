@@ -12,7 +12,7 @@ the falling water does the counting.
 | Collector | Ø159.6 mm = **200 cm²**, the WMO lower bound and the Hellmann standard. 1 mm of rain = 20 ml |
 | Bucket | tips every **10 ml = 0.5 mm**; two M3 screws calibrate it |
 | Register | four dials ×1000, ×100, ×10, ×1 mm, 10:1 between neighbours, all clockwise; 20 tips turn the ×1 pointer once |
-| Reset | lift the tab: four rollers drive four heart cams and every pointer returns to 0 |
+| Reset | lift the tab under the dials: four rollers drive four heart cams and every pointer returns to 0 |
 | Size | Ø163 × 233 mm on its feet (177 × 183 mm over the mounting ears) |
 | Printed parts | 31 pieces from 17 designs, PETG, no supports |
 | Printer | Bambu Lab X1 Carbon, 0.4 mm nozzle; largest part is the collector, 163 × 163 × 211 mm |
@@ -49,8 +49,9 @@ not, so expect to calibrate it and to report back what a real print does.
    raises a bar with four rollers; each roller pushes its cam round until it drops into the cusp,
    which is zero. The gears stay where they are, locked by the anchor (the wheel can creep within
    its 1.7° of end play, which the next tip takes up). The cam is an Archimedean
-   heart, which lifts the roller the same 2.9 mm per radian wherever it touches, so the push keeps
-   turning the cam even with dry plastic rubbing on plastic.
+   heart, which lifts the roller by about the same amount per degree wherever it touches, so the
+   push keeps turning the cam even with dry plastic rubbing on plastic. The bar runs on four pins,
+   two at each end and 40 mm apart in height, so it stays level when only one dial needs moving.
 
 ![Gear train, heart cams and reset bar](preview-train.png)
 ![Anchor, counterweight and pin wheel](preview-escapement.png)
@@ -121,7 +122,7 @@ Single-part STLs (`units_wheel`, `cluster`, `idler`, `rotor_long`, `rotor_short`
 `roller`, `foot`, `leaf_guard`) are there for reprinting one piece. Use PETG throughout, white or light for the
 collector and base. Dry the filament before the gears and clean any strings from between the teeth.
 
-**Hardware:** M3 × 10 pan head × 3 (dial plate), M3 × 10 countersunk × 2 (register feet),
+**Hardware:** M3 × 10 pan head × 3 (dial plate), M3 × 10 hex-socket countersunk × 2 (register feet),
 M3 × 20 socket head cap × 2 (calibration stops, turned with a 2.5 mm hex key), M3 × 8 pan head × 3
 (collector skirt), and three screws about 4 × 40 mm for the mounting ears and feet. All the M3 screws cut their own thread in the plastic: drive
 each one in and out once before assembly.
@@ -134,14 +135,15 @@ Build the register face down on the bench.
    through both and press a rotor onto it, cam against the plate, with the flats aligned. The
    **short-collar rotor goes on the ×100 dial** (third from the right as you will read it).
 2. Set the four rollers on the plate below the cams and lower the reset bar so its posts enter
-   them. Its centre slot goes over the post beside the ×10 dial.
+   them. Its centre slot goes over the centre post and one ear goes over the pin near the top
+   corner of the plate.
 3. Add the gears from the front plane backwards: the ×100 cluster (big gear first) and the idler
    beside it (pinion first); then the ×10 and ×1000 clusters (pinion first) and the idler between
    ×1 and ×10 (gear first). Rest the third idler (gear first) in mesh between ×100 and ×1000.
 4. Lay the anchor on the centre post with its pallets up, then lower the pin wheel onto the ×1
    arbor, pinion first, so its pins drop either side of a pallet.
 5. Lower the back plate so that its post finds the third idler, the four arbors enter their
-   bosses and the stepped standoffs pass through the reset bar. Turn it over and fit the three
+   bosses and the three stepped standoffs pass through the slots in the reset bar. Turn it over and fit the three
    M3 × 10 screws through the card. Check that the tab lifts and falls freely and that turning the
    pin wheel by hand moves the ×1 pointer.
 6. From behind, pass the bucket's neck through the keyhole in the back plate and push it into the
@@ -155,8 +157,9 @@ Build the register face down on the bench.
    base 20 mm so the drain slots run free and a hex key still reaches the calibration screws.
 
 To clean the bucket in place, lift the collector off. To take the bucket out, undo the two foot
-screws, lift the register out with the bucket, and pull the bucket backwards out of the anchor.
-Once the collector is on, the bucket cannot jump off its pivots: the nozzle stops it first.
+screws (a 2 mm hex key reaches them between the feet), lift the register out with the bucket,
+and pull the bucket backwards out of the anchor. The bucket cannot jump off its pivots: its
+front knife edge sits in a closed keyhole and the anchor hub is trapped behind the back plate.
 
 ## Calibrate
 
@@ -182,36 +185,42 @@ Read the dials left to right like a meter. If a pointer is between two numbers t
 if it sits on a number, look at the dial to its right and take the lower number unless that dial
 has passed 0. The ×1 dial reads to half a millimetre, one tip.
 
-To reset, lift the tab under the dials as far as it goes and let it drop.
+To reset, lift the tab under the middle of the dials as far as it goes and let it drop. A heart
+cam has one dead point, at its tip. It is placed at 5.17 on each dial, which the ×1 pointer
+never stops on, but a ×10, ×100 or ×1000 pointer resting within 0.07 of 5.17 will not move:
+nudge it with a fingertip and lift the tab again.
 
 ## Verification
 
 Every claim above is tied to something that is checked when the model compiles.
 
-- **Gate:** `verify-model.py` builds all 36 parts and views with OpenSCAD 2026.11.12. Every printed
+- **Gate:** `verify-model.py` builds all 38 parts and views with OpenSCAD 2026.11.12. Every printed
   part is one manifold body on the bed and inside 256 mm; the base is 177 × 183 mm, inside the
   220 mm area that clears the X1C's exclusion zone.
-- **Interference:** six `clash_*` parts intersect every pair of the 27 assembled pieces (351 pairs)
-  at rest, mid-swing handover, mid-push, end of travel, return stroke and reset, with the pointers
-  at different readings. Four more check the anchor against the pin wheel at in-between angles.
+- **Interference:** eight `clash_*` parts intersect every pair of the 27 assembled pieces (351
+  pairs) at rest, mid-swing handover, mid-push, end of travel, return stroke and reset, and with
+  the bucket and anchor at each end of their 0.3 mm end float, with the pointers at different
+  readings. Four more check the anchor against the pin wheel at in-between angles.
   All render empty, and a deliberate mis-pose of the wheel is caught.
 - **Drive kinematics:** `calc/escapement.py` swings the anchor in 0.05° steps and lets the pallets
   push the pins. Each tip advances the wheel 18° in both directions (72° in four tips), pushing
   from 4° to 15° of the swing, so it is finished 3.9° before the earliest stop.
 - **Tip volume:** `calc/bucket.py` takes the bucket's mass and centre of mass from the exported STL
-  and solves the moment balance: 26.7 g, centre of mass 14.3 mm above the pivot, 10.0 ml at 20.0°.
+  and solves the moment balance: 26.8 g, centre of mass 14.2 mm above the pivot, 10.0 ml at 20.0°.
   The water gives up about 2.4 mJ per tip; stepping the wheel takes about 0.03 mJ.
 - **Balance:** `calc/balance.py` puts the anchor's centre of mass within 0.03 mm of the pivot, a
   bias of 0.3 g·mm against the bucket's 130 g·mm holding moment.
 - **Reset:** the cam's lift is compared with the friction of the roller on its post and the rotor
-  in its journals at a coefficient of 0.35: 1.6 mm of torque arm is left at the cusp and 0.6 mm
-  at the tip.
+  in its journals at a coefficient of 0.35: 1.7 mm of torque arm is left at the cusp and 0.7 mm
+  at the tip. With one outer dial resisting and friction at the guides, the tab needs 3.5 N at
+  worst. The dead band round the cam tip is ±2.3°, 6° from the nearest ×1 station.
 - **Clutches:** beam theory gives 0.10 N·mm of drag at worst (soft plastic, low friction, half
   lost to creep) against the 0.03 N·mm needed to carry a rotor, whose cam is windowed to halve its
-  imbalance to 1.9 g·mm. At best the drag is 0.59 N·mm, which the reset overcomes with 0.9 N per dial.
-- **Contracts:** 32 `assert()`s in `rg-assembly.scad` cover the orifice area, the 10:1 ratio, gear
-  contact ratios (1.22 and 1.27), printable tooth tips, cam and roller geometry, the reach of the
-  calibration screws, end stops for the idlers, nozzle clearance and the size limits. Changing a parameter that breaks one stops the build.
+  imbalance to 1.9 g·mm. At most the drag is 0.59 N·mm, which the reset overcomes with 0.9 N per dial.
+- **Contracts:** 41 `assert()`s in `rg-assembly.scad` cover the orifice area, the 10:1 ratio, gear
+  contact ratios (1.27 and 1.32 as drawn, 1.12 and 1.17 with a mesh opened 0.15 mm by bearing
+  play), printable tooth tips, cam and roller geometry, the reach of the calibration screws, end
+  stops for the idlers and the rocker, nozzle clearance and the size limits. Changing a parameter that breaks one stops the build.
 
 Only a print can confirm these:
 
@@ -243,4 +252,4 @@ floor is flat, so it stays damp after rain.
 
 | Version | AI model | Date | Change |
 |---|---|---|---|
-| v1 | claude-fable-5-2 (design review: claude-sonnet-5-5) | 2026-11-14 | Initial design |
+| v1 | claude-fable-5-2 (design review: claude-sonnet-5-5; final review: claude-fable-5-2) | 2026-11-14 | Initial design |

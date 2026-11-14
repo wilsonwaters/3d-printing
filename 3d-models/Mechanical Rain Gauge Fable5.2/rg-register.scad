@@ -6,12 +6,11 @@
 so_low = [[52, 28], [-52, 28]];        // lower standoffs: their stepped tips also guide the reset bar
 so_top = [-53, 75];                    // upper standoff
 so_d = 9; so_tip_d = 6;
-foot_x = 52; foot_w = 9; foot_h = 10; foot_d = 9;
+rfoot_x = 52; rfoot_w = 9; rfoot_h = 10; rfoot_d = 9;
 plate_x = 55.5; plate_y0 = 22; plate_y1 = 77;
 bp_shield_x = dial_x[0] + esc_rp + esc_pin_d / 2 + 2.5;   // back plate edge that covers the pin wheel
-tab_x0 = 22; tab_x1 = 36;              // reset tab
-run_d_arbor = arbor_d + hole_comp + fit_run;     // free-running bore on the arbors and posts
-run_d_stub = stub_d + hole_comp + fit_run;
+run_d_arbor = arbor_d + hole_comp + fit_gear;    // running bore on the arbors and posts
+run_d_stub = stub_d + hole_comp + fit_gear;
 screw_clear = 3 + hole_comp + fit_run;           // M3 clearance
 screw_pilot = 2.8;                               // M3 self-tap pilot (D - 0.4 P)
 collar_long = f_cam - (f_A + gear_t + 0.1);      // dials x1, x10, x1000: cluster front face is in plane A
@@ -50,14 +49,14 @@ module back_plate() {
     difference() {
         union() {
             linear_extrude(bp_t) hull() {                                   // wider on the pin-wheel side: splash shield
-                plate_outline2d(foot_x + foot_w / 2, 0, 80);
+                plate_outline2d(rfoot_x + rfoot_w / 2, 0, 80);
                 translate([bp_shield_x - 3, 3]) circle(r = 3, $fn = 24); translate([bp_shield_x - 3, 77]) circle(r = 3, $fn = 24);
             }
             for (i = [1:3]) translate(dial_pos(i)) cylinder(d = collar_d, h = boss_top(i));
             translate(dial_pos(0)) cylinder(d = 10, h = f_disc - 0.2);            // thrust pad for the pin wheel
             for (p = so_low) translate(p) { cylinder(d = so_d, h = f_slide - 0.15); cylinder(d = so_tip_d, h = f_dp); }
-            translate(so_top) cylinder(d = so_d - 1, h = f_dp);
-            for (sx = [-1, 1]) translate([sx * foot_x - foot_w / 2, 0, 0]) cube([foot_w, foot_h, bp_t + foot_d]);
+            translate(so_top) { cylinder(d = so_d, h = f_slide - 0.15); cylinder(d = so_tip_d, h = f_dp); }
+            for (sx = [-1, 1]) translate([sx * rfoot_x - rfoot_w / 2, 0, 0]) cube([rfoot_w, rfoot_h, bp_t + rfoot_d]);
             translate(idler_pos(2)) {      // idler 2 runs on a post from this plate (a front post would cross the x100 gear)
                 cylinder(d = 6, h = f_B - 0.1);
                 cylinder(d = post_d, h = f_A + gear_t - 0.3);
@@ -66,7 +65,7 @@ module back_plate() {
         translate([pivot_pos[0], pivot_pos[1], -fudge]) linear_extrude(bp_t + 2 * fudge) vee2d(key_swing_r);
         for (i = [0:3]) translate([dial_x[i], dial_z, 0]) bore(run_d_arbor, 40);
         for (p = concat(so_low, [so_top])) translate([p[0], p[1], f_dp + fudge]) mirror([0, 0, 1]) self_tap(9);
-        for (sx = [-1, 1]) translate([sx * foot_x, 0, bp_t + foot_d / 2]) rotate([-90, 0, 0]) self_tap(foot_h - 1.5);
+        for (sx = [-1, 1]) translate([sx * rfoot_x, 0, bp_t + rfoot_d / 2]) rotate([-90, 0, 0]) self_tap(rfoot_h - 1.5);
     }
 }
 
@@ -74,12 +73,12 @@ module back_plate() {
 module dial_outline2d() {
     difference() {
         plate_outline2d(plate_x, plate_y0, plate_y1);
-        translate([tab_x0 - 1.5, plate_y0 - 1]) square([tab_x1 - tab_x0 + 3, 16.5]);     // reset tab travels here
+        translate([-tab_w / 2 - 1.5, plate_y0 - 1]) square([tab_w + 3, 8.5]);            // reset tab travels here
     }
 }
 function post_shoulder_s(i) = f_card - ((idler_front(i) ? f_C : f_A) + gear_t + 0.1);   // depth behind the plate front
 function post_end_s(i) = f_card - ((idler_front(i) ? f_A : f_B) + 0.3);
-hub_stop_s = f_card - (f_anchor + anchor_t + 0.4);
+hub_stop_s = f_card - (f_anchor + anchor_t + hub_float);
 module dial_plate() {
     front_down() difference() {
         union() {
@@ -89,6 +88,7 @@ module dial_plate() {
                 cylinder(d = post_d, h = post_end_s(i));
             }
             translate(pivot_pos) cylinder(d = 6, h = hub_stop_s);                        // end stop for the anchor hub
+            translate(guide_pin) cylinder(d = guide_pin_d, h = f_card - (f_slide - 0.2), $fn = 24);   // upper right guide for the reset bar
         }
         for (i = [0:3]) translate([dial_x[i], dial_z, 0]) bore(run_d_stub, dp_t);
         for (p = concat(so_low, [so_top])) translate([p[0], p[1], -fudge]) cylinder(d = screw_clear, h = dp_t + 2 * fudge, $fn = 24);
@@ -125,10 +125,11 @@ module dial_card() {
 
 // ---- rotor (front-down): heart cam + collar + arbor. One per dial; the pointer stub presses into its face ----
 module cam2d() {   // cusp (pointer at 0) points down, towards the reset roller
-    polygon([for (a = [-180:3:180]) pol(cam_r(a), -90 + a)]);
+    polygon([for (a = [-(180 - cam_skew):3:180 + cam_skew]) pol(cam_r(a), -90 + a)]);
 }
 module dee2d(d) { intersection() { circle(d = d, $fn = 40); translate([-d, -d]) square([2 * d, d + 0.72 * d / 2]); } }
 socket_depth = 3.0;
+arbor_proud = 1.0; arbor_nose = 1.5;   // the tapered nose lies behind the back plate, so the journal keeps its full diameter
 cam_rim = 1.8; cam_win_r = 5.5; cam_win_half = 60;
 module cam_window2d() {   // lightening window in the tip half: removes about half of the cam's out-of-balance moment
     difference() {
@@ -137,15 +138,19 @@ module cam_window2d() {   // lightening window in the tip half: removes about ha
     }
 }
 module rotor(collar_len) {
-    arbor_end = (f_cam + cam_t) - 0.4;           // total length: stops 0.4 short of the back plate's rear face
+    arbor_end = (f_cam + cam_t) + arbor_proud;   // total length: the nose stands just proud of the back plate's rear face
     front_down() difference() {
         union() {
             linear_extrude(cam_t) cam2d();
             cylinder(d = collar_d, h = cam_t + collar_len);
-            cylinder(d = arbor_d, h = arbor_end - 0.5, $fn = 32);
-            translate([0, 0, arbor_end - 0.5 - fudge]) cylinder(d1 = arbor_d, d2 = arbor_d - 1, h = 0.5, $fn = 32);
+            cylinder(d = arbor_d, h = arbor_end - arbor_nose, $fn = 32);
+            translate([0, 0, arbor_end - arbor_nose - fudge]) cylinder(d1 = arbor_d, d2 = arbor_d - 1.8, h = arbor_nose, $fn = 32);   // lead-in past the clutch beam
         }
         translate([0, 0, -fudge]) linear_extrude(socket_depth) dee2d(stub_d + hole_comp + fit_press);
+        hull() {                                 // lead-in at the socket mouth (also absorbs first-layer squish)
+            translate([0, 0, -fudge]) linear_extrude(fudge) offset(delta = 0.4) dee2d(stub_d + hole_comp + fit_press);
+            translate([0, 0, 0.4]) linear_extrude(fudge) dee2d(stub_d + hole_comp + fit_press);
+        }
         translate([0, 0, -fudge]) linear_extrude(cam_t + 2 * fudge) cam_window2d();
     }
 }
@@ -192,7 +197,7 @@ module cluster(beam = true) {     // beam = false poses the part without its (de
         union() {
             gear_bed(z_g2, -x_pin, gear_t);
             cylinder(r = ra_p1, h = gear_t + shroud_t, $fn = 48);              // shroud: the pinion teeth print on it, not over air
-            translate([0, 0, gear_t + shroud_t - fudge]) linear_extrude(gear_t + gear_gap - shroud_t + fudge) gear2d(z_p1, x_pin, pin_short);
+            translate([0, 0, gear_t + shroud_t - fudge]) linear_extrude(gear_t + gear_gap - shroud_t + fudge) gear2d(z_p1, x_pin, pin_short, root_cut = root_extra);
         }
         bore(run_d_arbor, 2 * gear_t + 3);
         clutch_cut(gear_t);
@@ -205,7 +210,7 @@ module idler() {
         union() {
             gear_bed(z_g1, -x_pin, gear_t);
             cylinder(r = ra_p2, h = gear_t + shroud_t, $fn = 48);
-            translate([0, 0, gear_t + shroud_t - fudge]) linear_extrude(gear_t + gear_gap - shroud_t + fudge) gear2d(z_p2, x_pin, pin_short);
+            translate([0, 0, gear_t + shroud_t - fudge]) linear_extrude(gear_t + gear_gap - shroud_t + fudge) gear2d(z_p2, x_pin, pin_short, root_cut = root_extra);
         }
         bore(run_d_arbor, 2 * gear_t + 2);
     }
@@ -223,7 +228,7 @@ module units_wheel(beam = true) {
             for (k = [0:esc_n - 1]) rotate(k * 360 / esc_n) translate([esc_rp, 0, 0]) cylinder(d = esc_pin_d, h = disc_t + pin_h, $fn = 32);
             cylinder(r = wheel_sleeve_r, h = z_cone + fudge, $fn = 40);
             intersection() {     // pinion teeth grow out of the sleeve on a 45-degree cone (no support)
-                translate([0, 0, z_cone]) linear_extrude(z_pin - z_cone + gear_t) gear2d(z_p1, x_pin, pin_short);
+                translate([0, 0, z_cone]) linear_extrude(z_pin - z_cone + gear_t) gear2d(z_p1, x_pin, pin_short, root_cut = root_extra);
                 translate([0, 0, z_cone]) cylinder(r1 = wheel_sleeve_r, r2 = wheel_sleeve_r + 30, h = 30);
             }
         }
@@ -250,8 +255,8 @@ module esc_frame() { translate(pivot_pos) rotate(pw_ang) mirror([0, 1, 0]) child
 // ---- anchor (front-down): plate, two pallets, keyed hub, counterweight ----
 band_ri = 31; band_ro = 36;
 arm_ang = 22;                          // arm direction in the escapement frame (clear of the x10 boss)
-hub_r = 8.5; hub_len = f_anchor + anchor_t - (bp_t + 0.6);
-cw_r = 27.3; cw_a0 = 177.5; cw_a1 = 239.5; cw_ri = 6;    // counterweight sector (front-view angles); balanced in calc/balance.py
+hub_r = 8.5; hub_len = f_anchor + anchor_t - (bp_t + hub_float);
+cw_r = 26.8; cw_a0 = 177.5; cw_a1 = 239.5; cw_ri = 6;    // counterweight sector (front-view angles); balanced in calc/balance.py
 pal_tail = rad2deg((esc_len - esc_lead) / esc_lt);  // pallet body angle beyond the tangent point
 module anchor_plate2d() {
     esc_frame() {
@@ -281,25 +286,38 @@ module anchor() {
 }
 
 // ---- reset bar (rear-down) and rollers ----
-bar_y0 = 17; bar_y1 = dial_z - roller_rest + 2.6; bar_x = 56.5;
+bar_y0 = 11; bar_y1 = dial_z - roller_rest + 2.6; bar_x = 56.5;
 reset_travel = 10.5;
 roller_h = (f_dp - 0.3) - (f_slide + slide_t + 0.3);
 tab_reach = 10;                        // how far the tab stands in front of the dial card
+tab_w = 14;                            // the tab is on the centre line, so the push is never far from the load
+guide_pin = [53, 67.5]; guide_pin_d = 4;          // upper right guide: a pin on the dial plate (upper left is the top standoff)
+guide_L = min(so_top[1], guide_pin[1]) - so_low[0][1];   // height between lower and upper guides: what stops the bar racking
+ear_w = 2.75;                          // material left round each upper slot
+module guide_slot2d(p, d) { hull() for (dy = [0, -reset_travel]) translate([p[0], p[1] + dy]) circle(d = d + 0.5, $fn = 24); }
+module rrect2d(x0, x1, y0, y1, r = 2) { hull() for (xx = [x0 + r, x1 - r], yy = [y0 + r, y1 - r]) translate([xx, yy]) circle(r = r, $fn = 20); }
 module slide() {
+    wl = so_tip_d + 0.5 + 2 * ear_w; wr = guide_pin_d + 0.5 + 2 * ear_w;
     difference() {
         union() {
-            linear_extrude(slide_t) plate_outline2d(bar_x, bar_y0, bar_y1, 2);
+            linear_extrude(slide_t) union() {
+                plate_outline2d(bar_x, bar_y0, bar_y1, 2);
+                // two ears reach up to the upper guides, so each end runs on two pins about 40 mm apart
+                rrect2d(so_top[0] - wl / 2, so_top[0] + wl / 2, bar_y1 - 6, so_top[1] + (so_tip_d + 0.5) / 2 + ear_w);
+                rrect2d(guide_pin[0] - wr / 2, guide_pin[0] + wr / 2, bar_y1 - 6, guide_pin[1] + (guide_pin_d + 0.5) / 2 + ear_w);
+            }
             for (i = [0:3]) translate([dial_x[i], dial_z - roller_rest, 0]) {
                 cylinder(d = roller_post_d + 2.6, h = slide_t + 0.3);
                 cylinder(d = roller_post_d, h = (f_dp - 0.3) - f_slide, $fn = 24);
             }
-            translate([tab_x0, bar_y0 - 10, 0]) cube([tab_x1 - tab_x0, 12, f_card + card_t + tab_reach - f_slide]);
+            translate([-tab_w / 2, bar_y0 - 6, 0]) cube([tab_w, 12, f_card + card_t + tab_reach - f_slide]);
         }
-        // guide slots on the two lower standoff tips and the anchor-hub post
-        for (p = so_low) translate([p[0], p[1], -fudge]) linear_extrude(slide_t + 2 * fudge)
-            hull() for (dy = [0, -reset_travel]) translate([0, dy]) circle(d = so_tip_d + 0.5, $fn = 24);
-        translate([pivot_pos[0], pivot_pos[1], -fudge]) linear_extrude(slide_t + 2 * fudge)
-            hull() for (dy = [12, -reset_travel]) translate([0, dy]) circle(d = 6.6, $fn = 24);   // open at the top edge
+        translate([0, 0, -fudge]) linear_extrude(slide_t + 2 * fudge) {
+            for (p = so_low) guide_slot2d(p, so_tip_d);          // closed slots on the stepped standoff tips
+            guide_slot2d(so_top, so_tip_d);
+            guide_slot2d(guide_pin, guide_pin_d);
+            hull() for (dy = [12, -reset_travel]) translate([pivot_pos[0], pivot_pos[1] + dy]) circle(d = 6.6, $fn = 24);   // round the anchor-hub post, open at the top
+        }
     }
 }
 module roller() {

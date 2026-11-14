@@ -18,8 +18,8 @@ function gear_eps(z1, x1, s1, z2, x2, s2, a) =
 // rotation of driven gear B (zb at direction phi from A) that meshes with A (za, rotation ra): tooth 0 on +X at rotation 0
 function mesh_rot(za, ra, zb, phi) = phi + 180 + 180 / zb - (ra - phi) * za / zb;
 
-module gear2d(z, x = 0, short = 0, bl = gear_backlash) {
-    ra = gear_ra(z, x, short); rf = gear_rf(z, x); r0 = max(gear_rb(z), rf) + 0.001;
+module gear2d(z, x = 0, short = 0, bl = gear_backlash, root_cut = 0) {
+    ra = gear_ra(z, x, short); rf = gear_rf(z, x) - root_cut; r0 = max(gear_rb(z), rf) + 0.001;
     n = 10;
     flank = [for (i = [0:n]) let (q = r0 + (ra - r0) * i / n, a = gear_ha(z, x, bl, q)) [q, a]];
     a0 = gear_ha(z, x, bl, r0);
