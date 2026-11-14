@@ -116,3 +116,18 @@ module collector_use() {                         // gauge coordinates, skirt bot
     }
 }
 module collector() { translate([0, 0, rim_z]) rotate([180, 0, 0]) collector_use(); }           // printed rim-down
+
+// ---- leaf guard: a spoked star that sits in the funnel above the nozzle (optional) ----
+guard_r = 20; guard_t = 2; guard_spokes = 16; guard_spoke_w = 1.6;
+guard_seat_r = guard_r - guard_t / tan(funnel_slope);                      // radius of the spoke tips' lower edge
+guard_z = throat_z + (guard_seat_r - nozzle_id / 2) * tan(funnel_slope);   // height at which that edge meets the funnel
+module leaf_guard() {
+    intersection() {
+        union() {
+            cylinder(r = 5, h = guard_t, $fn = 32);
+            cylinder(r = 2.5, h = guard_t + 7, $fn = 24);                  // lifting knob
+            for (k = [0:guard_spokes - 1]) rotate(k * 360 / guard_spokes) translate([4, -guard_spoke_w / 2, 0]) cube([guard_r - 4, guard_spoke_w, guard_t]);
+        }
+        cylinder(r1 = guard_seat_r, r2 = guard_seat_r + 20 / tan(funnel_slope), h = 20, $fn = 96);   // tips cut to the funnel's slope
+    }
+}

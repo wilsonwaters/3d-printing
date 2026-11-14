@@ -14,7 +14,7 @@ the falling water does the counting.
 | Register | four dials ×1000, ×100, ×10, ×1 mm, 10:1 between neighbours, all clockwise; 20 tips turn the ×1 pointer once |
 | Reset | lift the tab: four rollers drive four heart cams and every pointer returns to 0 |
 | Size | Ø163 × 214 mm (177 × 183 mm over the mounting ears) |
-| Printed parts | 27 pieces from 15 designs, PETG, no supports |
+| Printed parts | 28 pieces from 16 designs, PETG, no supports |
 | Printer | Bambu Lab X1 Carbon, 0.4 mm nozzle; largest part is the collector, 163 × 163 × 211 mm |
 | Hardware | ten M3 screws and three mounting screws (list below) |
 
@@ -47,7 +47,9 @@ not, so expect to calibrate it and to report back what a real print does.
    A small cantilever inside the gear drags on the arbor, enough to carry the pointer round but
    weak enough to slip. Behind each dial the rotor has a heart-shaped cam. Lifting the reset tab
    raises a bar with four rollers; each roller pushes its cam round until it drops into the cusp,
-   which is zero. The gears stay where they are, locked by the anchor.
+   which is zero. The gears stay where they are, locked by the anchor. The cam is an Archimedean
+   heart, which lifts the roller the same 2.9 mm per radian wherever it touches, so the push keeps
+   turning the cam even with dry plastic rubbing on plastic.
 
 ![Gear train, heart cams and reset bar](preview-train.png)
 ![Anchor, counterweight and pin wheel](preview-escapement.png)
@@ -111,6 +113,7 @@ The `.stl` files are the same parts for any other slicer.
 | `dial_plate` | 1 | 0.2 mm, 4 walls, 20 % | prints face down |
 | `dial_card` | 1 | 0.2 mm | **change filament at 1.2 mm (layer 7)** for contrasting numerals |
 | `slide` | 1 | 0.2 mm, 4 walls, 20 % | reset bar and tab |
+| `leaf_guard` | 1 | 0.2 mm (STL only) | optional: a spoked star that sits in the funnel and lifts out by its knob |
 | `plate_register` | 1 plate | 0.16 mm, 100 % infill | 3 clusters, 3 idlers, pin wheel, 3 long rotors, 1 short rotor, 4 pointers, 4 rollers |
 
 Single-part STLs (`units_wheel`, `cluster`, `idler`, `rotor_long`, `rotor_short`, `pointer`,
@@ -181,13 +184,13 @@ To reset, lift the tab under the dials as far as it goes and let it drop.
 
 Every claim above is tied to something that is checked when the model compiles.
 
-- **Gate:** `verify-model.py` builds all 32 parts and views with OpenSCAD 2026.11.12. Every printed
+- **Gate:** `verify-model.py` builds all 34 parts and views with OpenSCAD 2026.11.12. Every printed
   part is one manifold body on the bed and inside 256 mm; the base is 177 × 183 mm, inside the
   220 mm area that clears the X1C's exclusion zone.
 - **Interference:** six `clash_*` parts intersect every pair of the 27 assembled pieces (351 pairs)
   at rest, mid-swing handover, mid-push, end of travel, return stroke and reset, with the pointers
   at different readings. Four more check the anchor against the pin wheel at in-between angles.
-  All render empty.
+  All render empty, and a deliberate mis-pose of the wheel is caught.
 - **Drive kinematics:** `calc/escapement.py` swings the anchor in 0.05° steps and lets the pallets
   push the pins. Each tip advances the wheel 18° in both directions (72° in four tips), pushing
   from 4° to 15° of the swing, so it is finished 3.9° before the earliest stop.
@@ -195,7 +198,10 @@ Every claim above is tied to something that is checked when the model compiles.
   and solves the moment balance: 26.8 g, centre of mass 13.9 mm above the pivot, 10.00 ml at 20.0°.
 - **Balance:** `calc/balance.py` puts the anchor's centre of mass within 0.03 mm of the pivot, a
   bias of 0.3 g·mm against the bucket's 127 g·mm holding moment.
-- **Contracts:** 22 `assert()`s in `rg-assembly.scad` cover the orifice area, the 10:1 ratio, gear
+- **Reset:** the cam's lift is compared with the friction of the roller on its post and the rotor
+  in its journals at a coefficient of 0.35: 1.6 mm of torque arm is left at the cusp and 0.6 mm
+  at the tip, so about 0.6 N per dial turns a cam against its clutch.
+- **Contracts:** 24 `assert()`s in `rg-assembly.scad` cover the orifice area, the 10:1 ratio, gear
   contact ratios (1.22 and 1.27), printable tooth tips, cam and roller geometry, nozzle clearance
   and the size limits. Changing a parameter that breaks one stops the build.
 
@@ -208,8 +214,7 @@ Only a print can confirm these:
 - under-reading in heavy rain, which is not modelled.
 
 Known limits: nothing holds the wheel against turning backwards for part of each swing except its
-own friction, so strong vibration could lose a half-count; there is no leaf guard over the nozzle
-and no window over the dials; the base floor is flat, so it stays damp after rain.
+own friction, so strong vibration could lose a half-count; the dials have no window; the base floor is flat, so it stays damp after rain.
 
 ## Files
 

@@ -17,7 +17,7 @@ module reg_frame() { translate([0, bp_rear_y, 0.02]) rotate([90, 0, 0]) children
 module fd(f_front) { translate([0, 0, f_front]) rotate([0, 180, 0]) children(); }    // seat a front-down part
 module spin(pos, f, ang) { translate([pos[0], pos[1], f]) rotate(ang) children(); }
 
-n_elem = 28;
+n_elem = 29;
 module elem(i, P) {
     if (i == 0) reg_frame() back_plate();
     if (i == 1) reg_frame() translate([0, 0, 0.02]) fd(f_card) dial_plate();
@@ -40,10 +40,12 @@ module elem(i, P) {
     if (i == 22) reg_frame() translate([0, bar_lift(P), f_slide]) slide();
     if (i >= 23 && i <= 26) { k = i - 23;
         reg_frame() translate([dial_x[k], dial_z - roller_rest + bar_lift(P), f_slide + slide_t + 0.35]) roller(); }
+    if (i == 28) translate([0, 0, guard_z + 0.05]) leaf_guard();
     if (i == 27) for (sx = [-1, 1]) translate([sx * stop_x, 0, pivot_z - stop_x * tan(tilt_nom) - 20]) cylinder(d = 2.7, h = 20, $fn = 16);   // calibration screws (M3 x 20), view only
 }
 function elem_col(i) = i <= 2 ? "#e8e4d8" : i == 3 ? "#cfd6da" : i == 4 ? "#f4f4f0" : i == 5 ? "#3f88c5" : i == 6 ? "#d1495b"
     : i == 7 ? "#edae49" : i <= 10 ? "#c9a227" : i <= 13 ? "#b08d57" : i <= 17 ? "#66a182" : i <= 21 ? "#222222" : i <= 26 ? "#8f5fbf" : "#888888";
+module clash_guard() { intersection() { collector_use(); translate([0, 0, guard_z + 0.05]) leaf_guard(); } }
 module assembly(P, skip = []) { for (i = [0:n_elem - 1]) if (len(search(i, skip)) == 0) color(elem_col(i)) elem(i, P); }
 n_clash = 27;   // element 27 (the screws) is for the view only
 module clash_all(P) { for (i = [0:n_clash - 2], j = [i + 1:n_clash - 1]) intersection() { elem(i, P); elem(j, P); } }
@@ -84,6 +86,7 @@ assert(tail_low_z >= 1.5, "anchor would sweep into the base floor");
 assert(tilt_min > 15, "the lowered floor must slope enough to drain");
 assert(mast_top_z <= nozzle_z - 1, "bucket mast would hit the nozzle");
 assert(funnel_slope >= 45, "WMO: funnel at least 45 degrees");
+assert(2 * PI * guard_r / guard_spokes - guard_spoke_w <= 7 && guard_z + guard_t + 7 < funnel_top_z, "leaf guard gaps or seat");
 assert(90 - funnel_slope <= 45, "funnel overhang when printed rim-down");
 assert(rim_z <= build_z - 6, "collector too tall for the printer");
 assert(2 * ear_r <= bed_free, "base must fit the bed without the exclusion-zone clip");

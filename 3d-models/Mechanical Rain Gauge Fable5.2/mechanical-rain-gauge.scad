@@ -42,6 +42,7 @@
 //   "clutch"                     -> clutch_cut(), clutch_beam(), clutch_L, clutch_t, clutch_defl
 //   "register frame"             -> back_plate(), dial_plate(), so_low, so_top, foot_x
 //   "base / drains / ears"       -> base(), drain_slots2d(), ear_r, upstand_h
+//   "leaf guard"                 -> leaf_guard(), guard_r, guard_spokes (optional; lifts out by its knob)
 //
 // Common modifications:
 //   Different collector size     -> collector_area_cm2 (then rerun calc/bucket.py: tip volume = area x 0.5 mm)
@@ -268,7 +269,7 @@ include <rg-assembly.scad>
 
 // === ASSEMBLY / RENDER ===
 P_view = [pose_stroke, pose_anchor, pose_count_mm, pose_reset];
-part = "all"; // "all", "assembly_open", "section", "view_train", "view_escapement", "base", "collector", "bucket", "anchor", "back_plate", "dial_plate", "dial_card", "units_wheel", "cluster", "idler", "rotor_long", "rotor_short", "pointer", "slide", "roller", "plate_register", "clash_rest", "clash_handover", "clash_push", "clash_end", "clash_return", "clash_reset", "clash_esc_a", "clash_esc_b", "clash_esc_c", "clash_esc_d", "check_pair"
+part = "all"; // "all", "assembly_open", "section", "view_train", "view_escapement", "base", "collector", "bucket", "anchor", "back_plate", "dial_plate", "dial_card", "units_wheel", "cluster", "idler", "rotor_long", "rotor_short", "pointer", "slide", "roller", "leaf_guard", "plate_register", "clash_rest", "clash_handover", "clash_push", "clash_end", "clash_return", "clash_reset", "clash_esc_a", "clash_esc_b", "clash_esc_c", "clash_esc_d", "clash_guard", "check_pair"
 if (part == "all") assembly(P_view);
 if (part == "assembly_open") assembly(P_view, [4]);                                   // collector removed
 if (part == "section") difference() { assembly(P_view); translate([0, -200, -50]) cube([200, 400, 400]); }
@@ -289,6 +290,7 @@ if (part == "rotor_short") rotor(collar_short);
 if (part == "pointer") pointer();
 if (part == "slide") slide();
 if (part == "roller") roller();
+if (part == "leaf_guard") leaf_guard();
 if (part == "plate_register") plate_register();
 // whole-assembly pairwise interference at six poses: [stroke, anchor angle, reading in mm, reset 0..1]
 if (part == "clash_rest") clash_all([0, -21.5, 0, 0]);
@@ -302,6 +304,7 @@ if (part == "clash_esc_a") clash_esc([0, 6, 0, 0]);
 if (part == "clash_esc_b") clash_esc([0, 12, 0, 0]);
 if (part == "clash_esc_c") clash_esc([1, -6, 0, 0]);
 if (part == "clash_esc_d") clash_esc([1, -12, 0, 0]);
+if (part == "clash_guard") clash_guard();
 // diagnostics: one pair of elements at one pose (used by calc/find-clash.sh)
 ci = 0; cj = 1; cP = [0, -21, 0, 0];
 if (part == "check_pair") intersection() { elem(ci, cP); elem(cj, cP); }
