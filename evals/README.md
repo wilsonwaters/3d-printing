@@ -364,7 +364,7 @@ These are for the skill review:
 - **In the existing models.** Gate latch v4's `lever` part is modelled off the
   plate. On printability, the rain gauges have improved sharply: summed
   sloped overhang went from about 12,300 mm² (Fable, Opus5.0 v1) to 4,824
-  (Opus5.0 v2) to 396 (Opus5.5); see the ledger.
+  (Opus5.0 v2) to 396 (Opus5.5) to 98 (Fable5.2); see the ledger.
 - **From the smoke run (Opus 5.5, current skill):**
   - *Where the money goes.* On the two design runs, output plus thinking was
     about 46-48% of cost, cache writes about 30% and cache reads about 20%. The
